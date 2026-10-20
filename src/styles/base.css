@@ -1,0 +1,133 @@
+:root {
+  color-scheme: light dark;
+
+  /* Colores: modo claro */
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --surface-muted: #eef1f6;
+  --text: #1b1f24;
+  --text-muted: #4f5b6b;
+  --border: #d3d9e2;
+  --primary: #2457d6;
+  --primary-hover: #1b45ae;
+  --on-primary: #ffffff;
+  --danger: #b42318;
+  --warning: #8a5a00;
+  --success: #067647;
+  --focus: #2457d6;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 12px rgb(0 0 0 / 0.04);
+
+  /* Espaciado */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  /* Forma y tipografía */
+  --radius: 0.75rem;
+  --radius-sm: 0.5rem;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fs-sm: 0.875rem;
+  --fs-base: 1rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: clamp(1.5rem, 1.2rem + 1.5vw, 2rem);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1116;
+    --surface: #161b22;
+    --surface-muted: #1e252e;
+    --text: #e8ebf0;
+    --text-muted: #a6b0bf;
+    --border: #2d3640;
+    --primary: #7ea6ff;
+    --primary-hover: #a3bfff;
+    --on-primary: #0b1020;
+    --danger: #ff8f84;
+    --warning: #f5b84a;
+    --success: #4fd98b;
+    --focus: #a3bfff;
+    --shadow: none;
+  }
+}
+
+/* Reset mínimo */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  font-family: var(--font);
+  font-size: var(--fs-base);
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+}
+
+svg,
+img {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* Foco visible para teclado */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+main:focus {
+  outline: none;
+}
+
+/* Oculto visualmente pero accesible para lectores de pantalla */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

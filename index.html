@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta
+      name="description"
+      content="Controla tus gastos mensuales, tu presupuesto y cuánto ahorras."
+    />
+    <title>Gastos App</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+    <header class="app-header">
+      <div>
+        <h1>Gastos App</h1>
+        <p class="app-header__subtitle">
+          Controla lo que gastas y lo que ahorras cada mes
+        </p>
+      </div>
+      <div class="field">
+        <label class="field__label" for="month-select">Mes</label>
+        <input class="field__input" type="month" id="month-select" name="month" />
+      </div>
+    </header>
+
+    <main class="app-main layout" id="contenido" tabindex="-1">
+      <!-- Resumen -->
+      <section class="panel panel--summary" aria-labelledby="summary-title">
+        <h2 class="panel__title" id="summary-title">Resumen del mes</h2>
+        <ul class="cards">
+          <li class="card">
+            <p class="card__label">Sueldo</p>
+            <p class="card__value" id="summary-income">—</p>
+          </li>
+          <li class="card">
+            <p class="card__label">Gastado</p>
+            <p class="card__value" id="summary-spent">—</p>
+          </li>
+          <li class="card">
+            <p class="card__label">Ahorrado</p>
+            <p class="card__value" id="summary-saved">—</p>
+          </li>
+          <li class="card">
+            <p class="card__label">% de ahorro</p>
+            <p class="card__value" id="summary-savings-pct">—</p>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Sueldo -->
+      <section class="panel panel--income" aria-labelledby="income-title">
+        <h2 class="panel__title" id="income-title">Sueldo del mes</h2>
+        <form class="form form--inline" id="income-form">
+          <div class="field">
+            <label class="field__label" for="income-amount">Importe (€)</label>
+            <input
+              class="field__input"
+              type="text"
+              id="income-amount"
+              name="income"
+              inputmode="decimal"
+              autocomplete="off"
+              placeholder="0,00"
+              required
+            />
+          </div>
+          <button class="button" type="submit">Guardar</button>
+        </form>
+        <p class="hint" id="income-status">
+          Aún no has registrado el sueldo de este mes.
+        </p>
+      </section>
+
+      <!-- Presupuesto -->
+      <section class="panel panel--budget" aria-labelledby="budget-title">
+        <h2 class="panel__title" id="budget-title">Presupuesto</h2>
+        <form class="form form--inline" id="budget-form">
+          <div class="field">
+            <label class="field__label" for="budget-amount">Límite mensual (€)</label>
+            <input
+              class="field__input"
+              type="text"
+              id="budget-amount"
+              name="budget"
+              inputmode="decimal"
+              autocomplete="off"
+              placeholder="0,00"
+              required
+            />
+          </div>
+          <button class="button" type="submit">Guardar</button>
+        </form>
+        <progress
+          class="progress"
+          id="budget-progress"
+          max="100"
+          value="0"
+          aria-labelledby="budget-title"
+        ></progress>
+        <p class="hint" id="budget-status">Sin presupuesto definido.</p>
+      </section>
+
+      <!-- Gráfico -->
+      <section class="panel panel--chart" aria-labelledby="chart-title">
+        <h2 class="panel__title" id="chart-title">Distribución del sueldo</h2>
+        <div class="chart" id="chart">
+          <p class="empty">El gráfico aparecerá cuando haya datos del mes.</p>
+        </div>
+        <ul class="legend" id="chart-legend"></ul>
+      </section>
+
+      <!-- Añadir gasto -->
+      <section class="panel panel--form" aria-labelledby="expense-form-title">
+        <h2 class="panel__title" id="expense-form-title">Añadir gasto</h2>
+        <form class="form" id="expense-form">
+          <div class="form__row">
+            <div class="field">
+              <label class="field__label" for="expense-amount">Importe (€)</label>
+              <input
+                class="field__input"
+                type="text"
+                id="expense-amount"
+                name="amount"
+                inputmode="decimal"
+                autocomplete="off"
+                placeholder="0,00"
+                required
+              />
+            </div>
+            <div class="field">
+              <label class="field__label" for="expense-date">Fecha</label>
+              <input
+                class="field__input"
+                type="date"
+                id="expense-date"
+                name="date"
+                required
+              />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="expense-category">Categoría</label>
+            <select class="field__input" id="expense-category" name="category" required>
+              <option value="comida">Comida</option>
+              <option value="transporte">Transporte</option>
+              <option value="vivienda">Vivienda</option>
+              <option value="ocio">Ocio</option>
+              <option value="salud">Salud</option>
+              <option value="suscripciones">Suscripciones</option>
+              <option value="otros">Otros</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field__label" for="expense-note">Nota (opcional)</label>
+            <input
+              class="field__input"
+              type="text"
+              id="expense-note"
+              name="note"
+              maxlength="120"
+              autocomplete="off"
+            />
+          </div>
+          <button class="button" type="submit">Añadir gasto</button>
+        </form>
+      </section>
+
+      <!-- Lista de gastos -->
+      <section class="panel panel--list" aria-labelledby="list-title">
+        <div class="panel__head">
+          <h2 class="panel__title" id="list-title">Gastos</h2>
+          <div class="field">
+            <label class="field__label" for="filter-category">Categoría</label>
+            <select class="field__input" id="filter-category" name="filter">
+              <option value="all">Todas</option>
+              <option value="comida">Comida</option>
+              <option value="transporte">Transporte</option>
+              <option value="vivienda">Vivienda</option>
+              <option value="ocio">Ocio</option>
+              <option value="salud">Salud</option>
+              <option value="suscripciones">Suscripciones</option>
+              <option value="otros">Otros</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <caption class="visually-hidden">
+              Gastos del mes seleccionado
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Fecha</th>
+                <th scope="col">Categoría</th>
+                <th scope="col">Nota</th>
+                <th scope="col" class="num">Importe</th>
+                <th scope="col"><span class="visually-hidden">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody id="expense-rows"></tbody>
+          </table>
+        </div>
+        <p class="empty" id="list-empty">No hay gastos para este mes.</p>
+      </section>
+
+      <!-- Copia de seguridad -->
+      <section class="panel panel--data" aria-labelledby="data-title">
+        <h2 class="panel__title" id="data-title">Copia de seguridad</h2>
+        <p class="hint">
+          Tus datos se guardan solo en este navegador. Exporta una copia de vez en cuando.
+        </p>
+        <div class="button-group">
+          <button class="button button--secondary" type="button" id="export-btn">
+            Exportar JSON
+          </button>
+          <label class="button button--secondary file-button">
+            Importar JSON
+            <input
+              class="visually-hidden"
+              type="file"
+              id="import-file"
+              accept="application/json,.json"
+            />
+          </label>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>Gastos App · proyecto personal con HTML, CSS y TypeScript</p>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
