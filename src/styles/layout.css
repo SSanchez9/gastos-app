@@ -55,7 +55,7 @@
     grid-template-areas:
       "summary summary"
       "income  chart"
-      "budget  chart"
+      "form    chart"
       "form    list"
       "data    list";
     align-items: start;
@@ -67,9 +67,6 @@
   }
   .panel--income {
     grid-area: income;
-  }
-  .panel--budget {
-    grid-area: budget;
   }
   .panel--chart {
     grid-area: chart;
