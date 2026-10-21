@@ -4,10 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
-    <meta
-      name="description"
-      content="Controla tus gastos mensuales, tu presupuesto y cuánto ahorras."
-    />
+    <meta name="description" content="Controla tus gastos mensuales y cuánto ahorras." />
     <title>Gastos App</title>
   </head>
   <body>
@@ -25,6 +22,11 @@
         <input class="field__input" type="month" id="month-select" name="month" />
       </div>
     </header>
+
+    <p class="alert" id="save-warning" role="alert" hidden>
+      No se pudieron guardar los cambios en este navegador. Exporta una copia de seguridad
+      para no perder tus datos.
+    </p>
 
     <main class="app-main layout" id="contenido" tabindex="-1">
       <!-- Resumen -->
@@ -74,35 +76,6 @@
         </p>
       </section>
 
-      <!-- Presupuesto NO IMPLEMENTADO DE MOMENTO -->
-      <!-- <section class="panel panel--budget" aria-labelledby="budget-title">
-        <h2 class="panel__title" id="budget-title">Presupuesto</h2>
-        <form class="form form--inline" id="budget-form">
-          <div class="field">
-            <label class="field__label" for="budget-amount">Límite mensual (€)</label>
-            <input
-              class="field__input"
-              type="text"
-              id="budget-amount"
-              name="budget"
-              inputmode="decimal"
-              autocomplete="off"
-              placeholder="0,00"
-              required
-            />
-          </div>
-          <button class="button" type="submit">Guardar</button>
-        </form>
-        <progress
-          class="progress"
-          id="budget-progress"
-          max="100"
-          value="0"
-          aria-labelledby="budget-title"
-        ></progress>
-        <p class="hint" id="budget-status">Sin presupuesto definido.</p>
-      </section> -->
-
       <!-- Gráfico -->
       <section class="panel panel--chart" aria-labelledby="chart-title">
         <h2 class="panel__title" id="chart-title">Distribución del sueldo</h2>
@@ -112,7 +85,7 @@
         <ul class="legend" id="chart-legend"></ul>
       </section>
 
-      <!-- Añadir gasto -->
+      <!-- Añadir o editar gasto -->
       <section class="panel panel--form" aria-labelledby="expense-form-title">
         <h2 class="panel__title" id="expense-form-title">Añadir gasto</h2>
         <form class="form" id="expense-form">
@@ -143,16 +116,12 @@
           </div>
           <div class="field">
             <label class="field__label" for="expense-category">Categoría</label>
-            <select class="field__input" id="expense-category" name="category" required>
-              <option value="personal">Personal</option>
-              <option value="social">Social</option>
-              <option value="supermercado">Supermercado</option>
-              <option value="casa">Casa</option>
-              <option value="alquiler">Alquiler</option>
-              <option value="gasolina">Gasolina</option>
-              <option value="coche">Coche</option>
-              <option value="otros">Otros</option>
-            </select>
+            <select
+              class="field__input"
+              id="expense-category"
+              name="category"
+              required
+            ></select>
           </div>
           <div class="field">
             <label class="field__label" for="expense-note">Nota (opcional)</label>
@@ -165,7 +134,18 @@
               autocomplete="off"
             />
           </div>
-          <button class="button" type="submit">Añadir gasto</button>
+          <p class="form__error" id="expense-error" role="alert" hidden></p>
+          <div class="button-group">
+            <button class="button" type="submit" id="expense-submit">Añadir gasto</button>
+            <button
+              class="button button--secondary"
+              type="button"
+              id="expense-cancel"
+              hidden
+            >
+              Cancelar
+            </button>
+          </div>
         </form>
       </section>
 
@@ -175,19 +155,10 @@
           <h2 class="panel__title" id="list-title">Gastos</h2>
           <div class="field">
             <label class="field__label" for="filter-category">Categoría</label>
-            <select class="field__input" id="filter-category" name="filter">
-              <option value="personal">Personal</option>
-              <option value="social">Social</option>
-              <option value="supermercado">Supermercado</option>
-              <option value="casa">Casa</option>
-              <option value="alquiler">Alquiler</option>
-              <option value="gasolina">Gasolina</option>
-              <option value="coche">Coche</option>
-              <option value="otros">Otros</option>
-            </select>
+            <select class="field__input" id="filter-category" name="filter"></select>
           </div>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap" id="expense-table-wrap" hidden>
           <table class="table">
             <caption class="visually-hidden">
               Gastos del mes seleccionado
@@ -204,7 +175,7 @@
             <tbody id="expense-rows"></tbody>
           </table>
         </div>
-        <p class="empty" id="list-empty">No hay gastos para este mes.</p>
+        <p class="empty" id="list-empty">No hay gastos en este mes.</p>
       </section>
 
       <!-- Copia de seguridad -->

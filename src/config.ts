@@ -1,4 +1,4 @@
-import type { CategoryKey } from "./types";
+import type { CategoryFilter, CategoryKey } from "./types";
 
 export const DATA_VERSION = 1;
 export const STORAGE_KEY = "gastos-app:v1";
@@ -8,7 +8,7 @@ export const NOTE_MAX_LENGTH = 120;
 
 export interface CategoryInfo {
   label: string;
-  /** Color para el gráfico (fase 6). */
+  /** Color para el gráfico y los indicadores de categoría. */
   color: string;
 }
 
@@ -33,4 +33,8 @@ export function isCategoryKey(value: unknown): value is CategoryKey {
   return (
     typeof value === "string" && (CATEGORY_KEYS as readonly string[]).includes(value)
   );
+}
+
+export function isCategoryFilter(value: unknown): value is CategoryFilter {
+  return value === "all" || isCategoryKey(value);
 }
