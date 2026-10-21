@@ -1,11 +1,19 @@
-/** En este archivo se gestionan las interacciones con la interfaz de usuario. Es lo que toca el DOM*/
+import {
+  compareWithPreviousMonth,
+  expensesOfMonth,
+  filterExpenses,
+  sumCents,
+  totalsByCategory,
+} from "./calc";
+import type { MonthComparison } from "./calc";
 import { CATEGORIES, CATEGORY_KEYS, isCategoryKey } from "./config";
-import { filterExpenses } from "./calc";
 import {
   centsToInputString,
   eurosToCents,
   formatDate,
   formatMoney,
+  formatMonth,
+  formatPercent,
   getTodayIso,
 } from "./format";
 import type { AppState, CategoryKey, Expense, NewExpense, Result } from "./types";
@@ -21,6 +29,10 @@ function getElement<T extends HTMLElement>(id: string, type: new () => T): T {
 export const dom = {
   monthSelect: getElement("month-select", HTMLInputElement),
   saveWarning: getElement("save-warning", HTMLParagraphElement),
+  spent: getElement("summary-spent", HTMLParagraphElement),
+  spentCompare: getElement("summary-spent-compare", HTMLParagraphElement),
+  categoryTotals: getElement("category-totals", HTMLUListElement),
+  categoryEmpty: getElement("category-empty", HTMLParagraphElement),
   form: getElement("expense-form", HTMLFormElement),
   formTitle: getElement("expense-form-title", HTMLHeadingElement),
   formError: getElement("expense-error", HTMLParagraphElement),
@@ -113,6 +125,96 @@ export function resetForm(options: { keepContext: boolean }): void {
   dom.amount.focus();
 }
 
+// ---------- Resumen ----------
+
+type Trend = "up" | "down" | "flat" | "none";
+
+function describeComparison(comparison: MonthComparison): { text: string; trend: Trend } {
+  const previousName = formatMonth(comparison.previousMonth);
+  const { currentCents, previousCents, diffCents, diffPct } = comparison;
+
+  if (currentCents === 0 && previousCents === 0) {
+    return { text: "Sin gastos este mes ni el anterior.", trend: "none" };
+  }
+  if (previousCents === 0 || diffPct === null) {
+    return { text: `Sin gastos en ${previousName} para comparar.`, trend: "none" };
+  }
+  if (diffCents === 0) {
+    return { text: `Igual que en ${previousName}.`, trend: "flat" };
+  }
+  if (diffCents > 0) {
+    return {
+      text: `${formatMoney(diffCents)} más que en ${previousName} (+${formatPercent(diffPct)})`,
+      trend: "up",
+    };
+  }
+  return {
+    text: `${formatMoney(-diffCents)} menos que en ${previousName} (-${formatPercent(-diffPct)})`,
+    trend: "down",
+  };
+}
+
+function createBreakdownItem(
+  category: CategoryKey,
+  cents: number,
+  pct: number,
+): HTMLLIElement {
+  const info = CATEGORIES[category];
+
+  const dot = document.createElement("span");
+  dot.className = "dot";
+  dot.style.backgroundColor = info.color;
+  dot.setAttribute("aria-hidden", "true");
+
+  const name = document.createElement("span");
+  name.className = "breakdown__name";
+  name.textContent = info.label;
+
+  const amount = document.createElement("span");
+  amount.className = "breakdown__amount";
+  amount.textContent = formatMoney(cents);
+
+  const percentage = document.createElement("span");
+  percentage.className = "breakdown__pct";
+  percentage.textContent = formatPercent(pct);
+
+  const head = document.createElement("div");
+  head.className = "breakdown__head";
+  head.append(dot, name, amount, percentage);
+
+  const fill = document.createElement("span");
+  fill.style.width = `${pct}%`;
+  fill.style.backgroundColor = info.color;
+
+  const bar = document.createElement("div");
+  bar.className = "breakdown__bar";
+  bar.setAttribute("aria-hidden", "true");
+  bar.append(fill);
+
+  const item = document.createElement("li");
+  item.className = "breakdown__item";
+  item.append(head, bar);
+  return item;
+}
+
+function renderSummary(state: AppState): void {
+  const month = state.ui.selectedMonth;
+  const expenses = state.data.expenses;
+
+  dom.spent.textContent = formatMoney(sumCents(expensesOfMonth(expenses, month)));
+
+  const comparison = describeComparison(compareWithPreviousMonth(expenses, month));
+  dom.spentCompare.textContent = comparison.text;
+  dom.spentCompare.className = `card__note card__note--${comparison.trend}`;
+
+  const totals = totalsByCategory(expenses, month);
+  dom.categoryTotals.replaceChildren(
+    ...totals.map((item) => createBreakdownItem(item.category, item.cents, item.pct)),
+  );
+  dom.categoryTotals.hidden = totals.length === 0;
+  dom.categoryEmpty.hidden = totals.length > 0;
+}
+
 // ---------- Lista ----------
 
 function createCell(text: string, className?: string): HTMLTableCellElement {
@@ -194,5 +296,6 @@ export function renderApp(state: AppState): void {
   dom.monthSelect.value = state.ui.selectedMonth;
   dom.filterCategory.value = state.ui.categoryFilter;
   dom.saveWarning.hidden = !state.saveFailed;
+  renderSummary(state);
   renderExpenseList(state);
 }

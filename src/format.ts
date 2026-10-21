@@ -127,3 +127,13 @@ export function getTodayIso(): IsoDate {
 export function getCurrentMonthKey(): MonthKey {
   return getMonthKey(getTodayIso());
 }
+
+const percentFormatter = new Intl.NumberFormat(LOCALE, {
+  style: "percent",
+  maximumFractionDigits: 1,
+});
+
+/** 35.2 → "35,2 %" (recibe el porcentaje como 35.2, no como 0.352). */
+export function formatPercent(percent: number): string {
+  return percentFormatter.format(percent / 100);
+}
