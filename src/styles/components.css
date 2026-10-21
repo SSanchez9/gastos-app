@@ -332,3 +332,49 @@
 .panel > .button--small {
   justify-self: start;
 }
+
+/* Gráfico circular */
+.chart__svg {
+  width: min(100%, 16rem);
+  height: auto;
+}
+
+.chart__track {
+  stroke: var(--surface-muted);
+}
+
+.chart__slice {
+  transition: opacity 0.15s;
+}
+
+.chart__svg:hover .chart__slice:not(:hover) {
+  opacity: 0.55;
+}
+
+.chart__center-value {
+  fill: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+  text-anchor: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart__center-value--small {
+  font-size: 13px;
+}
+
+.chart__center-label {
+  fill: var(--text-muted);
+  font-size: 11px;
+  text-anchor: middle;
+}
+
+.legend__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.legend .dot {
+  margin-right: 0;
+}

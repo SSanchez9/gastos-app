@@ -183,3 +183,58 @@ export function getSavingsSummary(data: AppData, month: MonthKey): SavingsSummar
     isDeficit: savedCents < 0,
   };
 }
+
+export type ChartKind = "income" | "deficit" | "no-income" | "empty";
+
+export interface ChartSlice {
+  key: CategoryKey | "ahorro";
+  cents: number;
+  /** Porcentaje sobre el total del gráfico (un decimal). */
+  pct: number;
+}
+
+export interface ChartData {
+  kind: ChartKind;
+  /** Importe que representa el 100 % del gráfico. */
+  totalCents: number;
+  slices: ChartSlice[];
+}
+
+/**
+ * Datos del gráfico circular de un mes. Con sueldo suficiente, el 100 % es el sueldo
+ * y el ahorro es una porción más. Si no hay sueldo o hay déficit, el 100 % es lo gastado.
+ */
+export function getChartData(data: AppData, month: MonthKey): ChartData {
+  const categoryTotals = totalsByCategory(data.expenses, month);
+  const spentCents = categoryTotals.reduce((sum, item) => sum + item.cents, 0);
+  const incomeCents = data.income.byMonth[month] ?? null;
+
+  if (incomeCents !== null && incomeCents >= spentCents) {
+    const savedCents = incomeCents - spentCents;
+    const parts: { key: CategoryKey | "ahorro"; cents: number }[] = categoryTotals.map(
+      (item) => ({ key: item.category, cents: item.cents }),
+    );
+    if (savedCents > 0) parts.push({ key: "ahorro", cents: savedCents });
+
+    const percentages = percentagesOfTotal(parts.map((part) => part.cents));
+    return {
+      kind: "income",
+      totalCents: incomeCents,
+      slices: parts.map((part, index) => ({ ...part, pct: percentages[index] ?? 0 })),
+    };
+  }
+
+  if (spentCents === 0) {
+    return { kind: "empty", totalCents: 0, slices: [] };
+  }
+
+  return {
+    kind: incomeCents === null ? "no-income" : "deficit",
+    totalCents: spentCents,
+    slices: categoryTotals.map((item) => ({
+      key: item.category,
+      cents: item.cents,
+      pct: item.pct,
+    })),
+  };
+}

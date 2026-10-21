@@ -2,9 +2,11 @@ import "./styles/base.css";
 import "./styles/layout.css";
 import "./styles/components.css";
 import { getPreviousIncome } from "./calc";
+import { renderChart } from "./charts";
 import { isCategoryFilter } from "./config";
 import { getMonthKey, getTodayIso } from "./format";
 import * as state from "./state";
+import type { AppState } from "./types";
 import {
   clearIncomeError,
   dom,
@@ -28,6 +30,12 @@ declare global {
 // Solo en desarrollo: permite probar el estado desde la consola del navegador.
 if (import.meta.env.DEV) {
   window.gastos = state;
+}
+
+/** Sincroniza toda la pantalla con el estado. */
+function render(appState: AppState): void {
+  renderApp(appState);
+  renderChart(appState);
 }
 
 let editingId: string | null = null;
@@ -138,13 +146,13 @@ dom.incomeClear.addEventListener("click", () => {
 // ---------- Mes y filtro ----------
 
 dom.monthSelect.addEventListener("change", () => {
-  if (!state.setSelectedMonth(dom.monthSelect.value)) renderApp(state.getState());
+  if (!state.setSelectedMonth(dom.monthSelect.value)) render(state.getState());
 });
 
 dom.filterCategory.addEventListener("change", () => {
   const value = dom.filterCategory.value;
   if (!isCategoryFilter(value) || !state.setCategoryFilter(value)) {
-    renderApp(state.getState());
+    render(state.getState());
   }
 });
 
@@ -152,5 +160,5 @@ dom.filterCategory.addEventListener("change", () => {
 
 initCategorySelects();
 dom.date.value = getTodayIso();
-state.subscribe(renderApp);
-renderApp(state.getState());
+state.subscribe(render);
+render(state.getState());

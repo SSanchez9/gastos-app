@@ -20,7 +20,7 @@ import {
 } from "./format";
 import type { AppState, CategoryKey, Expense, NewExpense, Result } from "./types";
 
-function getElement<T extends HTMLElement>(id: string, type: new () => T): T {
+export function getElement<T extends HTMLElement>(id: string, type: new () => T): T {
   const element = document.getElementById(id);
   if (!(element instanceof type)) {
     throw new Error(`No se encontró #${id} o no es del tipo esperado`);
