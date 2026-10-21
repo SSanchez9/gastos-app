@@ -1,18 +1,22 @@
 import "./styles/base.css";
 import "./styles/layout.css";
 import "./styles/components.css";
+import { getPreviousIncome } from "./calc";
 import { isCategoryFilter } from "./config";
 import { getMonthKey, getTodayIso } from "./format";
 import * as state from "./state";
 import {
+  clearIncomeError,
   dom,
   fillForm,
   initCategorySelects,
   readExpenseForm,
+  readIncomeForm,
   renderApp,
   resetForm,
   setEditMode,
   showFormError,
+  showIncomeError,
 } from "./ui";
 
 declare global {
@@ -95,6 +99,42 @@ dom.rows.addEventListener("click", (event) => {
   }
 });
 
+// ---------- Sueldo del mes ----------
+
+dom.incomeForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const input = readIncomeForm();
+  if (!input.ok) {
+    showIncomeError(input.error);
+    return;
+  }
+
+  const result = state.setIncome(state.getState().ui.selectedMonth, input.value);
+  if (!result.ok) {
+    showIncomeError(result.error);
+    return;
+  }
+  clearIncomeError();
+});
+
+dom.incomeCopy.addEventListener("click", () => {
+  const { data, ui } = state.getState();
+  const previous = getPreviousIncome(data.income, ui.selectedMonth);
+  if (previous === null) return;
+
+  state.setIncome(ui.selectedMonth, previous.cents);
+  // El botón desaparece al copiar: se devuelve el foco al campo para no perderlo.
+  dom.incomeAmount.focus();
+});
+
+dom.incomeClear.addEventListener("click", () => {
+  if (window.confirm("¿Quitar el sueldo de este mes?")) {
+    state.clearIncome(state.getState().ui.selectedMonth);
+    dom.incomeAmount.focus();
+  }
+});
+
 // ---------- Mes y filtro ----------
 
 dom.monthSelect.addEventListener("change", () => {
@@ -109,11 +149,6 @@ dom.filterCategory.addEventListener("change", () => {
 });
 
 // ---------- Arranque ----------
-
-// Provisional (fase 5): el formulario del sueldo todavía no hace nada.
-document.getElementById("income-form")?.addEventListener("submit", (event) => {
-  event.preventDefault();
-});
 
 initCategorySelects();
 dom.date.value = getTodayIso();

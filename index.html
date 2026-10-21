@@ -45,6 +45,7 @@
           <li class="card">
             <p class="card__label">Ahorrado</p>
             <p class="card__value" id="summary-saved">—</p>
+            <p class="card__note" id="summary-saved-note"></p>
           </li>
           <li class="card">
             <p class="card__label">% de ahorro</p>
@@ -70,14 +71,28 @@
               inputmode="decimal"
               autocomplete="off"
               placeholder="0,00"
+              aria-describedby="income-status income-error"
               required
             />
           </div>
           <button class="button" type="submit">Guardar</button>
         </form>
-        <p class="hint" id="income-status">
-          Aún no has registrado el sueldo de este mes.
-        </p>
+        <p class="form__error" id="income-error" role="alert" hidden></p>
+        <p class="hint" id="income-status"></p>
+        <button
+          class="button button--secondary button--small"
+          type="button"
+          id="income-copy"
+          hidden
+        ></button>
+        <button
+          class="button button--secondary button--small button--danger"
+          type="button"
+          id="income-clear"
+          hidden
+        >
+          Quitar sueldo
+        </button>
       </section>
 
       <!-- Gráfico -->

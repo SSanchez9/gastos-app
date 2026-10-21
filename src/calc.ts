@@ -1,6 +1,13 @@
 import { CATEGORY_KEYS } from "./config";
 import { getMonthKey, shiftMonth } from "./format";
-import type { CategoryFilter, CategoryKey, Expense, MonthKey } from "./types";
+import type {
+  AppData,
+  CategoryFilter,
+  CategoryKey,
+  Expense,
+  Income,
+  MonthKey,
+} from "./types";
 
 /** Gastos de un mes, en el orden original. */
 export function expensesOfMonth(
@@ -116,5 +123,63 @@ export function compareWithPreviousMonth(
     previousCents,
     diffCents,
     diffPct: previousCents > 0 ? (diffCents / previousCents) * 100 : null,
+  };
+}
+
+export interface PreviousIncome {
+  month: MonthKey;
+  cents: number;
+}
+
+/**
+ * Sueldo registrado más reciente de un mes anterior al indicado (aunque haya huecos).
+ * Devuelve null si no hay ninguno.
+ */
+export function getPreviousIncome(
+  income: Income,
+  month: MonthKey,
+): PreviousIncome | null {
+  let best: PreviousIncome | null = null;
+  for (const [key, cents] of Object.entries(income.byMonth)) {
+    // Las claves "YYYY-MM" se ordenan correctamente como texto.
+    if (key < month && (best === null || key > best.month)) {
+      best = { month: key, cents };
+    }
+  }
+  return best;
+}
+
+export interface SavingsSummary {
+  /** null si el mes no tiene sueldo registrado. */
+  incomeCents: number | null;
+  spentCents: number;
+  /** null si no hay sueldo; negativo si hay déficit. */
+  savedCents: number | null;
+  /** Porcentaje sobre el sueldo; null si no hay sueldo. */
+  savingsPct: number | null;
+  isDeficit: boolean;
+}
+
+export function getSavingsSummary(data: AppData, month: MonthKey): SavingsSummary {
+  const spentCents = sumCents(expensesOfMonth(data.expenses, month));
+  const incomeCents = data.income.byMonth[month] ?? null;
+
+  if (incomeCents === null) {
+    return {
+      incomeCents: null,
+      spentCents,
+      savedCents: null,
+      savingsPct: null,
+      isDeficit: false,
+    };
+  }
+
+  const savedCents = incomeCents - spentCents;
+  return {
+    incomeCents,
+    spentCents,
+    savedCents,
+    savingsPct: (savedCents / incomeCents) * 100,
+    isDeficit: savedCents < 0,
   };
 }

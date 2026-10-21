@@ -2,6 +2,8 @@ import {
   compareWithPreviousMonth,
   expensesOfMonth,
   filterExpenses,
+  getPreviousIncome,
+  getSavingsSummary,
   sumCents,
   totalsByCategory,
 } from "./calc";
@@ -29,10 +31,20 @@ function getElement<T extends HTMLElement>(id: string, type: new () => T): T {
 export const dom = {
   monthSelect: getElement("month-select", HTMLInputElement),
   saveWarning: getElement("save-warning", HTMLParagraphElement),
+  income: getElement("summary-income", HTMLParagraphElement),
   spent: getElement("summary-spent", HTMLParagraphElement),
   spentCompare: getElement("summary-spent-compare", HTMLParagraphElement),
+  saved: getElement("summary-saved", HTMLParagraphElement),
+  savedNote: getElement("summary-saved-note", HTMLParagraphElement),
+  savingsPct: getElement("summary-savings-pct", HTMLParagraphElement),
   categoryTotals: getElement("category-totals", HTMLUListElement),
   categoryEmpty: getElement("category-empty", HTMLParagraphElement),
+  incomeForm: getElement("income-form", HTMLFormElement),
+  incomeAmount: getElement("income-amount", HTMLInputElement),
+  incomeError: getElement("income-error", HTMLParagraphElement),
+  incomeStatus: getElement("income-status", HTMLParagraphElement),
+  incomeCopy: getElement("income-copy", HTMLButtonElement),
+  incomeClear: getElement("income-clear", HTMLButtonElement),
   form: getElement("expense-form", HTMLFormElement),
   formTitle: getElement("expense-form-title", HTMLHeadingElement),
   formError: getElement("expense-error", HTMLParagraphElement),
@@ -66,7 +78,7 @@ export function initCategorySelects(): void {
   );
 }
 
-// ---------- Formulario ----------
+// ---------- Formulario de gastos ----------
 
 export function showFormError(message: string): void {
   dom.formError.textContent = message;
@@ -125,7 +137,76 @@ export function resetForm(options: { keepContext: boolean }): void {
   dom.amount.focus();
 }
 
-// ---------- Resumen ----------
+// ---------- Formulario del sueldo ----------
+
+export function showIncomeError(message: string): void {
+  dom.incomeError.textContent = message;
+  dom.incomeError.hidden = false;
+}
+
+export function clearIncomeError(): void {
+  dom.incomeError.textContent = "";
+  dom.incomeError.hidden = true;
+}
+
+/** Lee el campo del sueldo. La validación completa la repite state.ts. */
+export function readIncomeForm(): Result<number> {
+  const cents = eurosToCents(dom.incomeAmount.value);
+  if (cents === null) {
+    return { ok: false, error: "Introduce un importe válido, por ejemplo 2.150,00." };
+  }
+  return { ok: true, value: cents };
+}
+
+/** Clave del último valor volcado al campo: evita pisar lo que el usuario está escribiendo. */
+let incomeFieldKey = "";
+
+function renderIncome(state: AppState): void {
+  const month = state.ui.selectedMonth;
+  const savings = getSavingsSummary(state.data, month);
+  const previous = getPreviousIncome(state.data.income, month);
+
+  // Tarjetas del resumen
+  dom.income.textContent =
+    savings.incomeCents === null ? "—" : formatMoney(savings.incomeCents);
+  dom.saved.textContent =
+    savings.savedCents === null ? "—" : formatMoney(savings.savedCents);
+  dom.savingsPct.textContent =
+    savings.savingsPct === null ? "—" : formatPercent(savings.savingsPct);
+
+  let noteText = "";
+  let noteKind: "none" | "deficit" = "none";
+  if (savings.incomeCents === null) {
+    noteText = "Registra el sueldo del mes para calcular el ahorro.";
+  } else if (savings.isDeficit) {
+    noteText = "Has gastado más de lo que ingresaste este mes.";
+    noteKind = "deficit";
+  }
+  dom.savedNote.textContent = noteText;
+  dom.savedNote.className = `card__note card__note--${noteKind}`;
+
+  // Campo del sueldo: solo se reescribe al cambiar de mes o de sueldo guardado
+  const key = `${month}|${savings.incomeCents ?? ""}`;
+  if (key !== incomeFieldKey) {
+    incomeFieldKey = key;
+    dom.incomeAmount.value =
+      savings.incomeCents === null ? "" : centsToInputString(savings.incomeCents);
+    clearIncomeError();
+  }
+
+  dom.incomeStatus.textContent =
+    savings.incomeCents === null
+      ? "Aún no has registrado el sueldo de este mes."
+      : `Sueldo de ${formatMonth(month)}: ${formatMoney(savings.incomeCents)}.`;
+
+  dom.incomeCopy.hidden = !(savings.incomeCents === null && previous !== null);
+  if (previous !== null) {
+    dom.incomeCopy.textContent = `Usar el de ${formatMonth(previous.month)} (${formatMoney(previous.cents)})`;
+  }
+  dom.incomeClear.hidden = savings.incomeCents === null;
+}
+
+// ---------- Resumen de gastos ----------
 
 type Trend = "up" | "down" | "flat" | "none";
 
@@ -296,6 +377,7 @@ export function renderApp(state: AppState): void {
   dom.monthSelect.value = state.ui.selectedMonth;
   dom.filterCategory.value = state.ui.categoryFilter;
   dom.saveWarning.hidden = !state.saveFailed;
+  renderIncome(state);
   renderSummary(state);
   renderExpenseList(state);
 }
