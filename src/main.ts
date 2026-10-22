@@ -1,6 +1,7 @@
 import "./styles/base.css";
 import "./styles/layout.css";
 import "./styles/components.css";
+import { initBackup } from "./backup";
 import { getPreviousIncome } from "./calc";
 import { renderChart } from "./charts";
 import { isCategoryFilter } from "./config";
@@ -162,3 +163,10 @@ initCategorySelects();
 dom.date.value = getTodayIso();
 state.subscribe(render);
 render(state.getState());
+
+initBackup({
+  onDataReplaced: () => {
+    // Si estabas editando un gasto que ya no existe tras importar, se cancela la edición.
+    if (editingId !== null) cancelEditing();
+  },
+});

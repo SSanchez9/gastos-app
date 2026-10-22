@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+gastos-app-copia-*.json
+gastos-app-gastos-*.csv

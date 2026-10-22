@@ -159,3 +159,10 @@ export function setCategoryFilter(filter: CategoryFilter): boolean {
   publish({ ...state, ui: { ...state.ui, categoryFilter: filter } });
   return true;
 }
+
+// ---------- Datos completos (importar copias de seguridad) ----------
+
+/** Sustituye todos los datos. El documento debe venir ya validado con parseAppData. */
+export function replaceAllData(data: AppData): void {
+  updateData(() => data);
+}

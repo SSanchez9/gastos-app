@@ -38,3 +38,6 @@ export function isCategoryKey(value: unknown): value is CategoryKey {
 export function isCategoryFilter(value: unknown): value is CategoryFilter {
   return value === "all" || isCategoryKey(value);
 }
+
+/** Tamaño máximo de un archivo de copia de seguridad al importar. */
+export const MAX_IMPORT_BYTES = 5 * 1024 * 1024;

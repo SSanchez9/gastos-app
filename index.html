@@ -200,14 +200,18 @@
       <section class="panel panel--data" aria-labelledby="data-title">
         <h2 class="panel__title" id="data-title">Copia de seguridad</h2>
         <p class="hint">
-          Tus datos se guardan solo en este navegador. Exporta una copia de vez en cuando.
+          Tus datos se guardan solo en este navegador. Exporta una copia para guardarla o
+          para llevarla a otro dispositivo.
         </p>
         <div class="button-group">
-          <button class="button button--secondary" type="button" id="export-btn">
-            Exportar JSON
+          <button class="button button--secondary" type="button" id="export-json">
+            Exportar copia (JSON)
+          </button>
+          <button class="button button--secondary" type="button" id="export-csv">
+            Exportar gastos (CSV)
           </button>
           <label class="button button--secondary file-button">
-            Importar JSON
+            Importar copia
             <input
               class="visually-hidden"
               type="file"
@@ -216,8 +220,33 @@
             />
           </label>
         </div>
+        <p class="hint" id="backup-status" role="status"></p>
       </section>
     </main>
+
+    <dialog class="dialog" id="import-dialog" aria-labelledby="import-dialog-title">
+      <h2 class="panel__title" id="import-dialog-title">Importar copia de seguridad</h2>
+      <ul class="dialog__list" id="import-summary"></ul>
+      <p class="hint">
+        Antes de reemplazar, te recomiendo guardar una copia de tus datos actuales.
+      </p>
+      <div class="button-group">
+        <button class="button" type="button" id="import-merge">Combinar</button>
+        <button
+          class="button button--secondary button--danger"
+          type="button"
+          id="import-replace"
+        >
+          Reemplazar todo
+        </button>
+        <button class="button button--secondary" type="button" id="import-export-current">
+          Exportar copia actual
+        </button>
+        <button class="button button--secondary" type="button" id="import-cancel">
+          Cancelar
+        </button>
+      </div>
+    </dialog>
 
     <footer class="app-footer">
       <p>Gastos App · proyecto personal con HTML, CSS y TypeScript</p>

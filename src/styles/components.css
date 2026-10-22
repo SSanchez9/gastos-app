@@ -378,3 +378,33 @@
 .legend .dot {
   margin-right: 0;
 }
+
+/* Copia de seguridad: estado y diálogo de importación */
+.hint--error {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.dialog {
+  width: min(100% - 2rem, 34rem);
+  padding: var(--space-5);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.dialog[open] {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}
+
+.dialog__list {
+  display: grid;
+  gap: var(--space-2);
+  padding-left: var(--space-5);
+}
