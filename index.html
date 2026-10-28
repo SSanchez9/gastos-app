@@ -4,253 +4,289 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
+    <meta name="robots" content="noindex" />
     <meta name="description" content="Controla tus gastos mensuales y cuánto ahorras." />
     <title>Gastos App</title>
   </head>
   <body>
-    <a class="skip-link" href="#contenido">Saltar al contenido</a>
-
-    <header class="app-header">
-      <div>
-        <h1>Gastos App</h1>
-        <p class="app-header__subtitle">
-          Controla lo que gastas y lo que ahorras cada mes
-        </p>
-      </div>
-      <div class="field">
-        <label class="field__label" for="month-select">Mes</label>
-        <input class="field__input" type="month" id="month-select" name="month" />
-      </div>
-    </header>
-
-    <p class="alert" id="save-warning" role="alert" hidden>
-      No se pudieron guardar los cambios en este navegador. Exporta una copia de seguridad
-      para no perder tus datos.
-    </p>
-
-    <main class="app-main layout" id="contenido" tabindex="-1">
-      <!-- Resumen -->
-      <section class="panel panel--summary" aria-labelledby="summary-title">
-        <h2 class="panel__title" id="summary-title">Resumen del mes</h2>
-        <ul class="cards">
-          <li class="card">
-            <p class="card__label">Sueldo</p>
-            <p class="card__value" id="summary-income">—</p>
-          </li>
-          <li class="card">
-            <p class="card__label">Gastado</p>
-            <p class="card__value" id="summary-spent">—</p>
-            <p class="card__note" id="summary-spent-compare"></p>
-          </li>
-          <li class="card">
-            <p class="card__label">Ahorrado</p>
-            <p class="card__value" id="summary-saved">—</p>
-            <p class="card__note" id="summary-saved-note"></p>
-          </li>
-          <li class="card">
-            <p class="card__label">% de ahorro</p>
-            <p class="card__value" id="summary-savings-pct">—</p>
-          </li>
-        </ul>
-        <h3 class="panel__subtitle">Gastos por categoría</h3>
-        <ul class="breakdown" id="category-totals"></ul>
-        <p class="empty" id="category-empty">Aún no hay gastos en este mes.</p>
-      </section>
-
-      <!-- Sueldo -->
-      <section class="panel panel--income" aria-labelledby="income-title">
-        <h2 class="panel__title" id="income-title">Sueldo del mes</h2>
-        <form class="form form--inline" id="income-form">
-          <div class="field">
-            <label class="field__label" for="income-amount">Importe (€)</label>
-            <input
-              class="field__input"
-              type="text"
-              id="income-amount"
-              name="income"
-              inputmode="decimal"
-              autocomplete="off"
-              placeholder="0,00"
-              aria-describedby="income-status income-error"
-              required
-            />
-          </div>
-          <button class="button" type="submit">Guardar</button>
-        </form>
-        <p class="form__error" id="income-error" role="alert" hidden></p>
-        <p class="hint" id="income-status"></p>
-        <button
-          class="button button--secondary button--small"
-          type="button"
-          id="income-copy"
-          hidden
-        ></button>
-        <button
-          class="button button--secondary button--small button--danger"
-          type="button"
-          id="income-clear"
-          hidden
-        >
-          Quitar sueldo
+    <!-- Pantalla de acceso -->
+    <main class="login" id="login-screen">
+      <section class="panel login__panel" aria-labelledby="login-title">
+        <h1 id="login-title">Gastos App</h1>
+        <p class="hint" id="login-status" role="status">Comprobando sesión…</p>
+        <p class="form__error" id="login-error" role="alert" hidden></p>
+        <button class="button" type="button" id="sign-in" hidden>
+          Entrar con Google
         </button>
-      </section>
-
-      <!-- Gráfico -->
-      <section class="panel panel--chart" aria-labelledby="chart-title">
-        <h2 class="panel__title" id="chart-title">Distribución del sueldo</h2>
-        <div class="chart" id="chart"></div>
-        <p class="hint" id="chart-note"></p>
-        <ul class="legend" id="chart-legend" aria-label="Detalle de la distribución"></ul>
-      </section>
-
-      <!-- Añadir o editar gasto -->
-      <section class="panel panel--form" aria-labelledby="expense-form-title">
-        <h2 class="panel__title" id="expense-form-title">Añadir gasto</h2>
-        <form class="form" id="expense-form">
-          <div class="form__row">
-            <div class="field">
-              <label class="field__label" for="expense-amount">Importe (€)</label>
-              <input
-                class="field__input"
-                type="text"
-                id="expense-amount"
-                name="amount"
-                inputmode="decimal"
-                autocomplete="off"
-                placeholder="0,00"
-                required
-              />
-            </div>
-            <div class="field">
-              <label class="field__label" for="expense-date">Fecha</label>
-              <input
-                class="field__input"
-                type="date"
-                id="expense-date"
-                name="date"
-                required
-              />
-            </div>
-          </div>
-          <div class="field">
-            <label class="field__label" for="expense-category">Categoría</label>
-            <select
-              class="field__input"
-              id="expense-category"
-              name="category"
-              required
-            ></select>
-          </div>
-          <div class="field">
-            <label class="field__label" for="expense-note">Nota (opcional)</label>
-            <input
-              class="field__input"
-              type="text"
-              id="expense-note"
-              name="note"
-              maxlength="120"
-              autocomplete="off"
-            />
-          </div>
-          <p class="form__error" id="expense-error" role="alert" hidden></p>
-          <div class="button-group">
-            <button class="button" type="submit" id="expense-submit">Añadir gasto</button>
-            <button
-              class="button button--secondary"
-              type="button"
-              id="expense-cancel"
-              hidden
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
-      </section>
-
-      <!-- Lista de gastos -->
-      <section class="panel panel--list" aria-labelledby="list-title">
-        <div class="panel__head">
-          <h2 class="panel__title" id="list-title">Gastos</h2>
-          <div class="field">
-            <label class="field__label" for="filter-category">Categoría</label>
-            <select class="field__input" id="filter-category" name="filter"></select>
-          </div>
-        </div>
-        <div class="table-wrap" id="expense-table-wrap" hidden>
-          <table class="table">
-            <caption class="visually-hidden">
-              Gastos del mes seleccionado
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Fecha</th>
-                <th scope="col">Categoría</th>
-                <th scope="col">Nota</th>
-                <th scope="col" class="num">Importe</th>
-                <th scope="col"><span class="visually-hidden">Acciones</span></th>
-              </tr>
-            </thead>
-            <tbody id="expense-rows"></tbody>
-          </table>
-        </div>
-        <p class="empty" id="list-empty">No hay gastos en este mes.</p>
-      </section>
-
-      <!-- Copia de seguridad -->
-      <section class="panel panel--data" aria-labelledby="data-title">
-        <h2 class="panel__title" id="data-title">Copia de seguridad</h2>
-        <p class="hint">
-          Tus datos se guardan solo en este navegador. Exporta una copia para guardarla o
-          para llevarla a otro dispositivo.
-        </p>
-        <div class="button-group">
-          <button class="button button--secondary" type="button" id="export-json">
-            Exportar copia (JSON)
-          </button>
-          <button class="button button--secondary" type="button" id="export-csv">
-            Exportar gastos (CSV)
-          </button>
-          <label class="button button--secondary file-button">
-            Importar copia
-            <input
-              class="visually-hidden"
-              type="file"
-              id="import-file"
-              accept="application/json,.json"
-            />
-          </label>
-        </div>
-        <p class="hint" id="backup-status" role="status"></p>
       </section>
     </main>
 
-    <dialog class="dialog" id="import-dialog" aria-labelledby="import-dialog-title">
-      <h2 class="panel__title" id="import-dialog-title">Importar copia de seguridad</h2>
-      <ul class="dialog__list" id="import-summary"></ul>
-      <p class="hint">
-        Antes de reemplazar, te recomiendo guardar una copia de tus datos actuales.
-      </p>
-      <div class="button-group">
-        <button class="button" type="button" id="import-merge">Combinar</button>
-        <button
-          class="button button--secondary button--danger"
-          type="button"
-          id="import-replace"
-        >
-          Reemplazar todo
-        </button>
-        <button class="button button--secondary" type="button" id="import-export-current">
-          Exportar copia actual
-        </button>
-        <button class="button button--secondary" type="button" id="import-cancel">
-          Cancelar
-        </button>
-      </div>
-    </dialog>
+    <!-- Aplicación (solo visible con sesión iniciada) -->
+    <div id="app-shell" hidden>
+      <a class="skip-link" href="#contenido">Saltar al contenido</a>
 
-    <footer class="app-footer">
-      <p>Gastos App · proyecto personal con HTML, CSS y TypeScript</p>
-    </footer>
+      <header class="app-header">
+        <div>
+          <h1>Gastos App</h1>
+          <p class="app-header__subtitle">
+            Controla lo que gastas y lo que ahorras cada mes
+          </p>
+        </div>
+        <div class="field">
+          <label class="field__label" for="month-select">Mes</label>
+          <input class="field__input" type="month" id="month-select" name="month" />
+        </div>
+        <div class="session">
+          <span class="session__email" id="session-email"></span>
+          <button
+            class="button button--secondary button--small"
+            type="button"
+            id="sign-out"
+          >
+            Cerrar sesión
+          </button>
+        </div>
+      </header>
+
+      <p class="alert" id="save-warning" role="alert" hidden>
+        No se pudieron guardar los cambios en este navegador. Exporta una copia de
+        seguridad para no perder tus datos.
+      </p>
+
+      <main class="app-main layout" id="contenido" tabindex="-1">
+        <!-- Resumen -->
+        <section class="panel panel--summary" aria-labelledby="summary-title">
+          <h2 class="panel__title" id="summary-title">Resumen del mes</h2>
+          <ul class="cards">
+            <li class="card">
+              <p class="card__label">Sueldo</p>
+              <p class="card__value" id="summary-income">—</p>
+            </li>
+            <li class="card">
+              <p class="card__label">Gastado</p>
+              <p class="card__value" id="summary-spent">—</p>
+              <p class="card__note" id="summary-spent-compare"></p>
+            </li>
+            <li class="card">
+              <p class="card__label">Ahorrado</p>
+              <p class="card__value" id="summary-saved">—</p>
+              <p class="card__note" id="summary-saved-note"></p>
+            </li>
+            <li class="card">
+              <p class="card__label">% de ahorro</p>
+              <p class="card__value" id="summary-savings-pct">—</p>
+            </li>
+          </ul>
+          <h3 class="panel__subtitle">Gastos por categoría</h3>
+          <ul class="breakdown" id="category-totals"></ul>
+          <p class="empty" id="category-empty">Aún no hay gastos en este mes.</p>
+        </section>
+
+        <!-- Sueldo -->
+        <section class="panel panel--income" aria-labelledby="income-title">
+          <h2 class="panel__title" id="income-title">Sueldo del mes</h2>
+          <form class="form form--inline" id="income-form">
+            <div class="field">
+              <label class="field__label" for="income-amount">Importe (€)</label>
+              <input
+                class="field__input"
+                type="text"
+                id="income-amount"
+                name="income"
+                inputmode="decimal"
+                autocomplete="off"
+                placeholder="0,00"
+                aria-describedby="income-status income-error"
+                required
+              />
+            </div>
+            <button class="button" type="submit">Guardar</button>
+          </form>
+          <p class="form__error" id="income-error" role="alert" hidden></p>
+          <p class="hint" id="income-status"></p>
+          <button
+            class="button button--secondary button--small"
+            type="button"
+            id="income-copy"
+            hidden
+          ></button>
+          <button
+            class="button button--secondary button--small button--danger"
+            type="button"
+            id="income-clear"
+            hidden
+          >
+            Quitar sueldo
+          </button>
+        </section>
+
+        <!-- Gráfico -->
+        <section class="panel panel--chart" aria-labelledby="chart-title">
+          <h2 class="panel__title" id="chart-title">Distribución del sueldo</h2>
+          <div class="chart" id="chart"></div>
+          <p class="hint" id="chart-note"></p>
+          <ul
+            class="legend"
+            id="chart-legend"
+            aria-label="Detalle de la distribución"
+          ></ul>
+        </section>
+
+        <!-- Añadir o editar gasto -->
+        <section class="panel panel--form" aria-labelledby="expense-form-title">
+          <h2 class="panel__title" id="expense-form-title">Añadir gasto</h2>
+          <form class="form" id="expense-form">
+            <div class="form__row">
+              <div class="field">
+                <label class="field__label" for="expense-amount">Importe (€)</label>
+                <input
+                  class="field__input"
+                  type="text"
+                  id="expense-amount"
+                  name="amount"
+                  inputmode="decimal"
+                  autocomplete="off"
+                  placeholder="0,00"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label class="field__label" for="expense-date">Fecha</label>
+                <input
+                  class="field__input"
+                  type="date"
+                  id="expense-date"
+                  name="date"
+                  required
+                />
+              </div>
+            </div>
+            <div class="field">
+              <label class="field__label" for="expense-category">Categoría</label>
+              <select
+                class="field__input"
+                id="expense-category"
+                name="category"
+                required
+              ></select>
+            </div>
+            <div class="field">
+              <label class="field__label" for="expense-note">Nota (opcional)</label>
+              <input
+                class="field__input"
+                type="text"
+                id="expense-note"
+                name="note"
+                maxlength="120"
+                autocomplete="off"
+              />
+            </div>
+            <p class="form__error" id="expense-error" role="alert" hidden></p>
+            <div class="button-group">
+              <button class="button" type="submit" id="expense-submit">
+                Añadir gasto
+              </button>
+              <button
+                class="button button--secondary"
+                type="button"
+                id="expense-cancel"
+                hidden
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Lista de gastos -->
+        <section class="panel panel--list" aria-labelledby="list-title">
+          <div class="panel__head">
+            <h2 class="panel__title" id="list-title">Gastos</h2>
+            <div class="field">
+              <label class="field__label" for="filter-category">Categoría</label>
+              <select class="field__input" id="filter-category" name="filter"></select>
+            </div>
+          </div>
+          <div class="table-wrap" id="expense-table-wrap" hidden>
+            <table class="table">
+              <caption class="visually-hidden">
+                Gastos del mes seleccionado
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Fecha</th>
+                  <th scope="col">Categoría</th>
+                  <th scope="col">Nota</th>
+                  <th scope="col" class="num">Importe</th>
+                  <th scope="col"><span class="visually-hidden">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody id="expense-rows"></tbody>
+            </table>
+          </div>
+          <p class="empty" id="list-empty">No hay gastos en este mes.</p>
+        </section>
+
+        <!-- Copia de seguridad -->
+        <section class="panel panel--data" aria-labelledby="data-title">
+          <h2 class="panel__title" id="data-title">Copia de seguridad</h2>
+          <p class="hint">
+            Tus datos se guardan solo en este navegador. Exporta una copia para guardarla
+            o para llevarla a otro dispositivo.
+          </p>
+          <div class="button-group">
+            <button class="button button--secondary" type="button" id="export-json">
+              Exportar copia (JSON)
+            </button>
+            <button class="button button--secondary" type="button" id="export-csv">
+              Exportar gastos (CSV)
+            </button>
+            <label class="button button--secondary file-button">
+              Importar copia
+              <input
+                class="visually-hidden"
+                type="file"
+                id="import-file"
+                accept="application/json,.json"
+              />
+            </label>
+          </div>
+          <p class="hint" id="backup-status" role="status"></p>
+        </section>
+      </main>
+
+      <dialog class="dialog" id="import-dialog" aria-labelledby="import-dialog-title">
+        <h2 class="panel__title" id="import-dialog-title">Importar copia de seguridad</h2>
+        <ul class="dialog__list" id="import-summary"></ul>
+        <p class="hint">
+          Antes de reemplazar, te recomiendo guardar una copia de tus datos actuales.
+        </p>
+        <div class="button-group">
+          <button class="button" type="button" id="import-merge">Combinar</button>
+          <button
+            class="button button--secondary button--danger"
+            type="button"
+            id="import-replace"
+          >
+            Reemplazar todo
+          </button>
+          <button
+            class="button button--secondary"
+            type="button"
+            id="import-export-current"
+          >
+            Exportar copia actual
+          </button>
+          <button class="button button--secondary" type="button" id="import-cancel">
+            Cancelar
+          </button>
+        </div>
+      </dialog>
+
+      <footer class="app-footer">
+        <p>Gastos App · proyecto personal con HTML, CSS y TypeScript</p>
+      </footer>
+    </div>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

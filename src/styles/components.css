@@ -408,3 +408,33 @@
   gap: var(--space-2);
   padding-left: var(--space-5);
 }
+
+/* Acceso y sesión */
+.login {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: var(--space-4);
+}
+
+.login__panel {
+  width: min(100%, 26rem);
+  text-align: center;
+}
+
+.login__panel h1 {
+  font-size: var(--fs-xl);
+}
+
+.session {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.session__email {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  overflow-wrap: anywhere;
+}

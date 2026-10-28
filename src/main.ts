@@ -2,6 +2,7 @@ import "./styles/base.css";
 import "./styles/layout.css";
 import "./styles/components.css";
 import { initBackup } from "./backup";
+import { initAuthUi } from "./auth-ui";
 import { getPreviousIncome } from "./calc";
 import { renderChart } from "./charts";
 import { isCategoryFilter } from "./config";
@@ -170,3 +171,5 @@ initBackup({
     if (editingId !== null) cancelEditing();
   },
 });
+
+initAuthUi();

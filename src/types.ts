@@ -56,3 +56,10 @@ export interface AppState {
 }
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
+
+/** Usuario con sesión iniciada (sin exponer los tipos de Firebase al resto de la app). */
+export interface SessionUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+}
