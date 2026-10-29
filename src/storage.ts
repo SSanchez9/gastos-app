@@ -2,8 +2,6 @@ import { DATA_VERSION, STORAGE_KEY } from "./config";
 import type { AppData } from "./types";
 import { parseAppData } from "./validate";
 
-const BACKUP_KEY = `${STORAGE_KEY}:corrupt-backup`;
-
 export function createEmptyData(): AppData {
   return {
     version: DATA_VERSION,
@@ -12,41 +10,34 @@ export function createEmptyData(): AppData {
   };
 }
 
-function backupCorruptData(rawText: string): void {
-  try {
-    localStorage.setItem(BACKUP_KEY, rawText);
-  } catch {
-    // Sin espacio o sin acceso: no hay nada más que hacer.
-  }
-}
-
-export function loadData(): AppData {
+/**
+ * Datos que versiones anteriores guardaron en este navegador.
+ * Devuelve null si no hay nada, están vacíos o no son válidos.
+ */
+export function loadLegacyData(): AppData | null {
   let rawText: string | null;
   try {
     rawText = localStorage.getItem(STORAGE_KEY);
   } catch {
-    return createEmptyData();
+    return null;
   }
-  if (rawText === null) return createEmptyData();
+  if (rawText === null) return null;
 
   try {
-    const parsed: unknown = JSON.parse(rawText);
-    const data = parseAppData(parsed);
-    if (data !== null) return data;
+    const data = parseAppData(JSON.parse(rawText) as unknown);
+    if (data === null) return null;
+    const isEmpty =
+      data.expenses.length === 0 && Object.keys(data.income.byMonth).length === 0;
+    return isEmpty ? null : data;
   } catch {
-    // JSON inválido: se trata igual que un documento no válido.
+    return null;
   }
-
-  backupCorruptData(rawText);
-  return createEmptyData();
 }
 
-/** Devuelve false si no se pudo guardar (almacenamiento lleno o bloqueado). */
-export function saveData(data: AppData): boolean {
+export function clearLegacyData(): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    return true;
+    localStorage.removeItem(STORAGE_KEY);
   } catch {
-    return false;
+    // Sin acceso al almacenamiento: no hay nada que borrar.
   }
 }

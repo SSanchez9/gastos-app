@@ -11,8 +11,11 @@ import {
 } from "./io";
 import type { DataSummary, MergeReport } from "./io";
 import * as state from "./state";
+import { clearLegacyData, loadLegacyData } from "./storage";
 import type { AppData } from "./types";
 import { getElement } from "./ui";
+
+type ImportSource = "file" | "legacy";
 
 const backupDom = {
   exportJson: getElement("export-json", HTMLButtonElement),
@@ -25,10 +28,15 @@ const backupDom = {
   replace: getElement("import-replace", HTMLButtonElement),
   exportCurrent: getElement("import-export-current", HTMLButtonElement),
   cancel: getElement("import-cancel", HTMLButtonElement),
+  legacyNotice: getElement("legacy-notice", HTMLDivElement),
+  legacyText: getElement("legacy-text", HTMLParagraphElement),
+  legacyImport: getElement("legacy-import", HTMLButtonElement),
 };
 
-/** Datos leídos del archivo, a la espera de que el usuario elija combinar o reemplazar. */
+/** Datos a la espera de que el usuario elija combinar o reemplazar. */
 let pendingImport: AppData | null = null;
+let pendingSource: ImportSource = "file";
+let legacyData: AppData | null = null;
 let onDataReplaced: () => void = () => undefined;
 
 // ---------- Utilidades ----------
@@ -83,6 +91,20 @@ function showStatus(message: string, isError = false): void {
   backupDom.status.classList.toggle("hint--error", isError);
 }
 
+/** Comprueba que los datos de la nube ya están cargados. */
+function ensureDataReady(): boolean {
+  if (state.getState().sync.status === "ready") return true;
+  showStatus("Espera a que terminen de cargar tus datos.", true);
+  return false;
+}
+
+function setImportBusy(busy: boolean): void {
+  backupDom.merge.disabled = busy;
+  backupDom.replace.disabled = busy;
+  backupDom.exportCurrent.disabled = busy;
+  backupDom.cancel.disabled = busy;
+}
+
 function downloadFile(fileName: string, content: string, mimeType: string): void {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
@@ -98,6 +120,7 @@ function downloadFile(fileName: string, content: string, mimeType: string): void
 // ---------- Exportar ----------
 
 function exportJson(): void {
+  if (!ensureDataReady()) return;
   const { data } = state.getState();
   downloadFile(
     buildFileName("copia", "json", getTodayIso()),
@@ -108,6 +131,7 @@ function exportJson(): void {
 }
 
 function exportCsv(): void {
+  if (!ensureDataReady()) return;
   const { expenses } = state.getState().data;
   if (expenses.length === 0) {
     showStatus("No hay gastos que exportar.", true);
@@ -121,24 +145,46 @@ function exportCsv(): void {
   showStatus(`Exportados ${plural(expenses.length, "gasto", "gastos")} a CSV.`);
 }
 
+// ---------- Datos antiguos de este navegador ----------
+
+function renderLegacyNotice(): void {
+  legacyData = loadLegacyData();
+  if (legacyData === null) {
+    backupDom.legacyNotice.hidden = true;
+    return;
+  }
+  backupDom.legacyText.textContent = `Este navegador tiene datos guardados de una versión anterior: ${describeCounts(summarizeData(legacyData))}. Súbelos a la nube para verlos en todos tus dispositivos.`;
+  backupDom.legacyNotice.hidden = false;
+}
+
+function offerClearLegacy(): void {
+  const accepted = window.confirm(
+    "Los datos ya están en la nube. ¿Quieres borrar la copia antigua guardada en este navegador?",
+  );
+  if (accepted) clearLegacyData();
+  renderLegacyNotice();
+}
+
 // ---------- Importar ----------
 
-function openImportDialog(incoming: AppData): void {
+function openImportDialog(incoming: AppData, source: ImportSource): void {
   const current = state.getState().data;
   const incomingInfo = summarizeData(incoming);
   const currentInfo = summarizeData(current);
   const { report } = mergeAppData(current, incoming);
   const replacement = describeReplacement(current, incoming);
+  const sourceLabel = source === "legacy" ? "Datos de este navegador" : "Archivo";
 
   const lines = [
-    `Archivo: ${describeCounts(incomingInfo)}${describeRange(incomingInfo)}.`,
-    `Tus datos actuales: ${describeCounts(currentInfo)}.`,
+    `${sourceLabel}: ${describeCounts(incomingInfo)}${describeRange(incomingInfo)}.`,
+    `Tus datos actuales en la nube: ${describeCounts(currentInfo)}.`,
     describeMerge(report),
-    `Reemplazar: se eliminarán ${plural(replacement.removedExpenses, "gasto", "gastos")} y ${plural(replacement.removedIncomes, "sueldo", "sueldos")} que no están en el archivo.`,
+    `Reemplazar: se eliminarán ${plural(replacement.removedExpenses, "gasto", "gastos")} y ${plural(replacement.removedIncomes, "sueldo", "sueldos")} de la nube que no están en estos datos.`,
   ];
   backupDom.summary.replaceChildren(...lines.map(createLine));
 
   pendingImport = incoming;
+  pendingSource = source;
   backupDom.dialog.showModal();
 }
 
@@ -147,6 +193,7 @@ async function handleFileSelected(): Promise<void> {
   // Se vacía el selector para poder elegir el mismo archivo otra vez.
   backupDom.importFile.value = "";
   if (file === null) return;
+  if (!ensureDataReady()) return;
 
   if (file.size > MAX_IMPORT_BYTES) {
     showStatus("El archivo es demasiado grande (máximo 5 MB).", true);
@@ -168,30 +215,45 @@ async function handleFileSelected(): Promise<void> {
   }
 
   showStatus("");
-  openImportDialog(parsed.value);
+  openImportDialog(parsed.value, "file");
 }
 
-function applyImport(mode: "merge" | "replace"): void {
+async function applyImport(mode: "merge" | "replace"): Promise<void> {
   const incoming = pendingImport;
   if (incoming === null) return;
+  const source = pendingSource;
   const current = state.getState().data;
 
+  let next: AppData;
   let message: string;
   if (mode === "merge") {
     const { data, report } = mergeAppData(current, incoming);
-    state.replaceAllData(data);
+    next = data;
     message = `Copia combinada: ${plural(report.addedExpenses, "gasto añadido", "gastos añadidos")} y ${plural(report.updatedExpenses, "actualizado", "actualizados")}.`;
   } else {
-    state.replaceAllData(incoming);
-    const summary = summarizeData(incoming);
-    if (summary.lastMonth !== null) state.setSelectedMonth(summary.lastMonth);
-    message = `Datos reemplazados: ${describeCounts(summary)}.`;
+    next = incoming;
+    message = `Datos reemplazados: ${describeCounts(summarizeData(incoming))}.`;
   }
+
+  setImportBusy(true);
+  const result = await state.replaceAllData(next);
+  setImportBusy(false);
 
   pendingImport = null;
   backupDom.dialog.close();
+
+  if (!result.ok) {
+    showStatus(result.error, true);
+    return;
+  }
+
+  if (mode === "replace") {
+    const lastMonth = summarizeData(incoming).lastMonth;
+    if (lastMonth !== null) state.setSelectedMonth(lastMonth);
+  }
   onDataReplaced();
   showStatus(message);
+  if (source === "legacy") offerClearLegacy();
 }
 
 // ---------- Arranque ----------
@@ -205,12 +267,22 @@ export function initBackup(options: { onDataReplaced: () => void }): void {
     void handleFileSelected();
   });
 
-  backupDom.merge.addEventListener("click", () => applyImport("merge"));
-  backupDom.replace.addEventListener("click", () => applyImport("replace"));
+  backupDom.merge.addEventListener("click", () => {
+    void applyImport("merge");
+  });
+  backupDom.replace.addEventListener("click", () => {
+    void applyImport("replace");
+  });
   backupDom.exportCurrent.addEventListener("click", exportJson);
   backupDom.cancel.addEventListener("click", () => backupDom.dialog.close());
   // También se dispara al cerrar con la tecla Escape.
   backupDom.dialog.addEventListener("close", () => {
     pendingImport = null;
   });
+
+  backupDom.legacyImport.addEventListener("click", () => {
+    if (legacyData === null || !ensureDataReady()) return;
+    openImportDialog(legacyData, "legacy");
+  });
+  renderLegacyNotice();
 }

@@ -1,13 +1,15 @@
 import "./styles/base.css";
 import "./styles/layout.css";
 import "./styles/components.css";
-import { initBackup } from "./backup";
 import { initAuthUi } from "./auth-ui";
+import { initBackup } from "./backup";
 import { getPreviousIncome } from "./calc";
 import { renderChart } from "./charts";
 import { isCategoryFilter } from "./config";
 import { getMonthKey, getTodayIso } from "./format";
+import { subscribeSession } from "./session";
 import * as state from "./state";
+import { initSyncUi } from "./sync-ui";
 import type { AppState } from "./types";
 import {
   clearIncomeError,
@@ -50,20 +52,21 @@ function cancelEditing(): void {
 
 // ---------- Formulario de gastos ----------
 
-dom.form.addEventListener("submit", (event) => {
-  event.preventDefault();
-
+async function handleExpenseSubmit(): Promise<void> {
   const input = readExpenseForm();
   if (!input.ok) {
     showFormError(input.error);
     return;
   }
 
-  const wasEditing = editingId !== null;
+  const idBeingEdited = editingId;
+  dom.submit.disabled = true;
   const result =
-    editingId === null
-      ? state.addExpense(input.value)
-      : state.updateExpense(editingId, input.value);
+    idBeingEdited === null
+      ? await state.addExpense(input.value)
+      : await state.updateExpense(idBeingEdited, input.value);
+  dom.submit.disabled = false;
+
   if (!result.ok) {
     showFormError(result.error);
     return;
@@ -76,16 +79,30 @@ dom.form.addEventListener("submit", (event) => {
     state.setCategoryFilter("all");
   }
 
-  if (wasEditing) {
+  if (idBeingEdited !== null) {
     cancelEditing();
   } else {
     resetForm({ keepContext: true });
   }
+}
+
+dom.form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  void handleExpenseSubmit();
 });
 
 dom.cancel.addEventListener("click", cancelEditing);
 
 // ---------- Acciones de la lista (editar y eliminar) ----------
+
+async function handleDelete(id: string): Promise<void> {
+  const result = await state.deleteExpense(id);
+  if (!result.ok) {
+    window.alert(result.error);
+    return;
+  }
+  if (editingId === id) cancelEditing();
+}
 
 dom.rows.addEventListener("click", (event) => {
   if (!(event.target instanceof Element)) return;
@@ -103,45 +120,63 @@ dom.rows.addEventListener("click", (event) => {
     fillForm(expense);
   } else if (button.dataset["action"] === "delete") {
     if (window.confirm("¿Eliminar este gasto? Esta acción no se puede deshacer.")) {
-      state.deleteExpense(id);
-      if (editingId === id) cancelEditing();
+      void handleDelete(id);
     }
   }
 });
 
 // ---------- Sueldo del mes ----------
 
-dom.incomeForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-
+async function handleIncomeSubmit(): Promise<void> {
   const input = readIncomeForm();
   if (!input.ok) {
     showIncomeError(input.error);
     return;
   }
 
-  const result = state.setIncome(state.getState().ui.selectedMonth, input.value);
+  const result = await state.setIncome(state.getState().ui.selectedMonth, input.value);
   if (!result.ok) {
     showIncomeError(result.error);
     return;
   }
   clearIncomeError();
+}
+
+dom.incomeForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  void handleIncomeSubmit();
 });
 
-dom.incomeCopy.addEventListener("click", () => {
+async function handleIncomeCopy(): Promise<void> {
   const { data, ui } = state.getState();
   const previous = getPreviousIncome(data.income, ui.selectedMonth);
   if (previous === null) return;
 
-  state.setIncome(ui.selectedMonth, previous.cents);
+  const result = await state.setIncome(ui.selectedMonth, previous.cents);
+  if (!result.ok) {
+    showIncomeError(result.error);
+    return;
+  }
   // El botón desaparece al copiar: se devuelve el foco al campo para no perderlo.
   dom.incomeAmount.focus();
+}
+
+dom.incomeCopy.addEventListener("click", () => {
+  void handleIncomeCopy();
 });
+
+async function handleIncomeClear(): Promise<void> {
+  const result = await state.clearIncome(state.getState().ui.selectedMonth);
+  if (!result.ok) {
+    showIncomeError(result.error);
+    return;
+  }
+  dom.incomeAmount.focus();
+}
 
 dom.incomeClear.addEventListener("click", () => {
   if (window.confirm("¿Quitar el sueldo de este mes?")) {
-    state.clearIncome(state.getState().ui.selectedMonth);
-    dom.incomeAmount.focus();
+    void handleIncomeClear();
   }
 });
 
@@ -171,5 +206,15 @@ initBackup({
     if (editingId !== null) cancelEditing();
   },
 });
+initSyncUi();
 
+// Al iniciar sesión se empieza a escuchar la nube; al cerrarla, se borra de memoria.
+subscribeSession((session) => {
+  if (session.status === "signed-in" && session.user !== null) {
+    state.startSync(session.user.uid);
+  } else {
+    state.stopSync();
+    if (editingId !== null) cancelEditing();
+  }
+});
 initAuthUi();

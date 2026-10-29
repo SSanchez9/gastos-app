@@ -438,3 +438,23 @@
   font-size: var(--fs-sm);
   overflow-wrap: anywhere;
 }
+
+/* Estado de sincronización y datos antiguos de este navegador */
+.alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.legacy {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--surface-muted);
+  border-radius: var(--radius-sm);
+}
+
+.legacy .button {
+  justify-self: start;
+}

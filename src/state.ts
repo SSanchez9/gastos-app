@@ -1,6 +1,7 @@
 import { isCategoryKey } from "./config";
+import * as repository from "./firebase/repository";
 import { getCurrentMonthKey, isValidMonthKey } from "./format";
-import { loadData, saveData } from "./storage";
+import { createEmptyData } from "./storage";
 import type {
   AppData,
   AppState,
@@ -9,18 +10,27 @@ import type {
   MonthKey,
   NewExpense,
   Result,
+  SyncState,
 } from "./types";
 import { validateAmount, validateExpenseInput } from "./validate";
 
 type Listener = (state: AppState) => void;
 
+function isOnline(): boolean {
+  return typeof navigator === "undefined" ? true : navigator.onLine;
+}
+
 let state: AppState = {
-  data: loadData(),
+  data: createEmptyData(),
   ui: { selectedMonth: getCurrentMonthKey(), categoryFilter: "all" },
-  saveFailed: false,
+  sync: { status: "signed-out", online: isOnline(), error: null },
 };
 
 const listeners = new Set<Listener>();
+let currentUserId: string | null = null;
+let stopWatching: (() => void) | null = null;
+/** Se incrementa en cada arranque o parada para ignorar avisos de escuchas antiguas. */
+let syncGeneration = 0;
 
 /** Estado actual. Solo lectura: para cambiarlo, usa las acciones de este archivo. */
 export function getState(): AppState {
@@ -40,23 +50,116 @@ function publish(next: AppState): void {
   for (const listener of listeners) listener(state);
 }
 
-function updateData(change: (data: AppData) => AppData): void {
-  const data = change(state.data);
-  publish({ ...state, data, saveFailed: !saveData(data) });
+function setSync(patch: Partial<SyncState>): void {
+  publish({ ...state, sync: { ...state.sync, ...patch } });
 }
 
-function withoutKey(record: Record<string, number>, key: string): Record<string, number> {
-  return Object.fromEntries(Object.entries(record).filter(([k]) => k !== key));
+// ---------- Sincronización con Firestore ----------
+
+/** Empieza a escuchar los datos del usuario. Se llama al iniciar sesión. */
+export function startSync(userId: string): void {
+  if (currentUserId === userId && state.sync.status !== "error") return;
+
+  stopWatching?.();
+  currentUserId = userId;
+  syncGeneration += 1;
+  const generation = syncGeneration;
+
+  let expensesReady = false;
+  let incomesReady = false;
+
+  publish({
+    ...state,
+    data: createEmptyData(),
+    sync: { ...state.sync, status: "loading", error: null },
+  });
+
+  const markReady = (): void => {
+    if (expensesReady && incomesReady) setSync({ status: "ready", error: null });
+  };
+
+  const fail = (message: string): void => {
+    if (generation !== syncGeneration) return;
+    setSync({ status: "error", error: message });
+  };
+
+  const stopExpenses = repository.watchExpenses(
+    userId,
+    (expenses) => {
+      if (generation !== syncGeneration) return;
+      expensesReady = true;
+      publish({ ...state, data: { ...state.data, expenses } });
+      markReady();
+    },
+    fail,
+  );
+
+  const stopIncomes = repository.watchMonthlyIncomes(
+    userId,
+    (income) => {
+      if (generation !== syncGeneration) return;
+      incomesReady = true;
+      publish({ ...state, data: { ...state.data, income } });
+      markReady();
+    },
+    fail,
+  );
+
+  stopWatching = () => {
+    stopExpenses();
+    stopIncomes();
+  };
 }
 
-function validateMonthAmount(month: MonthKey, cents: number): Result<number> {
-  if (!isValidMonthKey(month)) return { ok: false, error: "El mes no es válido." };
-  return validateAmount(cents);
+/** Deja de escuchar y borra los datos de memoria. Se llama al cerrar sesión. */
+export function stopSync(): void {
+  syncGeneration += 1;
+  stopWatching?.();
+  stopWatching = null;
+  currentUserId = null;
+  publish({
+    ...state,
+    data: createEmptyData(),
+    sync: { status: "signed-out", online: isOnline(), error: null },
+  });
+}
+
+/** Vuelve a intentar la carga tras un error. */
+export function retrySync(): void {
+  const userId = currentUserId;
+  if (userId === null) return;
+  currentUserId = null;
+  startSync(userId);
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("online", () => setSync({ online: true }));
+  window.addEventListener("offline", () => setSync({ online: false }));
+}
+
+/** Solo se escribe con sesión, datos cargados y conexión: evita pisar datos sin ver. */
+function requireWritable(): Result<string> {
+  if (currentUserId === null) {
+    return { ok: false, error: "Inicia sesión para guardar cambios." };
+  }
+  if (state.sync.status !== "ready") {
+    return {
+      ok: false,
+      error: "Tus datos todavía no se han cargado. Espera un momento.",
+    };
+  }
+  if (!state.sync.online) {
+    return { ok: false, error: "Sin conexión: no se pueden guardar cambios." };
+  }
+  return { ok: true, value: currentUserId };
 }
 
 // ---------- Gastos ----------
 
-export function addExpense(input: NewExpense): Result<Expense> {
+export async function addExpense(input: NewExpense): Promise<Result<Expense>> {
+  const writable = requireWritable();
+  if (!writable.ok) return writable;
+
   const checked = validateExpenseInput(input);
   if (!checked.ok) return checked;
 
@@ -67,11 +170,18 @@ export function addExpense(input: NewExpense): Result<Expense> {
     createdAt: now,
     updatedAt: now,
   };
-  updateData((data) => ({ ...data, expenses: [...data.expenses, expense] }));
-  return { ok: true, value: expense };
+
+  const saved = await repository.createExpense(writable.value, expense);
+  return saved.ok ? { ok: true, value: expense } : saved;
 }
 
-export function updateExpense(id: string, input: NewExpense): Result<Expense> {
+export async function updateExpense(
+  id: string,
+  input: NewExpense,
+): Promise<Result<Expense>> {
+  const writable = requireWritable();
+  if (!writable.ok) return writable;
+
   const existing = state.data.expenses.find((expense) => expense.id === id);
   if (existing === undefined) return { ok: false, error: "El gasto no existe." };
 
@@ -79,72 +189,39 @@ export function updateExpense(id: string, input: NewExpense): Result<Expense> {
   if (!checked.ok) return checked;
 
   const updated: Expense = { ...existing, ...checked.value, updatedAt: Date.now() };
-  updateData((data) => ({
-    ...data,
-    expenses: data.expenses.map((expense) => (expense.id === id ? updated : expense)),
-  }));
-  return { ok: true, value: updated };
+  const saved = await repository.updateExpense(writable.value, updated);
+  return saved.ok ? { ok: true, value: updated } : saved;
 }
 
-/** Devuelve false si no existía un gasto con ese id. */
-export function deleteExpense(id: string): boolean {
-  if (!state.data.expenses.some((expense) => expense.id === id)) return false;
-  updateData((data) => ({
-    ...data,
-    expenses: data.expenses.filter((expense) => expense.id !== id),
-  }));
-  return true;
+export async function deleteExpense(id: string): Promise<Result<null>> {
+  const writable = requireWritable();
+  if (!writable.ok) return writable;
+
+  if (!state.data.expenses.some((expense) => expense.id === id)) {
+    return { ok: false, error: "El gasto no existe." };
+  }
+  return repository.deleteExpense(writable.value, id);
 }
 
 // ---------- Sueldo (uno por mes, sin valor por defecto) ----------
 
-export function setIncome(month: MonthKey, cents: number): Result<number> {
-  const checked = validateMonthAmount(month, cents);
+export async function setIncome(month: MonthKey, cents: number): Promise<Result<number>> {
+  const writable = requireWritable();
+  if (!writable.ok) return writable;
+
+  if (!isValidMonthKey(month)) return { ok: false, error: "El mes no es válido." };
+  const checked = validateAmount(cents);
   if (!checked.ok) return checked;
-  updateData((data) => ({
-    ...data,
-    income: { byMonth: { ...data.income.byMonth, [month]: cents } },
-  }));
-  return checked;
+
+  const saved = await repository.saveMonthlyIncome(writable.value, month, cents);
+  return saved.ok ? checked : saved;
 }
 
-export function clearIncome(month: MonthKey): void {
-  updateData((data) => ({
-    ...data,
-    income: { byMonth: withoutKey(data.income.byMonth, month) },
-  }));
+export async function clearIncome(month: MonthKey): Promise<Result<null>> {
+  const writable = requireWritable();
+  if (!writable.ok) return writable;
+  return repository.deleteMonthlyIncome(writable.value, month);
 }
-
-// ---------- Presupuesto NO IMPLEMENTADO DE MOMENTO ----------
-
-/** cents = null elimina el presupuesto por defecto. */
-// export function setBudgetDefault(cents: number | null): Result<number | null> {
-//   if (cents === null) {
-//     updateData((data) => ({ ...data, budget: { ...data.budget, defaultCents: null } }));
-//     return { ok: true, value: null };
-//   }
-//   const checked = validateAmount(cents);
-//   if (!checked.ok) return checked;
-//   updateData((data) => ({ ...data, budget: { ...data.budget, defaultCents: cents } }));
-//   return checked;
-// }
-
-// export function setMonthBudget(month: MonthKey, cents: number): Result<number> {
-//   const checked = validateMonthAmount(month, cents);
-//   if (!checked.ok) return checked;
-//   updateData((data) => ({
-//     ...data,
-//     budget: { ...data.budget, byMonth: { ...data.budget.byMonth, [month]: cents } },
-//   }));
-//   return checked;
-// }
-
-// export function clearMonthBudget(month: MonthKey): void {
-//   updateData((data) => ({
-//     ...data,
-//     budget: { ...data.budget, byMonth: withoutKey(data.budget.byMonth, month) },
-//   }));
-// }
 
 // ---------- Ajustes de pantalla (no se guardan) ----------
 
@@ -162,7 +239,9 @@ export function setCategoryFilter(filter: CategoryFilter): boolean {
 
 // ---------- Datos completos (importar copias de seguridad) ----------
 
-/** Sustituye todos los datos. El documento debe venir ya validado con parseAppData. */
-export function replaceAllData(data: AppData): void {
-  updateData(() => data);
+/** Deja la nube igual que `next`. El documento debe venir ya validado con parseAppData. */
+export async function replaceAllData(next: AppData): Promise<Result<null>> {
+  const writable = requireWritable();
+  if (!writable.ok) return writable;
+  return repository.replaceAppData(writable.value, state.data, next);
 }

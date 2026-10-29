@@ -30,7 +30,6 @@ export function getElement<T extends HTMLElement>(id: string, type: new () => T)
 
 export const dom = {
   monthSelect: getElement("month-select", HTMLInputElement),
-  saveWarning: getElement("save-warning", HTMLParagraphElement),
   income: getElement("summary-income", HTMLParagraphElement),
   spent: getElement("summary-spent", HTMLParagraphElement),
   spentCompare: getElement("summary-spent-compare", HTMLParagraphElement),
@@ -376,7 +375,6 @@ function renderExpenseList(state: AppState): void {
 export function renderApp(state: AppState): void {
   dom.monthSelect.value = state.ui.selectedMonth;
   dom.filterCategory.value = state.ui.categoryFilter;
-  dom.saveWarning.hidden = !state.saveFailed;
   renderIncome(state);
   renderSummary(state);
   renderExpenseList(state);

@@ -35,7 +35,7 @@ export interface Income {
   byMonth: Record<MonthKey, number>;
 }
 
-/** Documento que se guarda en localStorage y se exporta a JSON. */
+/** Documento que se exporta a JSON y se importa. */
 export interface AppData {
   version: 1;
   expenses: Expense[];
@@ -48,11 +48,20 @@ export interface UiSettings {
   categoryFilter: CategoryFilter;
 }
 
+export type SyncStatus = "signed-out" | "loading" | "ready" | "error";
+
+export interface SyncState {
+  status: SyncStatus;
+  /** Según el navegador (navigator.onLine). */
+  online: boolean;
+  /** Mensaje del último error de carga; null si no hay. */
+  error: string | null;
+}
+
 export interface AppState {
   data: AppData;
   ui: UiSettings;
-  /** true si el último intento de guardar en localStorage falló. */
-  saveFailed: boolean;
+  sync: SyncState;
 }
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };

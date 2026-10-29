@@ -48,10 +48,17 @@
         </div>
       </header>
 
-      <p class="alert" id="save-warning" role="alert" hidden>
-        No se pudieron guardar los cambios en este navegador. Exporta una copia de
-        seguridad para no perder tus datos.
-      </p>
+      <div class="alert" id="sync-banner" role="status" hidden>
+        <span id="sync-message"></span>
+        <button
+          class="button button--secondary button--small"
+          type="button"
+          id="sync-retry"
+          hidden
+        >
+          Reintentar
+        </button>
+      </div>
 
       <main class="app-main layout" id="contenido" tabindex="-1">
         <!-- Resumen -->
@@ -231,9 +238,19 @@
         <section class="panel panel--data" aria-labelledby="data-title">
           <h2 class="panel__title" id="data-title">Copia de seguridad</h2>
           <p class="hint">
-            Tus datos se guardan solo en este navegador. Exporta una copia para guardarla
-            o para llevarla a otro dispositivo.
+            Tus datos se guardan en tu cuenta y se sincronizan entre tus dispositivos. Aun
+            así, exporta una copia de vez en cuando.
           </p>
+          <div class="legacy" id="legacy-notice" hidden>
+            <p class="hint" id="legacy-text"></p>
+            <button
+              class="button button--secondary button--small"
+              type="button"
+              id="legacy-import"
+            >
+              Subir a la nube
+            </button>
+          </div>
           <div class="button-group">
             <button class="button button--secondary" type="button" id="export-json">
               Exportar copia (JSON)
