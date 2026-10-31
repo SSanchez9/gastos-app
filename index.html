@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="color-scheme" content="dark" />
     <meta name="robots" content="noindex" />
     <meta name="description" content="Controla tus gastos mensuales y cuánto ahorras." />
     <title>Gastos App</title>
@@ -26,25 +26,26 @@
       <a class="skip-link" href="#contenido">Saltar al contenido</a>
 
       <header class="app-header">
-        <div>
-          <h1>Gastos App</h1>
-          <p class="app-header__subtitle">
-            Controla lo que gastas y lo que ahorras cada mes
-          </p>
+        <div class="app-header__brand">
+          <span class="brand-mark" aria-hidden="true">F</span>
+          <h1>Finanzas</h1>
         </div>
-        <div class="field">
-          <label class="field__label" for="month-select">Mes</label>
-          <input class="field__input" type="month" id="month-select" name="month" />
-        </div>
-        <div class="session">
-          <span class="session__email" id="session-email"></span>
-          <button
-            class="button button--secondary button--small"
-            type="button"
-            id="sign-out"
-          >
-            Cerrar sesión
-          </button>
+        <div class="app-header__controls">
+          <time class="app-header__date" id="current-date"></time>
+          <label class="month-control" for="month-select">
+            <span class="visually-hidden">Mes seleccionado</span>
+            <input class="field__input" type="month" id="month-select" name="month" />
+          </label>
+          <div class="session">
+            <span class="session__email" id="session-email"></span>
+            <button
+              class="button button--secondary button--small"
+              type="button"
+              id="sign-out"
+            >
+              Cerrar sesión
+            </button>
+          </div>
         </div>
       </header>
 
@@ -61,32 +62,25 @@
       </div>
 
       <main class="app-main layout" id="contenido" tabindex="-1">
-        <!-- Resumen -->
         <section class="panel panel--summary" aria-labelledby="summary-title">
-          <h2 class="panel__title" id="summary-title">Resumen del mes</h2>
+          <h2 class="visually-hidden" id="summary-title">Resumen del mes</h2>
           <ul class="cards">
             <li class="card">
-              <p class="card__label">Sueldo</p>
+              <p class="card__label">Ingresos del mes</p>
               <p class="card__value" id="summary-income">—</p>
             </li>
             <li class="card">
-              <p class="card__label">Gastado</p>
+              <p class="card__label">Gastos del mes</p>
               <p class="card__value" id="summary-spent">—</p>
               <p class="card__note" id="summary-spent-compare"></p>
             </li>
-            <li class="card">
-              <p class="card__label">Ahorrado</p>
+            <li class="card card--highlight">
+              <p class="card__label">Ahorro</p>
               <p class="card__value" id="summary-saved">—</p>
               <p class="card__note" id="summary-saved-note"></p>
-            </li>
-            <li class="card">
-              <p class="card__label">% de ahorro</p>
-              <p class="card__value" id="summary-savings-pct">—</p>
+              <p class="card__note card__note--savings" id="summary-savings-pct">—</p>
             </li>
           </ul>
-          <h3 class="panel__subtitle">Gastos por categoría</h3>
-          <ul class="breakdown" id="category-totals"></ul>
-          <p class="empty" id="category-empty">Aún no hay gastos en este mes.</p>
         </section>
 
         <!-- Sueldo -->
@@ -127,25 +121,53 @@
           </button>
         </section>
 
-        <!-- Gráfico -->
-        <section class="panel panel--chart" aria-labelledby="chart-title">
-          <h2 class="panel__title" id="chart-title">Distribución del sueldo</h2>
-          <div class="chart" id="chart"></div>
-          <p class="hint" id="chart-note"></p>
-          <ul
-            class="legend"
-            id="chart-legend"
-            aria-label="Detalle de la distribución"
-          ></ul>
+        <div class="chart-grid">
+          <section class="panel panel--chart" aria-labelledby="chart-title">
+            <div class="panel__head">
+              <h2 class="panel__title" id="chart-title">Gastos por categoría</h2>
+              <span class="panel__eyebrow" id="chart-period"></span>
+            </div>
+            <div class="chart-layout">
+              <div class="chart" id="chart"></div>
+              <ul class="legend" id="chart-legend" aria-label="Gastos por categoría"></ul>
+            </div>
+            <p class="hint" id="chart-note"></p>
+          </section>
+
+          <section class="panel panel--trend" aria-labelledby="trend-title">
+            <div class="panel__head">
+              <h2 class="panel__title" id="trend-title">Ahorro últimos 6 meses</h2>
+            </div>
+            <div
+              class="month-chart"
+              id="monthly-chart"
+              role="group"
+              aria-label="Ahorro mensual; pulsa una barra para ver el detalle"
+            ></div>
+          </section>
+        </div>
+
+        <section class="panel panel--breakdown" aria-labelledby="breakdown-title">
+          <div class="panel__head">
+            <div>
+              <h2 class="panel__title" id="breakdown-title">Desglose por categoría</h2>
+              <p class="hint">Proporción del gasto de este mes</p>
+            </div>
+            <span class="breakdown__total">
+              <span class="panel__eyebrow">Gasto total</span>
+              <strong id="breakdown-total">—</strong>
+            </span>
+          </div>
+          <ul class="breakdown" id="category-totals"></ul>
+          <p class="empty" id="category-empty">Aún no hay gastos en este mes.</p>
         </section>
 
-        <!-- Añadir o editar gasto -->
         <section class="panel panel--form" aria-labelledby="expense-form-title">
-          <h2 class="panel__title" id="expense-form-title">Añadir gasto</h2>
+          <h2 class="panel__title" id="expense-form-title">Añadir movimiento</h2>
           <form class="form" id="expense-form">
-            <div class="form__row">
-              <div class="field">
-                <label class="field__label" for="expense-amount">Importe (€)</label>
+            <div class="field field--amount">
+              <label class="field__label" for="expense-amount">Importe</label>
+              <div class="amount-input">
                 <input
                   class="field__input"
                   type="text"
@@ -156,26 +178,36 @@
                   placeholder="0,00"
                   required
                 />
-              </div>
-              <div class="field">
-                <label class="field__label" for="expense-date">Fecha</label>
-                <input
-                  class="field__input"
-                  type="date"
-                  id="expense-date"
-                  name="date"
-                  required
-                />
+                <span aria-hidden="true">€</span>
               </div>
             </div>
             <div class="field">
-              <label class="field__label" for="expense-category">Categoría</label>
+              <span class="field__label" id="expense-category-label">Categoría</span>
               <select
-                class="field__input"
+                class="visually-hidden"
                 id="expense-category"
                 name="category"
+                aria-labelledby="expense-category-label"
+                tabindex="-1"
+                aria-hidden="true"
                 required
               ></select>
+              <div
+                class="category-picker"
+                id="expense-category-picker"
+                role="group"
+                aria-labelledby="expense-category-label"
+              ></div>
+            </div>
+            <div class="field">
+              <label class="field__label" for="expense-date">Fecha</label>
+              <input
+                class="field__input"
+                type="date"
+                id="expense-date"
+                name="date"
+                required
+              />
             </div>
             <div class="field">
               <label class="field__label" for="expense-note">Nota (opcional)</label>
@@ -186,13 +218,12 @@
                 name="note"
                 maxlength="120"
                 autocomplete="off"
+                placeholder="Añade un detalle"
               />
             </div>
             <p class="form__error" id="expense-error" role="alert" hidden></p>
             <div class="button-group">
-              <button class="button" type="submit" id="expense-submit">
-                Añadir gasto
-              </button>
+              <button class="button" type="submit" id="expense-submit">Añadir</button>
               <button
                 class="button button--secondary"
                 type="button"
@@ -208,9 +239,14 @@
         <!-- Lista de gastos -->
         <section class="panel panel--list" aria-labelledby="list-title">
           <div class="panel__head">
-            <h2 class="panel__title" id="list-title">Gastos</h2>
-            <div class="field">
-              <label class="field__label" for="filter-category">Categoría</label>
+            <div>
+              <h2 class="panel__title" id="list-title">Movimientos del mes</h2>
+              <p class="panel__eyebrow">Gastos recientes</p>
+            </div>
+            <div class="field field--filter">
+              <label class="visually-hidden" for="filter-category"
+                >Filtrar categoría</label
+              >
               <select class="field__input" id="filter-category" name="filter"></select>
             </div>
           </div>

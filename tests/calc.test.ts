@@ -3,6 +3,8 @@ import {
   compareWithPreviousMonth,
   expensesOfMonth,
   filterExpenses,
+  lastSixMonthsExpenseTotals,
+  lastSixMonthsSavingsTotals,
   percentagesOfTotal,
   sumCents,
   totalsByCategory,
@@ -156,5 +158,48 @@ describe("compareWithPreviousMonth", () => {
     const result = compareWithPreviousMonth(data, "2026-01");
     expect(result.previousMonth).toBe("2025-12");
     expect(result.previousCents).toBe(3000);
+  });
+});
+
+describe("lastSixMonthsExpenseTotals", () => {
+  it("incluye los seis meses hasta el seleccionado, incluso al cruzar de año", () => {
+    const data = [
+      makeExpense({ id: "1", date: "2025-08-03", amountCents: 5000 }),
+      makeExpense({ id: "2", date: "2025-12-03", amountCents: 2000 }),
+      makeExpense({ id: "3", date: "2026-01-03", amountCents: 3000 }),
+      makeExpense({ id: "4", date: "2026-02-03", amountCents: 9000 }),
+    ];
+
+    expect(lastSixMonthsExpenseTotals(data, "2026-01")).toEqual([
+      { month: "2025-08", cents: 5000 },
+      { month: "2025-09", cents: 0 },
+      { month: "2025-10", cents: 0 },
+      { month: "2025-11", cents: 0 },
+      { month: "2025-12", cents: 2000 },
+      { month: "2026-01", cents: 3000 },
+    ]);
+  });
+});
+
+describe("lastSixMonthsSavingsTotals", () => {
+  it("calcula ahorro, déficit y meses sin sueldo registrado", () => {
+    const data = {
+      version: 1 as const,
+      expenses: [
+        makeExpense({ id: "aug", date: "2025-08-03", amountCents: 5000 }),
+        makeExpense({ id: "dec", date: "2025-12-03", amountCents: 2000 }),
+        makeExpense({ id: "jan", date: "2026-01-03", amountCents: 1000 }),
+      ],
+      income: { byMonth: { "2025-08": 12000, "2025-12": 1000, "2026-01": 3000 } },
+    };
+
+    expect(lastSixMonthsSavingsTotals(data, "2026-01")).toEqual([
+      { month: "2025-08", spentCents: 5000, savedCents: 7000 },
+      { month: "2025-09", spentCents: 0, savedCents: null },
+      { month: "2025-10", spentCents: 0, savedCents: null },
+      { month: "2025-11", spentCents: 0, savedCents: null },
+      { month: "2025-12", spentCents: 2000, savedCents: -1000 },
+      { month: "2026-01", spentCents: 1000, savedCents: 2000 },
+    ]);
   });
 });

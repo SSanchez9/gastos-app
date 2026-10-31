@@ -98,6 +98,47 @@ export function totalsByCategory(
   }));
 }
 
+export interface MonthlyExpenseTotal {
+  month: MonthKey;
+  cents: number;
+}
+
+/** Totales reales de los seis meses que terminan en el mes seleccionado. */
+export function lastSixMonthsExpenseTotals(
+  expenses: readonly Expense[],
+  month: MonthKey,
+): MonthlyExpenseTotal[] {
+  return Array.from({ length: 6 }, (_, index) => {
+    const currentMonth = shiftMonth(month, index - 5);
+    return {
+      month: currentMonth,
+      cents: sumCents(expensesOfMonth(expenses, currentMonth)),
+    };
+  });
+}
+
+export interface MonthlySavingsTotal {
+  month: MonthKey;
+  spentCents: number;
+  /** null cuando no hay sueldo registrado; negativo cuando el gasto supera el sueldo. */
+  savedCents: number | null;
+}
+
+/** Gasto y ahorro neto de los seis meses que terminan en el mes seleccionado. */
+export function lastSixMonthsSavingsTotals(
+  data: AppData,
+  month: MonthKey,
+): MonthlySavingsTotal[] {
+  return lastSixMonthsExpenseTotals(data.expenses, month).map((total) => {
+    const incomeCents = data.income.byMonth[total.month] ?? null;
+    return {
+      month: total.month,
+      spentCents: total.cents,
+      savedCents: incomeCents === null ? null : incomeCents - total.cents,
+    };
+  });
+}
+
 export interface MonthComparison {
   previousMonth: MonthKey;
   currentCents: number;

@@ -1,4 +1,4 @@
-import { getChartData } from "./calc";
+import { getChartData, getSavingsSummary, lastSixMonthsSavingsTotals } from "./calc";
 import type { ChartData, ChartSlice } from "./calc";
 import { CATEGORIES, SAVINGS_COLOR } from "./config";
 import { formatMoney, formatMonth, formatPercent } from "./format";
@@ -15,7 +15,9 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const chartDom = {
   container: getElement("chart", HTMLDivElement),
   note: getElement("chart-note", HTMLParagraphElement),
+  period: getElement("chart-period", HTMLSpanElement),
   legend: getElement("chart-legend", HTMLUListElement),
+  monthly: getElement("monthly-chart", HTMLDivElement),
 };
 
 function sliceLabel(key: ChartSlice["key"]): string {
@@ -37,34 +39,20 @@ function svgEl<K extends keyof SVGElementTagNameMap>(
   return element;
 }
 
-function buildCenterText(chart: ChartData): SVGTextElement[] {
-  let value: string;
-  let label: string;
-  if (chart.kind === "income") {
-    const savings = chart.slices.find((slice) => slice.key === "ahorro");
-    value = formatPercent(savings?.pct ?? 0);
-    label = "ahorrado";
-  } else {
-    value = formatMoney(chart.totalCents);
-    label = "gastado";
-  }
-
+function buildCenterText(savingsPct: number | null): SVGTextElement[] {
   const valueText = svgEl("text", {
     x: String(CENTER),
     y: String(CENTER - 2),
-    class:
-      chart.kind === "income"
-        ? "chart__center-value"
-        : "chart__center-value chart__center-value--small",
+    class: "chart__center-value",
   });
-  valueText.textContent = value;
+  valueText.textContent = savingsPct === null ? "—" : formatPercent(savingsPct);
 
   const labelText = svgEl("text", {
     x: String(CENTER),
     y: String(CENTER + 16),
     class: "chart__center-label",
   });
-  labelText.textContent = label;
+  labelText.textContent = "ahorro";
 
   return [valueText, labelText];
 }
@@ -73,7 +61,7 @@ function buildCenterText(chart: ChartData): SVGTextElement[] {
  * Anillo hecho con círculos cuyo trazo se corta con stroke-dasharray.
  * Así un único 100 % se dibuja sin casos especiales.
  */
-function buildDonut(chart: ChartData): SVGSVGElement {
+function buildDonut(chart: ChartData, savingsPct: number | null): SVGSVGElement {
   // El SVG es decorativo para lectores de pantalla: la leyenda ya contiene los datos.
   const svg = svgEl("svg", {
     viewBox: `0 0 ${SIZE} ${SIZE}`,
@@ -122,7 +110,7 @@ function buildDonut(chart: ChartData): SVGSVGElement {
     offset += length;
   }
 
-  svg.append(group, ...buildCenterText(chart));
+  svg.append(group, ...buildCenterText(savingsPct));
   return svg;
 }
 
@@ -150,23 +138,99 @@ function createLegendItem(slice: ChartSlice): HTMLLIElement {
   return item;
 }
 
-function describeBasis(chart: ChartData, month: string): string {
-  switch (chart.kind) {
-    case "income":
-      return `Los porcentajes se calculan sobre el sueldo de ${formatMonth(month)}.`;
-    case "deficit":
-      return "Has gastado más que tu sueldo, así que no hay ahorro. Los porcentajes se calculan sobre el total gastado.";
-    case "no-income":
-      return "Sin sueldo registrado: los porcentajes se calculan sobre el total gastado. Registra el sueldo para ver el ahorro.";
-    case "empty":
-      return "";
-  }
+const compactMoney = new Intl.NumberFormat("es-ES", {
+  style: "currency",
+  currency: "EUR",
+  notation: "compact",
+  maximumFractionDigits: 0,
+});
+
+function renderMonthlyChart(state: AppState): void {
+  const months = lastSixMonthsSavingsTotals(state.data, state.ui.selectedMonth);
+  const maximum = Math.max(...months.map((item) => Math.abs(item.savedCents ?? 0)), 0);
+  const monthLabel = new Intl.DateTimeFormat("es-ES", { month: "short" });
+
+  chartDom.monthly.replaceChildren(
+    ...months.map((item, index) => {
+      const month = new Date(
+        Number(item.month.slice(0, 4)),
+        Number(item.month.slice(5, 7)) - 1,
+        1,
+      );
+      const isCurrent = index === months.length - 1;
+      const column = document.createElement("button");
+      column.type = "button";
+      column.className = isCurrent
+        ? "month-chart__item month-chart__item--current"
+        : "month-chart__item";
+      column.setAttribute("aria-expanded", "false");
+
+      const savedText =
+        item.savedCents === null
+          ? "Sueldo sin registrar"
+          : item.savedCents < 0
+            ? `Déficit ${formatMoney(-item.savedCents)}`
+            : `Ahorraste ${formatMoney(item.savedCents)}`;
+      const tooltipText = `Gastaste ${formatMoney(item.spentCents)} · ${savedText}`;
+      column.setAttribute("aria-label", `${formatMonth(item.month)}. ${tooltipText}`);
+      column.title = `${formatMonth(item.month)}: ${tooltipText}`;
+
+      const tooltip = document.createElement("span");
+      tooltip.className = "month-chart__tooltip";
+      tooltip.id = `month-tooltip-${item.month}`;
+      tooltip.setAttribute("role", "tooltip");
+      tooltip.textContent = tooltipText;
+      column.setAttribute("aria-describedby", tooltip.id);
+
+      const amount = document.createElement("span");
+      amount.className = "month-chart__amount";
+      amount.setAttribute("aria-hidden", "true");
+      amount.textContent =
+        item.savedCents === null ? "—" : compactMoney.format(item.savedCents / 100);
+
+      const track = document.createElement("span");
+      track.className = "month-chart__track";
+      track.setAttribute("aria-hidden", "true");
+      const bar = document.createElement("span");
+      bar.className = "month-chart__bar";
+      if (item.savedCents === null) {
+        bar.classList.add("month-chart__bar--unknown");
+      } else if (item.savedCents < 0) {
+        bar.classList.add("month-chart__bar--negative");
+      }
+      const height =
+        maximum === 0 || item.savedCents === null
+          ? 0
+          : (Math.abs(item.savedCents) / maximum) * 100;
+      bar.style.height = `${height}%`;
+      track.append(bar);
+
+      const label = document.createElement("span");
+      label.className = "month-chart__label";
+      label.setAttribute("aria-hidden", "true");
+      label.textContent = monthLabel.format(month).replace(".", "");
+
+      column.append(amount, track, label, tooltip);
+      column.addEventListener("click", () => {
+        const shouldOpen = column.getAttribute("aria-expanded") !== "true";
+        for (const other of chartDom.monthly.querySelectorAll<HTMLButtonElement>(
+          ".month-chart__item",
+        )) {
+          other.setAttribute("aria-expanded", String(other === column && shouldOpen));
+        }
+      });
+      return column;
+    }),
+  );
 }
 
-/** Dibuja el gráfico y la leyenda del mes seleccionado. */
+/** Dibuja el reparto de gastos y la evolución mensual con los datos cargados. */
 export function renderChart(state: AppState): void {
   const month = state.ui.selectedMonth;
   const chart = getChartData(state.data, month);
+  const savings = getSavingsSummary(state.data, month);
+  chartDom.period.textContent = formatMonth(month);
+  renderMonthlyChart(state);
 
   if (chart.kind === "empty") {
     const empty = document.createElement("p");
@@ -179,7 +243,12 @@ export function renderChart(state: AppState): void {
     return;
   }
 
-  chartDom.container.replaceChildren(buildDonut(chart));
+  chartDom.container.replaceChildren(buildDonut(chart, savings.savingsPct));
   chartDom.legend.replaceChildren(...chart.slices.map(createLegendItem));
-  chartDom.note.textContent = describeBasis(chart, month);
+  chartDom.note.textContent =
+    chart.kind === "income"
+      ? `Reparto del sueldo de ${formatMonth(month)}.`
+      : chart.kind === "deficit"
+        ? "Los gastos superan los ingresos del mes."
+        : "Registra el sueldo para calcular el porcentaje de ahorro.";
 }

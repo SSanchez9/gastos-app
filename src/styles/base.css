@@ -1,21 +1,22 @@
 :root {
-  color-scheme: light dark;
-
-  /* Colores: modo claro */
-  --bg: #f4f6f9;
-  --surface: #ffffff;
-  --surface-muted: #eef1f6;
-  --text: #1b1f24;
-  --text-muted: #4f5b6b;
-  --border: #d3d9e2;
-  --primary: #2457d6;
-  --primary-hover: #1b45ae;
-  --on-primary: #ffffff;
-  --danger: #b42318;
-  --warning: #8a5a00;
-  --success: #067647;
-  --focus: #2457d6;
-  --shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 12px rgb(0 0 0 / 0.04);
+  color-scheme: dark;
+  --bg: #100e14;
+  --surface: #19161f;
+  --surface-muted: #211d29;
+  --surface-raised: #24202c;
+  --text: #f5f3f7;
+  --text-muted: #a6a0b2;
+  --text-subtle: #777180;
+  --border: #302a3a;
+  --primary: #a78bfa;
+  --primary-strong: #8b5cf6;
+  --primary-soft: #c4b5fd;
+  --on-primary: #100e14;
+  --danger: #fb7185;
+  --warning: #fbbf24;
+  --success: #5eead4;
+  --focus: #c4b5fd;
+  --shadow: 0 16px 36px rgb(0 0 0 / 0.16);
 
   /* Espaciado */
   --space-1: 0.25rem;
@@ -26,32 +27,13 @@
   --space-6: 2rem;
 
   /* Forma y tipografía */
-  --radius: 0.75rem;
-  --radius-sm: 0.5rem;
-  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius: 0.5rem;
+  --radius-sm: 0.375rem;
+  --font: "DM Sans", "Avenir Next", "Segoe UI", sans-serif;
   --fs-sm: 0.875rem;
   --fs-base: 1rem;
   --fs-lg: 1.25rem;
-  --fs-xl: clamp(1.5rem, 1.2rem + 1.5vw, 2rem);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0e1116;
-    --surface: #161b22;
-    --surface-muted: #1e252e;
-    --text: #e8ebf0;
-    --text-muted: #a6b0bf;
-    --border: #2d3640;
-    --primary: #7ea6ff;
-    --primary-hover: #a3bfff;
-    --on-primary: #0b1020;
-    --danger: #ff8f84;
-    --warning: #f5b84a;
-    --success: #4fd98b;
-    --focus: #a3bfff;
-    --shadow: none;
-  }
+  --fs-xl: 1.5rem;
 }
 
 /* Reset mínimo */
@@ -75,7 +57,11 @@ body {
   font-size: var(--fs-base);
   line-height: 1.5;
   color: var(--text);
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.012) 1px, transparent 1px);
+  background-size: 48px 48px;
 }
 
 h1,

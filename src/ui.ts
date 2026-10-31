@@ -38,6 +38,7 @@ export const dom = {
   savingsPct: getElement("summary-savings-pct", HTMLParagraphElement),
   categoryTotals: getElement("category-totals", HTMLUListElement),
   categoryEmpty: getElement("category-empty", HTMLParagraphElement),
+  breakdownTotal: getElement("breakdown-total", HTMLElement),
   incomeForm: getElement("income-form", HTMLFormElement),
   incomeAmount: getElement("income-amount", HTMLInputElement),
   incomeError: getElement("income-error", HTMLParagraphElement),
@@ -54,6 +55,8 @@ export const dom = {
   submit: getElement("expense-submit", HTMLButtonElement),
   cancel: getElement("expense-cancel", HTMLButtonElement),
   filterCategory: getElement("filter-category", HTMLSelectElement),
+  categoryPicker: getElement("expense-category-picker", HTMLDivElement),
+  currentDate: getElement("current-date", HTMLTimeElement),
   tableWrap: getElement("expense-table-wrap", HTMLDivElement),
   rows: getElement("expense-rows", HTMLTableSectionElement),
   listEmpty: getElement("list-empty", HTMLParagraphElement),
@@ -72,9 +75,36 @@ export function initCategorySelects(): void {
     ...CATEGORY_KEYS.map((key) => createOption(key, CATEGORIES[key].label)),
   );
   dom.filterCategory.replaceChildren(
-    createOption("all", "Todas"),
+    createOption("all", "Todos"),
     ...CATEGORY_KEYS.map((key) => createOption(key, CATEGORIES[key].label)),
   );
+  dom.categoryPicker.replaceChildren(
+    ...CATEGORY_KEYS.map((category) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "category-chip";
+      button.textContent = CATEGORIES[category].label;
+      button.dataset["category"] = category;
+      button.setAttribute("aria-pressed", "false");
+      button.addEventListener("click", () => {
+        dom.category.value = category;
+        syncCategoryPicker();
+      });
+      return button;
+    }),
+  );
+  syncCategoryPicker();
+}
+
+function syncCategoryPicker(): void {
+  for (const button of dom.categoryPicker.querySelectorAll<HTMLButtonElement>(
+    "[data-category]",
+  )) {
+    button.setAttribute(
+      "aria-pressed",
+      String(button.dataset["category"] === dom.category.value),
+    );
+  }
 }
 
 // ---------- Formulario de gastos ----------
@@ -106,8 +136,8 @@ export function readExpenseForm(): Result<NewExpense> {
 }
 
 export function setEditMode(editing: boolean): void {
-  dom.formTitle.textContent = editing ? "Editar gasto" : "Añadir gasto";
-  dom.submit.textContent = editing ? "Guardar cambios" : "Añadir gasto";
+  dom.formTitle.textContent = editing ? "Editar movimiento" : "Añadir movimiento";
+  dom.submit.textContent = editing ? "Guardar cambios" : "Añadir";
   dom.cancel.hidden = !editing;
 }
 
@@ -116,6 +146,7 @@ export function fillForm(expense: Expense): void {
   dom.amount.value = centsToInputString(expense.amountCents);
   dom.date.value = expense.date;
   dom.category.value = expense.category;
+  syncCategoryPicker();
   dom.note.value = expense.note;
   clearFormError();
   dom.amount.focus();
@@ -132,6 +163,7 @@ export function resetForm(options: { keepContext: boolean }): void {
     dom.date.value = getTodayIso();
     dom.category.selectedIndex = 0;
   }
+  syncCategoryPicker();
   clearFormError();
   dom.amount.focus();
 }
@@ -281,7 +313,9 @@ function renderSummary(state: AppState): void {
   const month = state.ui.selectedMonth;
   const expenses = state.data.expenses;
 
-  dom.spent.textContent = formatMoney(sumCents(expensesOfMonth(expenses, month)));
+  const spentCents = sumCents(expensesOfMonth(expenses, month));
+  dom.spent.textContent = formatMoney(spentCents);
+  dom.breakdownTotal.textContent = formatMoney(spentCents);
 
   const comparison = describeComparison(compareWithPreviousMonth(expenses, month));
   dom.spentCompare.textContent = comparison.text;
@@ -301,18 +335,6 @@ function createCell(text: string, className?: string): HTMLTableCellElement {
   const cell = document.createElement("td");
   cell.textContent = text;
   if (className !== undefined) cell.className = className;
-  return cell;
-}
-
-function createCategoryCell(category: CategoryKey): HTMLTableCellElement {
-  const cell = document.createElement("td");
-  const dot = document.createElement("span");
-  dot.className = "dot";
-  dot.style.backgroundColor = CATEGORIES[category].color;
-  dot.setAttribute("aria-hidden", "true");
-  const label = document.createElement("span");
-  label.textContent = CATEGORIES[category].label;
-  cell.append(dot, label);
   return cell;
 }
 
@@ -339,7 +361,30 @@ function createActionButton(
 
 function createRow(expense: Expense): HTMLTableRowElement {
   const row = document.createElement("tr");
+  const details = createCell("", "expense-row__details");
+  details.colSpan = 3;
+  const heading = document.createElement("div");
+  heading.className = "expense-row__heading";
+  const dot = document.createElement("span");
+  dot.className = "dot";
+  dot.style.backgroundColor = CATEGORIES[expense.category].color;
+  dot.setAttribute("aria-hidden", "true");
+  const category = document.createElement("span");
+  category.className = "expense-row__category";
+  category.textContent = CATEGORIES[expense.category].label;
+  heading.append(dot, category);
+
+  const meta = document.createElement("span");
+  meta.className = "expense-row__meta";
+  meta.textContent =
+    expense.note === ""
+      ? formatDate(expense.date)
+      : `${formatDate(expense.date)} · ${expense.note}`;
+  details.append(heading, meta);
+
+  const amount = createCell(formatMoney(expense.amountCents), "expense-row__amount");
   const actions = document.createElement("td");
+  actions.className = "expense-row__actions";
   const actionsWrap = document.createElement("div");
   actionsWrap.className = "actions";
   actionsWrap.append(
@@ -348,13 +393,7 @@ function createRow(expense: Expense): HTMLTableRowElement {
   );
   actions.append(actionsWrap);
 
-  row.append(
-    createCell(formatDate(expense.date)),
-    createCategoryCell(expense.category),
-    createCell(expense.note === "" ? "—" : expense.note),
-    createCell(formatMoney(expense.amountCents), "num"),
-    actions,
-  );
+  row.append(details, amount, actions);
   return row;
 }
 
@@ -373,6 +412,19 @@ function renderExpenseList(state: AppState): void {
 
 /** Sincroniza toda la pantalla con el estado. */
 export function renderApp(state: AppState): void {
+  const today = new Date();
+  const localDate = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, "0"),
+    String(today.getDate()).padStart(2, "0"),
+  ].join("-");
+  dom.currentDate.dateTime = localDate;
+  dom.currentDate.textContent = new Intl.DateTimeFormat("es-ES", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(today);
   dom.monthSelect.value = state.ui.selectedMonth;
   dom.filterCategory.value = state.ui.categoryFilter;
   renderIncome(state);
