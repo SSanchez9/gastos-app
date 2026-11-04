@@ -13,6 +13,8 @@ function sameExpense(a: Expense, b: Expense): boolean {
     a.category === b.category &&
     a.date === b.date &&
     a.note === b.note &&
+    a.walletId === b.walletId &&
+    a.walletId === b.walletId &&
     a.createdAt === b.createdAt &&
     a.updatedAt === b.updatedAt
   );

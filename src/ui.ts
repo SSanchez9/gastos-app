@@ -56,7 +56,12 @@ export const dom = {
   cancel: getElement("expense-cancel", HTMLButtonElement),
   filterCategory: getElement("filter-category", HTMLSelectElement),
   categoryPicker: getElement("expense-category-picker", HTMLDivElement),
+  wallet: getElement("expense-wallet", HTMLSelectElement),
   currentDate: getElement("current-date", HTMLTimeElement),
+  balance: getElement("summary-balance", HTMLHeadingElement),
+  balanceNote: getElement("summary-balance-note", HTMLParagraphElement),
+  balanceIncome: getElement("balance-income", HTMLElement),
+  balanceSpent: getElement("balance-spent", HTMLElement),
   tableWrap: getElement("expense-table-wrap", HTMLDivElement),
   rows: getElement("expense-rows", HTMLTableSectionElement),
   listEmpty: getElement("list-empty", HTMLParagraphElement),
@@ -131,7 +136,7 @@ export function readExpenseForm(): Result<NewExpense> {
   }
   return {
     ok: true,
-    value: { amountCents, category, date: dom.date.value, note: dom.note.value },
+    value: { amountCents, category, date: dom.date.value, note: dom.note.value, ...(dom.wallet.value ? { walletId: dom.wallet.value } : {}) },
   };
 }
 
@@ -148,6 +153,7 @@ export function fillForm(expense: Expense): void {
   dom.category.value = expense.category;
   syncCategoryPicker();
   dom.note.value = expense.note;
+  dom.wallet.value = expense.walletId ?? "";
   clearFormError();
   dom.amount.focus();
 }
@@ -202,6 +208,21 @@ function renderIncome(state: AppState): void {
     savings.incomeCents === null ? "—" : formatMoney(savings.incomeCents);
   dom.saved.textContent =
     savings.savedCents === null ? "—" : formatMoney(savings.savedCents);
+  dom.balance.textContent =
+    savings.savedCents === null ? "—" : formatMoney(savings.savedCents);
+  dom.balanceIncome.textContent =
+    savings.incomeCents === null ? "—" : formatMoney(savings.incomeCents);
+  const monthSpent = sumCents(expensesOfMonth(state.data.expenses, month));
+  dom.balanceSpent.textContent = formatMoney(monthSpent);
+  dom.balanceNote.textContent =
+    savings.savedCents === null
+      ? "Registra tus ingresos para ver tu balance."
+      : savings.isDeficit
+        ? "Este mes has gastado más de lo que ingresaste."
+        : "Tu balance está en positivo este mes.";
+  dom.balanceNote.className = savings.isDeficit
+    ? "balance-card__status balance-card__status--negative"
+    : "balance-card__status";
   dom.savingsPct.textContent =
     savings.savingsPct === null ? "—" : formatPercent(savings.savingsPct);
 
@@ -410,6 +431,114 @@ function renderExpenseList(state: AppState): void {
       : "No hay gastos de esta categoría en este mes.";
 }
 
+let plannerBudgetKey = "";
+function renderPlanner(state: AppState): void {
+  const month = state.ui.selectedMonth;
+  const budget = state.data.budgets?.[month] ?? null;
+  const spent = sumCents(expensesOfMonth(state.data.expenses, month));
+  const budgetKey = `${month}:${budget ?? ""}`;
+  const budgetInput = document.getElementById("budget-amount");
+  const budgetProgress = document.getElementById("budget-progress");
+  const budgetFill = document.getElementById("budget-meter-fill");
+  const budgetClear = document.getElementById("budget-clear");
+  if (budgetInput instanceof HTMLInputElement && budgetKey !== plannerBudgetKey) {
+    plannerBudgetKey = budgetKey;
+    budgetInput.value = budget === null ? "" : centsToInputString(budget);
+  }
+  if (budgetProgress) {
+    budgetProgress.textContent = budget === null
+      ? "Aún no has fijado un límite para este mes."
+      : `${formatMoney(spent)} gastados de ${formatMoney(budget)} · ${formatMoney(Math.max(0, budget - spent))} disponibles`;
+  }
+  if (budgetFill instanceof HTMLElement && budget !== null) {
+    budgetFill.style.width = `${Math.min(100, (spent / budget) * 100)}%`;
+    budgetFill.parentElement?.classList.toggle("budget-meter--warning", spent >= budget * 0.75 && spent < budget);
+    budgetFill.parentElement?.classList.toggle("budget-meter--danger", spent >= budget);
+  } else if (budgetFill instanceof HTMLElement) {
+    budgetFill.style.width = "0%";
+    budgetFill.parentElement?.classList.remove("budget-meter--warning", "budget-meter--danger");
+  }
+  if (budgetClear instanceof HTMLButtonElement) budgetClear.hidden = budget === null;
+
+  const goalsList = document.getElementById("goals-list");
+  const goalsEmpty = document.getElementById("goals-empty");
+  const goals = state.data.goals ?? [];
+  if (goalsList instanceof HTMLUListElement) {
+    goalsList.replaceChildren(...goals.map((goal) => {
+      const item = document.createElement("li"); item.className = "planner-item";
+      const top = document.createElement("div"); top.className = "planner-item__top";
+      const name = document.createElement("span"); name.className = "planner-item__name"; name.textContent = goal.name;
+      const amount = document.createElement("span"); amount.className = "planner-item__meta"; amount.textContent = `${formatMoney(goal.savedCents)} / ${formatMoney(goal.targetCents)}`;
+      top.append(name, amount);
+      const meter = document.createElement("div"); meter.className = "budget-meter";
+      const fill = document.createElement("span"); fill.style.width = `${Math.min(100, (goal.savedCents / goal.targetCents) * 100)}%`; meter.append(fill);
+      const controls = document.createElement("div"); controls.className = "planner-item__actions";
+      const contribution = document.createElement("input"); contribution.className = "field__input"; contribution.inputMode = "decimal"; contribution.placeholder = "Aportar €"; contribution.setAttribute("aria-label", `Aportación a ${goal.name}`); contribution.dataset["goalContribution"] = goal.id;
+      const add = document.createElement("button"); add.type = "button"; add.className = "button button--small"; add.textContent = "Añadir ahorro"; add.dataset["action"] = "goal-add"; add.dataset["id"] = goal.id;
+      const remove = document.createElement("button"); remove.type = "button"; remove.className = "button button--secondary button--small button--danger"; remove.textContent = "Eliminar"; remove.dataset["action"] = "goal-delete"; remove.dataset["id"] = goal.id;
+      controls.append(contribution, add, remove); item.append(top, meter, controls);
+      if (goal.dueDate) { const due = document.createElement("p"); due.className = "planner-item__meta"; due.textContent = `Fecha objetivo: ${formatDate(goal.dueDate)}`; item.append(due); }
+      return item;
+    }));
+  }
+  if (goalsEmpty) goalsEmpty.hidden = goals.length > 0;
+
+  const recurringList = document.getElementById("recurring-list");
+  const recurringEmpty = document.getElementById("recurring-empty");
+  const recurring = state.data.recurring ?? [];
+  if (recurringList instanceof HTMLUListElement) {
+    recurringList.replaceChildren(...recurring.map((template) => {
+      const item = document.createElement("li"); item.className = "planner-item";
+      const top = document.createElement("div"); top.className = "planner-item__top";
+      const name = document.createElement("span"); name.className = "planner-item__name"; name.textContent = template.name;
+      const amount = document.createElement("span"); amount.className = "planner-item__meta"; amount.textContent = `${formatMoney(template.amountCents)} · día ${template.dayOfMonth}`;
+      top.append(name, amount);
+      const meta = document.createElement("p"); meta.className = "planner-item__meta"; meta.textContent = template.active ? (template.lastRunMonth === month ? "Ya registrado este mes" : `Pendiente para ${formatMonth(month)}`) : "Pausado";
+      const controls = document.createElement("div"); controls.className = "planner-item__actions";
+      const run = document.createElement("button"); run.type = "button"; run.className = "button button--small"; run.textContent = "Registrar este mes"; run.dataset["action"] = "recurring-run"; run.dataset["id"] = template.id; run.disabled = !template.active || template.lastRunMonth === month;
+      const toggle = document.createElement("button"); toggle.type = "button"; toggle.className = "button button--secondary button--small"; toggle.textContent = template.active ? "Pausar" : "Activar"; toggle.dataset["action"] = "recurring-toggle"; toggle.dataset["id"] = template.id; toggle.dataset["active"] = String(!template.active);
+      controls.append(run, toggle); item.append(top, meta, controls); return item;
+    }));
+  }
+  if (recurringEmpty) recurringEmpty.hidden = recurring.length > 0;
+
+  const wallets = state.data.wallets ?? [];
+  const populateWalletSelect = (select: HTMLSelectElement, emptyLabel: string): void => {
+    const previous = select.value;
+    const empty = document.createElement("option"); empty.value = ""; empty.textContent = emptyLabel;
+    select.replaceChildren(empty, ...wallets.map((wallet) => { const option = document.createElement("option"); option.value = wallet.id; option.textContent = wallet.name; return option; }));
+    if (wallets.some((wallet) => wallet.id === previous)) select.value = previous;
+    else if (emptyLabel === "Selecciona una cartera" && wallets[0]) select.value = wallets[0].id;
+  };
+  populateWalletSelect(dom.wallet, "Sin asignar");
+  for (const id of ["transfer-from", "transfer-to"]) {
+    const select = document.getElementById(id);
+    if (select instanceof HTMLSelectElement) populateWalletSelect(select, "Selecciona una cartera");
+  }
+  const transferTo = document.getElementById("transfer-to");
+  if (transferTo instanceof HTMLSelectElement && wallets.length > 1 && transferTo.value === wallets[0]?.id) transferTo.value = wallets[1]?.id ?? "";
+  const walletsList = document.getElementById("wallets-list");
+  const walletsEmpty = document.getElementById("wallets-empty");
+  if (walletsList instanceof HTMLUListElement) {
+    walletsList.replaceChildren(...wallets.map((wallet) => {
+      const item = document.createElement("li"); item.className = "planner-item";
+      const top = document.createElement("div"); top.className = "planner-item__top";
+      const name = document.createElement("span"); name.className = "planner-item__name"; name.textContent = wallet.name;
+      const balance = document.createElement("strong"); balance.className = "planner-item__meta";
+      const spent = state.data.expenses.filter((expense) => expense.walletId === wallet.id).reduce((total, expense) => total + expense.amountCents, 0);
+      const outgoing = (state.data.transfers ?? []).filter((transfer) => transfer.fromWalletId === wallet.id).reduce((total, transfer) => total + transfer.amountCents, 0);
+      const incoming = (state.data.transfers ?? []).filter((transfer) => transfer.toWalletId === wallet.id).reduce((total, transfer) => total + transfer.amountCents, 0);
+      balance.textContent = formatMoney(wallet.openingCents - spent - outgoing + incoming);
+      top.append(name, balance);
+      const type = document.createElement("p"); type.className = "planner-item__meta"; type.textContent = `${wallet.kind === "cash" ? "Efectivo" : wallet.kind === "bank" ? "Banco" : wallet.kind === "card" ? "Tarjeta" : wallet.kind === "savings" ? "Ahorro" : "Inversión"} · saldo inicial ${formatMoney(wallet.openingCents)}`;
+      const remove = document.createElement("button"); remove.type = "button"; remove.className = "button button--secondary button--small button--danger"; remove.textContent = "Eliminar cartera"; remove.dataset["action"] = "wallet-delete"; remove.dataset["id"] = wallet.id;
+      const controls = document.createElement("div"); controls.className = "planner-item__actions"; controls.append(remove);
+      item.append(top, type, controls); return item;
+    }));
+  }
+  if (walletsEmpty) walletsEmpty.hidden = wallets.length > 0;
+}
+
 /** Sincroniza toda la pantalla con el estado. */
 export function renderApp(state: AppState): void {
   const today = new Date();
@@ -430,4 +559,5 @@ export function renderApp(state: AppState): void {
   renderIncome(state);
   renderSummary(state);
   renderExpenseList(state);
+  renderPlanner(state);
 }

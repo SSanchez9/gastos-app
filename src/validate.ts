@@ -1,6 +1,6 @@
 import { DATA_VERSION, NOTE_MAX_LENGTH, isCategoryKey } from "./config";
 import { isValidIsoDate, isValidMonthKey } from "./format";
-import type { AppData, Expense, NewExpense, Result } from "./types";
+import type { AppData, Expense, NewExpense, RecurringExpense, SavingsGoal, Wallet, WalletTransfer, WalletKind, Result } from "./types";
 
 function fail(error: string): Result<never> {
   return { ok: false, error };
@@ -42,6 +42,7 @@ export function validateExpenseInput(input: NewExpense): Result<NewExpense> {
       category: input.category,
       date: input.date,
       note,
+      ...(input.walletId === undefined ? {} : { walletId: input.walletId }),
     },
   };
 }
@@ -57,7 +58,8 @@ function parseExpense(raw: unknown): Expense | null {
   if (typeof note !== "string" || note.length > NOTE_MAX_LENGTH) return null;
   if (!isFiniteNumber(createdAt) || !isFiniteNumber(updatedAt)) return null;
 
-  return { id, amountCents, category, date, note, createdAt, updatedAt };
+  if (raw["walletId"] !== undefined && typeof raw["walletId"] !== "string") return null;
+  return { id, amountCents, category, date, note, ...(typeof raw["walletId"] === "string" ? { walletId: raw["walletId"] } : {}), createdAt, updatedAt };
 }
 
 function parseMonthMap(raw: unknown): Record<string, number> | null {
@@ -93,9 +95,83 @@ export function parseAppData(raw: unknown): AppData | null {
   const parsedIncomeByMonth = parseMonthMap(income["byMonth"]);
   if (parsedIncomeByMonth === null) return null;
 
-  return {
+  const result: AppData = {
     version: DATA_VERSION,
     expenses: parsedExpenses,
     income: { byMonth: parsedIncomeByMonth },
   };
+  if (raw["budgets"] !== undefined) {
+    const budgets = parseMonthMap(raw["budgets"]);
+    if (budgets === null) return null;
+    result.budgets = budgets;
+  }
+  if (raw["goals"] !== undefined) {
+    if (!Array.isArray(raw["goals"])) return null;
+    const goals = raw["goals"].map(parseGoal);
+    if (goals.some((goal) => goal === null)) return null;
+    result.goals = goals as SavingsGoal[];
+  }
+  if (raw["recurring"] !== undefined) {
+    if (!Array.isArray(raw["recurring"])) return null;
+    const recurring = raw["recurring"].map(parseRecurring);
+    if (recurring.some((item) => item === null)) return null;
+    result.recurring = recurring as RecurringExpense[];
+  }
+  if (raw["wallets"] !== undefined) {
+    if (!Array.isArray(raw["wallets"])) return null;
+    const wallets = raw["wallets"].map(parseWallet);
+    if (wallets.some((wallet) => wallet === null)) return null;
+    const parsedWallets = wallets as Wallet[];
+    if (new Set(parsedWallets.map((wallet) => wallet.id)).size !== parsedWallets.length) return null;
+    result.wallets = parsedWallets;
+    const walletIds = new Set(parsedWallets.map((wallet) => wallet.id));
+    if (parsedExpenses.some((expense) => expense.walletId !== undefined && !walletIds.has(expense.walletId))) return null;
+  }
+  if (raw["transfers"] !== undefined) {
+    if (!Array.isArray(raw["transfers"])) return null;
+    const transfers = raw["transfers"].map(parseTransfer);
+    if (transfers.some((transfer) => transfer === null)) return null;
+    result.transfers = transfers as WalletTransfer[];
+    if (!result.wallets || result.transfers.some((transfer) => !result.wallets?.some((wallet) => wallet.id === transfer.fromWalletId) || !result.wallets?.some((wallet) => wallet.id === transfer.toWalletId))) return null;
+  }
+  if (parsedExpenses.some((expense) => expense.walletId !== undefined && !result.wallets?.some((wallet) => wallet.id === expense.walletId))) return null;
+  return result;
+}
+
+function parseWallet(raw: unknown): Wallet | null {
+  if (!isRecord(raw)) return null;
+  const { id, name, kind, openingCents, createdAt } = raw;
+  const kinds: WalletKind[] = ["bank", "cash", "card", "savings", "investment"];
+  if (typeof id !== "string" || !id || typeof name !== "string" || !name.trim() || name.length > 60 || !kinds.includes(kind as WalletKind)) return null;
+  if (!Number.isSafeInteger(openingCents) || (openingCents as number) < 0 || !isFiniteNumber(createdAt)) return null;
+  return { id, name: name.trim(), kind: kind as WalletKind, openingCents: openingCents as number, createdAt };
+}
+
+function parseTransfer(raw: unknown): WalletTransfer | null {
+  if (!isRecord(raw)) return null;
+  const { id, fromWalletId, toWalletId, amountCents, date, note, createdAt } = raw;
+  if (typeof id !== "string" || !id || typeof fromWalletId !== "string" || typeof toWalletId !== "string" || fromWalletId === toWalletId) return null;
+  if (!isPositiveInt(amountCents) || typeof date !== "string" || !isValidIsoDate(date) || typeof note !== "string" || note.length > NOTE_MAX_LENGTH || !isFiniteNumber(createdAt)) return null;
+  return { id, fromWalletId, toWalletId, amountCents, date, note, createdAt };
+}
+
+function parseGoal(raw: unknown): SavingsGoal | null {
+  if (!isRecord(raw)) return null;
+  const { id, name, targetCents, savedCents, dueDate, createdAt } = raw;
+  if (typeof id !== "string" || id.length === 0 || typeof name !== "string" || name.trim().length === 0 || name.length > 60) return null;
+  if (!isPositiveInt(targetCents) || !Number.isSafeInteger(savedCents) || (savedCents as number) < 0) return null;
+  if (dueDate !== null && (typeof dueDate !== "string" || !isValidIsoDate(dueDate))) return null;
+  if (!isFiniteNumber(createdAt)) return null;
+  return { id, name: name.trim(), targetCents, savedCents: savedCents as number, dueDate: dueDate as string | null, createdAt };
+}
+
+function parseRecurring(raw: unknown): RecurringExpense | null {
+  if (!isRecord(raw)) return null;
+  const { id, name, amountCents, category, dayOfMonth, active, lastRunMonth } = raw;
+  if (typeof id !== "string" || id.length === 0 || typeof name !== "string" || name.trim().length === 0 || name.length > 60) return null;
+  if (!isPositiveInt(amountCents) || !isCategoryKey(category)) return null;
+  if (!Number.isInteger(dayOfMonth) || (dayOfMonth as number) < 1 || (dayOfMonth as number) > 28) return null;
+  if (typeof active !== "boolean") return null;
+  if (lastRunMonth !== null && (typeof lastRunMonth !== "string" || !isValidMonthKey(lastRunMonth))) return null;
+  return { id, name: name.trim(), amountCents, category, dayOfMonth: dayOfMonth as number, active, lastRunMonth: lastRunMonth as string | null };
 }

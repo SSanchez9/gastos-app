@@ -11,3 +11,7 @@ export function expensesPath(userId: string): string {
 export function monthlyIncomesPath(userId: string): string {
   return `${COLLECTION_USERS}/${userId}/${COLLECTION_MONTHLY_INCOMES}`;
 }
+
+export function financeSettingsPath(userId: string): string {
+  return `${COLLECTION_USERS}/${userId}/finance/settings`;
+}

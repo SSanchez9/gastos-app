@@ -3,16 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="light" />
     <meta name="robots" content="noindex" />
     <meta name="description" content="Controla tus gastos mensuales y cuánto ahorras." />
-    <title>Gastos App</title>
+    <title>Boti · Control de gastos</title>
   </head>
   <body>
     <!-- Pantalla de acceso -->
     <main class="login" id="login-screen">
       <section class="panel login__panel" aria-labelledby="login-title">
-        <h1 id="login-title">Gastos App</h1>
+        <h1 id="login-title">Boti</h1>
         <p class="hint" id="login-status" role="status">Comprobando sesión…</p>
         <p class="form__error" id="login-error" role="alert" hidden></p>
         <button class="button" type="button" id="sign-in" hidden>
@@ -22,14 +22,43 @@
     </main>
 
     <!-- Aplicación (solo visible con sesión iniciada) -->
-    <div id="app-shell" hidden>
+    <div id="app-shell" class="app-shell" hidden>
       <a class="skip-link" href="#contenido">Saltar al contenido</a>
 
-      <header class="app-header">
-        <div class="app-header__brand">
-          <span class="brand-mark" aria-hidden="true">F</span>
-          <h1>Finanzas</h1>
+      <aside class="sidebar" aria-label="Navegación principal">
+        <a class="app-header__brand" href="#contenido" aria-label="Boti, inicio">
+          <span class="brand-mark" aria-hidden="true">B</span>
+          <span class="brand-name">boti</span>
+        </a>
+        <p class="sidebar__caption">TU DINERO</p>
+        <nav class="sidebar__nav">
+          <a class="nav-link nav-link--active" href="#contenido" aria-current="page">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3h5v6H3zM12 3h5v3h-5zM12 9h5v8h-5zM3 12h5v5H3z"/></svg>
+            <span>Inicio</span>
+          </a>
+          <a class="nav-link" href="#list-title">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4h12M4 8h12M4 12h8M4 16h8"/></svg>
+            <span>Movimientos</span>
+          </a>
+          <a class="nav-link" href="#breakdown-title">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.8v7.4h7.4A7.4 7.4 0 1 1 10 2.8Zm3 0a7.4 7.4 0 0 1 4.4 4.4H13z"/></svg>
+            <span>Análisis</span>
+          </a>
+          <a class="nav-link" href="#income-title">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5v15M14 6H8a2.5 2.5 0 0 0 0 5h4a2.5 2.5 0 0 1 0 5H5"/></svg>
+            <span>Ingresos</span>
+          </a>
+        </nav>
+        <div class="sidebar__bottom">
+          <a class="nav-link" href="#data-title">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v8m-3-3 3 3 3-3M4 13v3h12v-3"/></svg>
+            <span>Copias de seguridad</span>
+          </a>
+          <div class="sidebar__account"><span class="sidebar__avatar" aria-hidden="true">G</span><span class="session__email" id="session-email"></span></div>
         </div>
+      </aside>
+
+      <header class="app-header">
         <div class="app-header__controls">
           <time class="app-header__date" id="current-date"></time>
           <label class="month-control" for="month-select">
@@ -37,7 +66,6 @@
             <input class="field__input" type="month" id="month-select" name="month" />
           </label>
           <div class="session">
-            <span class="session__email" id="session-email"></span>
             <button
               class="button button--secondary button--small"
               type="button"
@@ -62,8 +90,26 @@
       </div>
 
       <main class="app-main layout" id="contenido" tabindex="-1">
+        <div class="page-heading">
+          <div><h1>Tu dinero, más claro</h1><p>Esto es lo que está pasando este mes.</p></div>
+          <a class="button page-heading__action" href="#expense-form-title" aria-label="Añadir movimiento">Añadir movimiento</a>
+        </div>
         <section class="panel panel--summary" aria-labelledby="summary-title">
           <h2 class="visually-hidden" id="summary-title">Resumen del mes</h2>
+          <div class="balance-card">
+            <div>
+              <p class="balance-card__label">Disponible este mes</p>
+              <h2 id="summary-balance">—</h2>
+              <p class="balance-card__status" id="summary-balance-note">
+                Registra ingresos para ver tu balance.
+              </p>
+            </div>
+            <div class="balance-card__details">
+              <p>Ingresos <strong id="balance-income">—</strong></p>
+              <p>Has gastado <strong id="balance-spent">—</strong></p>
+            </div>
+            <span class="balance-card__orb" aria-hidden="true"></span>
+          </div>
           <ul class="cards">
             <li class="card">
               <p class="card__label">Ingresos del mes</p>
@@ -84,8 +130,13 @@
         </section>
 
         <!-- Sueldo -->
-        <section class="panel panel--income" aria-labelledby="income-title">
-          <h2 class="panel__title" id="income-title">Sueldo del mes</h2>
+        <section class="panel panel--income" aria-labelledby="income-title" id="income-section">
+          <div class="panel__head">
+            <div>
+              <h2 class="panel__title" id="income-title">Ingresos del mes</h2>
+              <p class="hint">Define el ingreso con el que calculamos tu ahorro.</p>
+            </div>
+          </div>
           <form class="form form--inline" id="income-form">
             <div class="field">
               <label class="field__label" for="income-amount">Importe (€)</label>
@@ -119,6 +170,37 @@
           >
             Quitar sueldo
           </button>
+        </section>
+
+        <section class="panel panel--planner" aria-labelledby="planner-title">
+          <div class="panel__head planner__head"><div><h2 class="panel__title" id="planner-title">Límites, metas y gastos fijos</h2><p class="hint">Planifica el mes y automatiza lo que se repite.</p></div></div>
+          <div class="planner-grid">
+            <section class="planner-card" aria-labelledby="budget-title">
+              <h3 id="budget-title">Presupuesto mensual</h3>
+              <p class="hint" id="budget-progress">Aún no has fijado un límite para este mes.</p>
+              <div class="budget-meter" aria-hidden="true"><span id="budget-meter-fill"></span></div>
+              <form class="planner-form" id="budget-form"><label class="field__label" for="budget-amount">Límite de gasto (€)</label><input class="field__input" id="budget-amount" inputmode="decimal" placeholder="1.200,00" required /><div class="button-group"><button class="button button--small" type="submit">Guardar límite</button><button class="button button--secondary button--small" type="button" id="budget-clear" hidden>Quitar</button></div><p class="form__error" id="budget-error" role="alert" hidden></p></form>
+            </section>
+            <section class="planner-card" aria-labelledby="goals-title">
+              <h3 id="goals-title">Metas de ahorro</h3>
+              <ul class="planner-list" id="goals-list"></ul>
+              <p class="empty planner-empty" id="goals-empty">Crea una meta para empezar a ahorrar.</p>
+              <form class="planner-form" id="goal-form"><label class="field__label" for="goal-name">¿Para qué estás ahorrando?</label><input class="field__input" id="goal-name" maxlength="60" placeholder="Viaje, colchón…" required /><label class="field__label" for="goal-target">Objetivo (€)</label><input class="field__input" id="goal-target" inputmode="decimal" placeholder="1.000,00" required /><label class="field__label" for="goal-date">Fecha objetivo (opcional)</label><input class="field__input" id="goal-date" type="date" /><button class="button button--small" type="submit">Crear meta</button><p class="form__error" id="goal-error" role="alert" hidden></p></form>
+            </section>
+            <section class="planner-card" aria-labelledby="recurring-title">
+              <h3 id="recurring-title">Gastos fijos</h3>
+              <ul class="planner-list" id="recurring-list"></ul>
+              <p class="empty planner-empty" id="recurring-empty">Añade alquiler, suscripciones u otros pagos regulares.</p>
+              <form class="planner-form" id="recurring-form"><label class="field__label" for="recurring-name">Nombre</label><input class="field__input" id="recurring-name" maxlength="60" placeholder="Alquiler, gimnasio…" required /><label class="field__label" for="recurring-amount">Importe (€)</label><input class="field__input" id="recurring-amount" inputmode="decimal" placeholder="45,00" required /><label class="field__label" for="recurring-category">Categoría</label><select class="field__input" id="recurring-category" required></select><label class="field__label" for="recurring-day">Día del mes</label><input class="field__input" id="recurring-day" type="number" min="1" max="28" value="1" required /><button class="button button--small" type="submit">Añadir gasto fijo</button><p class="form__error" id="recurring-error" role="alert" hidden></p></form>
+            </section>
+            <section class="planner-card" aria-labelledby="wallets-title">
+              <h3 id="wallets-title">Carteras</h3>
+              <ul class="planner-list" id="wallets-list"></ul>
+              <p class="empty planner-empty" id="wallets-empty">Añade tu banco, efectivo o cuenta de ahorro.</p>
+              <form class="planner-form" id="wallet-form"><label class="field__label" for="wallet-name">Nombre de la cartera</label><input class="field__input" id="wallet-name" maxlength="60" placeholder="Cuenta principal" required /><label class="field__label" for="wallet-kind">Tipo</label><select class="field__input" id="wallet-kind"><option value="bank">Banco</option><option value="cash">Efectivo</option><option value="card">Tarjeta</option><option value="savings">Ahorro</option><option value="investment">Inversión</option></select><label class="field__label" for="wallet-opening">Saldo actual (€)</label><input class="field__input" id="wallet-opening" inputmode="decimal" placeholder="0,00" value="0" required /><button class="button button--small" type="submit">Añadir cartera</button><p class="form__error" id="wallet-error" role="alert" hidden></p></form>
+              <form class="planner-form" id="transfer-form"><h4>Traspasar dinero</h4><label class="field__label" for="transfer-from">Desde</label><select class="field__input" id="transfer-from" required></select><label class="field__label" for="transfer-to">Hacia</label><select class="field__input" id="transfer-to" required></select><label class="field__label" for="transfer-amount">Importe (€)</label><input class="field__input" id="transfer-amount" inputmode="decimal" placeholder="50,00" required /><button class="button button--secondary button--small" type="submit">Hacer traspaso</button><p class="form__error" id="transfer-error" role="alert" hidden></p></form>
+            </section>
+          </div>
         </section>
 
         <div class="chart-grid">
@@ -164,6 +246,14 @@
 
         <section class="panel panel--form" aria-labelledby="expense-form-title">
           <h2 class="panel__title" id="expense-form-title">Añadir movimiento</h2>
+          <div class="quick-entry">
+            <label class="field__label" for="quick-entry-input">Apunta en un segundo</label>
+            <div class="quick-entry__row">
+              <input class="field__input" id="quick-entry-input" type="text" autocomplete="off" placeholder="12 café, 45 supermercado ayer" aria-describedby="quick-entry-help" />
+              <button class="button" type="button" id="quick-entry-submit">Añadir</button>
+            </div>
+            <p class="hint" id="quick-entry-help">Detectamos el importe, la fecha y una categoría aproximada. Revísalo antes de guardar.</p>
+          </div>
           <form class="form" id="expense-form">
             <div class="field field--amount">
               <label class="field__label" for="expense-amount">Importe</label>
@@ -199,6 +289,7 @@
                 aria-labelledby="expense-category-label"
               ></div>
             </div>
+            <div class="field"><label class="field__label" for="expense-wallet">Cartera</label><select class="field__input" id="expense-wallet"><option value="">Sin asignar</option></select></div>
             <div class="field">
               <label class="field__label" for="expense-date">Fecha</label>
               <input
@@ -308,6 +399,14 @@
         </section>
       </main>
 
+      <nav class="mobile-nav" aria-label="Navegación móvil">
+        <a class="mobile-nav__link mobile-nav__link--active" href="#contenido" aria-current="page"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3h5v6H3zM12 3h5v3h-5zM12 9h5v8h-5zM3 12h5v5H3z"/></svg>Inicio</a>
+        <a class="mobile-nav__link" href="#list-title"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4h12M4 8h12M4 12h8M4 16h8"/></svg>Movimientos</a>
+        <a class="mobile-nav__add" href="#expense-form-title" aria-label="Añadir movimiento"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12"/></svg></a>
+        <a class="mobile-nav__link" href="#breakdown-title"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.8v7.4h7.4A7.4 7.4 0 1 1 10 2.8Zm3 0a7.4 7.4 0 0 1 4.4 4.4H13z"/></svg>Análisis</a>
+        <a class="mobile-nav__link" href="#data-title"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1"/><circle cx="10" cy="10" r="1"/><circle cx="16" cy="10" r="1"/></svg>Más</a>
+      </nav>
+
       <dialog class="dialog" id="import-dialog" aria-labelledby="import-dialog-title">
         <h2 class="panel__title" id="import-dialog-title">Importar copia de seguridad</h2>
         <ul class="dialog__list" id="import-summary"></ul>
@@ -337,7 +436,7 @@
       </dialog>
 
       <footer class="app-footer">
-        <p>Gastos App · proyecto personal con HTML, CSS y TypeScript</p>
+        <p>Boti · Control de gastos</p>
       </footer>
     </div>
 

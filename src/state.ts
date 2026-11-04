@@ -1,6 +1,6 @@
 import { isCategoryKey } from "./config";
 import * as repository from "./firebase/repository";
-import { getCurrentMonthKey, isValidMonthKey } from "./format";
+import { getCurrentMonthKey, getMonthKey, getTodayIso, isValidIsoDate, isValidMonthKey } from "./format";
 import { createEmptyData } from "./storage";
 import type {
   AppData,
@@ -10,6 +10,11 @@ import type {
   MonthKey,
   NewExpense,
   Result,
+  RecurringExpense,
+  SavingsGoal,
+  Wallet,
+  WalletKind,
+  WalletTransfer,
   SyncState,
 } from "./types";
 import { validateAmount, validateExpenseInput } from "./validate";
@@ -67,6 +72,7 @@ export function startSync(userId: string): void {
 
   let expensesReady = false;
   let incomesReady = false;
+  let financeReady = false;
 
   publish({
     ...state,
@@ -75,7 +81,7 @@ export function startSync(userId: string): void {
   });
 
   const markReady = (): void => {
-    if (expensesReady && incomesReady) setSync({ status: "ready", error: null });
+    if (expensesReady && incomesReady && financeReady) setSync({ status: "ready", error: null });
   };
 
   const fail = (message: string): void => {
@@ -105,9 +111,21 @@ export function startSync(userId: string): void {
     fail,
   );
 
+  const stopFinance = repository.watchFinanceSettings(
+    userId,
+    (settings) => {
+      if (generation !== syncGeneration) return;
+      financeReady = true;
+      publish({ ...state, data: { ...state.data, ...settings } });
+      markReady();
+    },
+    fail,
+  );
+
   stopWatching = () => {
     stopExpenses();
     stopIncomes();
+    stopFinance();
   };
 }
 
@@ -162,6 +180,7 @@ export async function addExpense(input: NewExpense): Promise<Result<Expense>> {
 
   const checked = validateExpenseInput(input);
   if (!checked.ok) return checked;
+  if (input.walletId && !(state.data.wallets ?? []).some((wallet) => wallet.id === input.walletId)) return { ok: false, error: "La cartera seleccionada ya no existe." };
 
   const now = Date.now();
   const expense: Expense = {
@@ -187,6 +206,7 @@ export async function updateExpense(
 
   const checked = validateExpenseInput(input);
   if (!checked.ok) return checked;
+  if (input.walletId && !(state.data.wallets ?? []).some((wallet) => wallet.id === input.walletId)) return { ok: false, error: "La cartera seleccionada ya no existe." };
 
   const updated: Expense = { ...existing, ...checked.value, updatedAt: Date.now() };
   const saved = await repository.updateExpense(writable.value, updated);
@@ -221,6 +241,123 @@ export async function clearIncome(month: MonthKey): Promise<Result<null>> {
   const writable = requireWritable();
   if (!writable.ok) return writable;
   return repository.deleteMonthlyIncome(writable.value, month);
+}
+
+async function saveFinancialSettings(
+  patch: Partial<Pick<AppData, "budgets" | "goals" | "recurring" | "wallets" | "transfers">>,
+): Promise<Result<null>> {
+  const writable = requireWritable();
+  if (!writable.ok) return writable;
+  const settings = {
+    budgets: patch.budgets ?? state.data.budgets ?? {},
+    goals: patch.goals ?? state.data.goals ?? [],
+    recurring: patch.recurring ?? state.data.recurring ?? [],
+    wallets: patch.wallets ?? state.data.wallets ?? [],
+    transfers: patch.transfers ?? state.data.transfers ?? [],
+  };
+  const saved = await repository.saveFinanceSettings(writable.value, settings);
+  if (saved.ok) publish({ ...state, data: { ...state.data, ...settings } });
+  return saved;
+}
+
+export function setMonthlyBudget(month: MonthKey, cents: number): Promise<Result<null>> {
+  if (!isValidMonthKey(month) || !Number.isSafeInteger(cents) || cents <= 0) {
+    return Promise.resolve({ ok: false, error: "Introduce un presupuesto mensual válido." });
+  }
+  return saveFinancialSettings({ budgets: { ...(state.data.budgets ?? {}), [month]: cents } });
+}
+
+export function clearMonthlyBudget(month: MonthKey): Promise<Result<null>> {
+  const budgets = { ...(state.data.budgets ?? {}) };
+  delete budgets[month];
+  return saveFinancialSettings({ budgets });
+}
+
+export function addSavingsGoal(input: Omit<SavingsGoal, "id" | "savedCents" | "createdAt">): Promise<Result<null>> {
+  const goal: SavingsGoal = { ...input, id: crypto.randomUUID(), savedCents: 0, createdAt: Date.now() };
+  if (!goal.name.trim() || goal.name.length > 60 || !Number.isSafeInteger(goal.targetCents) || goal.targetCents <= 0 || (goal.dueDate !== null && !isValidIsoDate(goal.dueDate))) {
+    return Promise.resolve({ ok: false, error: "Revisa el nombre, el importe y la fecha de la meta." });
+  }
+  return saveFinancialSettings({ goals: [...(state.data.goals ?? []), goal] });
+}
+
+export function contributeToGoal(id: string, cents: number): Promise<Result<null>> {
+  if (!Number.isSafeInteger(cents) || cents <= 0) return Promise.resolve({ ok: false, error: "Introduce un importe válido." });
+  const goals = (state.data.goals ?? []).map((goal) => goal.id === id ? { ...goal, savedCents: goal.savedCents + cents } : goal);
+  if (!goals.some((goal) => goal.id === id)) return Promise.resolve({ ok: false, error: "No encontramos esa meta." });
+  return saveFinancialSettings({ goals });
+}
+
+export function deleteSavingsGoal(id: string): Promise<Result<null>> {
+  return saveFinancialSettings({ goals: (state.data.goals ?? []).filter((goal) => goal.id !== id) });
+}
+
+export function addRecurringExpense(input: Omit<RecurringExpense, "id" | "active" | "lastRunMonth">): Promise<Result<null>> {
+  const recurring: RecurringExpense = { ...input, id: crypto.randomUUID(), active: true, lastRunMonth: null };
+  return saveFinancialSettings({ recurring: [...(state.data.recurring ?? []), recurring] });
+}
+
+export function updateRecurringExpense(id: string, patch: Partial<Pick<RecurringExpense, "active">>): Promise<Result<null>> {
+  const recurring = (state.data.recurring ?? []).map((item) => item.id === id ? { ...item, ...patch } : item);
+  return saveFinancialSettings({ recurring });
+}
+
+export function createWallet(input: { name: string; kind: WalletKind; openingCents: number }): Promise<Result<null>> {
+  const name = input.name.trim();
+  if (!name || name.length > 60 || !Number.isSafeInteger(input.openingCents) || input.openingCents < 0) return Promise.resolve({ ok: false, error: "Revisa el nombre y el saldo inicial de la cartera." });
+  const wallet: Wallet = { id: crypto.randomUUID(), ...input, name, createdAt: Date.now() };
+  return saveFinancialSettings({ wallets: [...(state.data.wallets ?? []), wallet] });
+}
+
+export function getWalletBalance(walletId: string): number {
+  const wallet = (state.data.wallets ?? []).find((item) => item.id === walletId);
+  if (!wallet) return 0;
+  const spent = state.data.expenses.filter((item) => item.walletId === walletId).reduce((sum, item) => sum + item.amountCents, 0);
+  const transferredOut = (state.data.transfers ?? []).filter((item) => item.fromWalletId === walletId).reduce((sum, item) => sum + item.amountCents, 0);
+  const transferredIn = (state.data.transfers ?? []).filter((item) => item.toWalletId === walletId).reduce((sum, item) => sum + item.amountCents, 0);
+  return wallet.openingCents - spent - transferredOut + transferredIn;
+}
+
+export function deleteWallet(id: string): Promise<Result<null>> {
+  if (state.data.expenses.some((item) => item.walletId === id) || (state.data.transfers ?? []).some((item) => item.fromWalletId === id || item.toWalletId === id)) {
+    return Promise.resolve({ ok: false, error: "Esta cartera tiene movimientos. Conserva su historial o elimina primero esos movimientos." });
+  }
+  return saveFinancialSettings({ wallets: (state.data.wallets ?? []).filter((wallet) => wallet.id !== id) });
+}
+
+export function transferBetweenWallets(input: Omit<WalletTransfer, "id" | "createdAt">): Promise<Result<null>> {
+  if (input.fromWalletId === input.toWalletId || !(state.data.wallets ?? []).some((wallet) => wallet.id === input.fromWalletId) || !(state.data.wallets ?? []).some((wallet) => wallet.id === input.toWalletId) || !Number.isSafeInteger(input.amountCents) || input.amountCents <= 0 || !isValidIsoDate(input.date)) return Promise.resolve({ ok: false, error: "Revisa las carteras, la fecha y el importe del traspaso." });
+  if (getWalletBalance(input.fromWalletId) < input.amountCents) return Promise.resolve({ ok: false, error: "La cartera de origen no tiene saldo suficiente." });
+  const transfer: WalletTransfer = { ...input, id: crypto.randomUUID(), createdAt: Date.now() };
+  return saveFinancialSettings({ transfers: [...(state.data.transfers ?? []), transfer] });
+}
+
+export async function registerRecurringExpense(id: string): Promise<Result<null>> {
+  const template = (state.data.recurring ?? []).find((item) => item.id === id);
+  if (template === undefined || !template.active) return { ok: false, error: "Este gasto fijo no está activo." };
+  const month = state.ui.selectedMonth;
+  if (template.lastRunMonth === month) return { ok: false, error: "Este gasto ya está registrado este mes." };
+  const existing = state.data.expenses.find((item) => item.date.startsWith(`${month}-`) && item.note === `Pago fijo: ${template.name}`);
+  if (existing === undefined) {
+    const date = `${month}-${String(template.dayOfMonth).padStart(2, "0")}`;
+    const created = await addExpense({ amountCents: template.amountCents, category: template.category, date, note: `Pago fijo: ${template.name}`, ...(state.data.wallets?.[0] ? { walletId: state.data.wallets[0].id } : {}) });
+    if (!created.ok) return { ok: false, error: created.error };
+  }
+  const recurring = (state.data.recurring ?? []).map((item) => item.id === id ? { ...item, lastRunMonth: month } : item);
+  return saveFinancialSettings({ recurring });
+}
+
+export function registerDueRecurringExpenses(today = getTodayIso()): void {
+  const month = getMonthKey(today);
+  if (month !== state.ui.selectedMonth || state.sync.status !== "ready") return;
+  const day = Number(today.slice(8, 10));
+  for (const item of state.data.recurring ?? []) {
+    if (item.active && item.dayOfMonth <= day && item.lastRunMonth !== month) {
+      void registerRecurringExpense(item.id).then((result) => {
+        if (!result.ok) console.warn(`No se pudo registrar el gasto fijo ${item.name}: ${result.error}`);
+      });
+    }
+  }
 }
 
 // ---------- Ajustes de pantalla (no se guardan) ----------

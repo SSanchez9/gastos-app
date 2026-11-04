@@ -7,6 +7,7 @@ export interface ExpenseDocument {
   category: CategoryKey;
   date: IsoDate;
   note: string;
+  walletId?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -27,6 +28,7 @@ export function expenseToDocument(expense: Expense): ExpenseDocument {
     category: expense.category,
     date: expense.date,
     note: expense.note,
+    ...(expense.walletId ? { walletId: expense.walletId } : {}),
     createdAt: expense.createdAt,
     updatedAt: expense.updatedAt,
   };
@@ -42,15 +44,16 @@ export function incomeToDocument(
 /** Devuelve null si el documento no tiene la forma esperada. */
 export function documentToExpense(id: string, raw: unknown): Expense | null {
   if (!isRecord(raw)) return null;
-  const { amountCents, category, date, note, createdAt, updatedAt } = raw;
+  const { amountCents, category, date, note, createdAt, updatedAt, walletId } = raw;
 
   if (typeof amountCents !== "number") return null;
   if (!isCategoryKey(category)) return null;
   if (typeof date !== "string" || typeof note !== "string") return null;
   if (typeof createdAt !== "number" || !Number.isFinite(createdAt)) return null;
   if (typeof updatedAt !== "number" || !Number.isFinite(updatedAt)) return null;
+  if (walletId !== undefined && walletId !== null && typeof walletId !== "string") return null;
 
-  const checked = validateExpenseInput({ amountCents, category, date, note });
+  const checked = validateExpenseInput({ amountCents, category, date, note, ...(typeof walletId === "string" ? { walletId } : {}) });
   if (!checked.ok) return null;
 
   return { id, ...checked.value, createdAt, updatedAt };
