@@ -1,6 +1,13 @@
 import { isCategoryKey } from "./config";
+import { createLegacyIncomeMigration } from "./calc";
 import * as repository from "./firebase/repository";
-import { getCurrentMonthKey, getMonthKey, getTodayIso, isValidIsoDate, isValidMonthKey } from "./format";
+import {
+  getCurrentMonthKey,
+  getMonthKey,
+  getTodayIso,
+  isValidIsoDate,
+  isValidMonthKey,
+} from "./format";
 import { createEmptyData } from "./storage";
 import type {
   AppData,
@@ -16,6 +23,7 @@ import type {
   WalletKind,
   WalletTransfer,
   SyncState,
+  IncomeEntry,
 } from "./types";
 import { validateAmount, validateExpenseInput } from "./validate";
 
@@ -81,7 +89,8 @@ export function startSync(userId: string): void {
   });
 
   const markReady = (): void => {
-    if (expensesReady && incomesReady && financeReady) setSync({ status: "ready", error: null });
+    if (expensesReady && incomesReady && financeReady)
+      setSync({ status: "ready", error: null });
   };
 
   const fail = (message: string): void => {
@@ -180,7 +189,11 @@ export async function addExpense(input: NewExpense): Promise<Result<Expense>> {
 
   const checked = validateExpenseInput(input);
   if (!checked.ok) return checked;
-  if (input.walletId && !(state.data.wallets ?? []).some((wallet) => wallet.id === input.walletId)) return { ok: false, error: "La cartera seleccionada ya no existe." };
+  if (
+    input.walletId &&
+    !(state.data.wallets ?? []).some((wallet) => wallet.id === input.walletId)
+  )
+    return { ok: false, error: "La cartera seleccionada ya no existe." };
 
   const now = Date.now();
   const expense: Expense = {
@@ -206,7 +219,11 @@ export async function updateExpense(
 
   const checked = validateExpenseInput(input);
   if (!checked.ok) return checked;
-  if (input.walletId && !(state.data.wallets ?? []).some((wallet) => wallet.id === input.walletId)) return { ok: false, error: "La cartera seleccionada ya no existe." };
+  if (
+    input.walletId &&
+    !(state.data.wallets ?? []).some((wallet) => wallet.id === input.walletId)
+  )
+    return { ok: false, error: "La cartera seleccionada ya no existe." };
 
   const updated: Expense = { ...existing, ...checked.value, updatedAt: Date.now() };
   const saved = await repository.updateExpense(writable.value, updated);
@@ -234,17 +251,128 @@ export async function setIncome(month: MonthKey, cents: number): Promise<Result<
   if (!checked.ok) return checked;
 
   const saved = await repository.saveMonthlyIncome(writable.value, month, cents);
-  return saved.ok ? checked : saved;
+  if (!saved.ok) return saved;
+  if ((state.data.migratedIncomeMonths ?? []).includes(month)) {
+    const entryId = `legacy-income:${month}`;
+    const incomeEntries = (state.data.incomeEntries ?? []).map((entry) =>
+      entry.id === entryId
+        ? { ...entry, amountCents: cents, updatedAt: Date.now() }
+        : entry,
+    );
+    const settingsSaved = await saveFinancialSettings({ incomeEntries });
+    if (!settingsSaved.ok) return settingsSaved;
+  }
+  return checked;
 }
 
 export async function clearIncome(month: MonthKey): Promise<Result<null>> {
   const writable = requireWritable();
   if (!writable.ok) return writable;
-  return repository.deleteMonthlyIncome(writable.value, month);
+  const deleted = await repository.deleteMonthlyIncome(writable.value, month);
+  if (!deleted.ok) return deleted;
+  if ((state.data.migratedIncomeMonths ?? []).includes(month)) {
+    return saveFinancialSettings({
+      incomeEntries: (state.data.incomeEntries ?? []).filter(
+        (entry) => entry.id !== `legacy-income:${month}`,
+      ),
+      migratedIncomeMonths: (state.data.migratedIncomeMonths ?? []).filter(
+        (item) => item !== month,
+      ),
+    });
+  }
+  return deleted;
+}
+
+export async function addIncomeEntry(
+  input: Omit<IncomeEntry, "id" | "createdAt" | "updatedAt">,
+): Promise<Result<IncomeEntry>> {
+  const writable = requireWritable();
+  if (!writable.ok) return writable;
+  const title = input.title.trim();
+  if (
+    !title ||
+    title.length > 80 ||
+    !Number.isSafeInteger(input.amountCents) ||
+    input.amountCents <= 0 ||
+    !isValidIsoDate(input.date)
+  )
+    return { ok: false, error: "Revisa el título, el importe y la fecha del ingreso." };
+  const now = Date.now();
+  const entry: IncomeEntry = {
+    ...input,
+    title,
+    id: crypto.randomUUID(),
+    createdAt: now,
+    updatedAt: now,
+  };
+  const saved = await saveFinancialSettings({
+    incomeEntries: [...(state.data.incomeEntries ?? []), entry],
+  });
+  return saved.ok ? { ok: true, value: entry } : saved;
+}
+
+export async function updateIncomeEntry(
+  id: string,
+  patch: Pick<IncomeEntry, "title" | "amountCents" | "date">,
+): Promise<Result<null>> {
+  if (!(state.data.incomeEntries ?? []).some((entry) => entry.id === id))
+    return { ok: false, error: "No encontramos ese ingreso." };
+  const title = patch.title.trim();
+  if (
+    !title ||
+    title.length > 80 ||
+    !Number.isSafeInteger(patch.amountCents) ||
+    patch.amountCents <= 0 ||
+    !isValidIsoDate(patch.date)
+  )
+    return { ok: false, error: "Revisa el título, el importe y la fecha del ingreso." };
+  return saveFinancialSettings({
+    incomeEntries: (state.data.incomeEntries ?? []).map((entry) =>
+      entry.id === id ? { ...entry, ...patch, title, updatedAt: Date.now() } : entry,
+    ),
+  });
+}
+
+export function deleteIncomeEntry(id: string): Promise<Result<null>> {
+  const entry = (state.data.incomeEntries ?? []).find((item) => item.id === id);
+  const migratedIncomeMonths = entry?.legacySourceMonth
+    ? (state.data.migratedIncomeMonths ?? []).filter(
+        (month) => month !== entry.legacySourceMonth,
+      )
+    : state.data.migratedIncomeMonths;
+  return saveFinancialSettings({
+    incomeEntries: (state.data.incomeEntries ?? []).filter((item) => item.id !== id),
+    ...(migratedIncomeMonths === undefined ? {} : { migratedIncomeMonths }),
+  });
+}
+
+/** Copia el sueldo legado como ingreso titulado una sola vez y conserva income.byMonth. */
+export async function migrateLegacyIncome(month: MonthKey): Promise<Result<null>> {
+  const writable = requireWritable();
+  if (!writable.ok) return writable;
+  if (!isValidMonthKey(month)) return { ok: false, error: "El mes no es válido." };
+  const migration = createLegacyIncomeMigration(state.data, month, Date.now());
+  if (migration === null) {
+    return state.data.income.byMonth[month] === undefined
+      ? { ok: false, error: "Este mes no tiene un sueldo antiguo para migrar." }
+      : { ok: true, value: null };
+  }
+  return saveFinancialSettings(migration);
 }
 
 async function saveFinancialSettings(
-  patch: Partial<Pick<AppData, "budgets" | "goals" | "recurring" | "wallets" | "transfers">>,
+  patch: Partial<
+    Pick<
+      AppData,
+      | "budgets"
+      | "goals"
+      | "recurring"
+      | "wallets"
+      | "transfers"
+      | "incomeEntries"
+      | "migratedIncomeMonths"
+    >
+  >,
 ): Promise<Result<null>> {
   const writable = requireWritable();
   if (!writable.ok) return writable;
@@ -254,6 +382,9 @@ async function saveFinancialSettings(
     recurring: patch.recurring ?? state.data.recurring ?? [],
     wallets: patch.wallets ?? state.data.wallets ?? [],
     transfers: patch.transfers ?? state.data.transfers ?? [],
+    incomeEntries: patch.incomeEntries ?? state.data.incomeEntries ?? [],
+    migratedIncomeMonths:
+      patch.migratedIncomeMonths ?? state.data.migratedIncomeMonths ?? [],
   };
   const saved = await repository.saveFinanceSettings(writable.value, settings);
   if (saved.ok) publish({ ...state, data: { ...state.data, ...settings } });
@@ -262,9 +393,14 @@ async function saveFinancialSettings(
 
 export function setMonthlyBudget(month: MonthKey, cents: number): Promise<Result<null>> {
   if (!isValidMonthKey(month) || !Number.isSafeInteger(cents) || cents <= 0) {
-    return Promise.resolve({ ok: false, error: "Introduce un presupuesto mensual válido." });
+    return Promise.resolve({
+      ok: false,
+      error: "Introduce un presupuesto mensual válido.",
+    });
   }
-  return saveFinancialSettings({ budgets: { ...(state.data.budgets ?? {}), [month]: cents } });
+  return saveFinancialSettings({
+    budgets: { ...(state.data.budgets ?? {}), [month]: cents },
+  });
 }
 
 export function clearMonthlyBudget(month: MonthKey): Promise<Result<null>> {
@@ -273,88 +409,268 @@ export function clearMonthlyBudget(month: MonthKey): Promise<Result<null>> {
   return saveFinancialSettings({ budgets });
 }
 
-export function addSavingsGoal(input: Omit<SavingsGoal, "id" | "savedCents" | "createdAt">): Promise<Result<null>> {
-  const goal: SavingsGoal = { ...input, id: crypto.randomUUID(), savedCents: 0, createdAt: Date.now() };
-  if (!goal.name.trim() || goal.name.length > 60 || !Number.isSafeInteger(goal.targetCents) || goal.targetCents <= 0 || (goal.dueDate !== null && !isValidIsoDate(goal.dueDate))) {
-    return Promise.resolve({ ok: false, error: "Revisa el nombre, el importe y la fecha de la meta." });
+export function addSavingsGoal(
+  input: Omit<SavingsGoal, "id" | "savedCents" | "createdAt">,
+): Promise<Result<null>> {
+  const goal: SavingsGoal = {
+    ...input,
+    id: crypto.randomUUID(),
+    savedCents: 0,
+    createdAt: Date.now(),
+  };
+  if (
+    !goal.name.trim() ||
+    goal.name.length > 60 ||
+    !Number.isSafeInteger(goal.targetCents) ||
+    goal.targetCents <= 0 ||
+    (goal.dueDate !== null && !isValidIsoDate(goal.dueDate))
+  ) {
+    return Promise.resolve({
+      ok: false,
+      error: "Revisa el nombre, el importe y la fecha de la meta.",
+    });
   }
   return saveFinancialSettings({ goals: [...(state.data.goals ?? []), goal] });
 }
 
 export function contributeToGoal(id: string, cents: number): Promise<Result<null>> {
-  if (!Number.isSafeInteger(cents) || cents <= 0) return Promise.resolve({ ok: false, error: "Introduce un importe válido." });
-  const goals = (state.data.goals ?? []).map((goal) => goal.id === id ? { ...goal, savedCents: goal.savedCents + cents } : goal);
-  if (!goals.some((goal) => goal.id === id)) return Promise.resolve({ ok: false, error: "No encontramos esa meta." });
+  if (!Number.isSafeInteger(cents) || cents <= 0)
+    return Promise.resolve({ ok: false, error: "Introduce un importe válido." });
+  const now = Date.now();
+  const goals = (state.data.goals ?? []).map((goal) =>
+    goal.id === id
+      ? {
+          ...goal,
+          savedCents: goal.savedCents + cents,
+          contributions: [
+            ...(goal.contributions ?? []),
+            {
+              id: crypto.randomUUID(),
+              amountCents: cents,
+              date: getTodayIso(),
+              createdAt: now,
+            },
+          ],
+        }
+      : goal,
+  );
+  if (!goals.some((goal) => goal.id === id))
+    return Promise.resolve({ ok: false, error: "No encontramos esa meta." });
   return saveFinancialSettings({ goals });
 }
 
 export function deleteSavingsGoal(id: string): Promise<Result<null>> {
-  return saveFinancialSettings({ goals: (state.data.goals ?? []).filter((goal) => goal.id !== id) });
+  return saveFinancialSettings({
+    goals: (state.data.goals ?? []).filter((goal) => goal.id !== id),
+  });
 }
 
-export function addRecurringExpense(input: Omit<RecurringExpense, "id" | "active" | "lastRunMonth">): Promise<Result<null>> {
-  const recurring: RecurringExpense = { ...input, id: crypto.randomUUID(), active: true, lastRunMonth: null };
-  return saveFinancialSettings({ recurring: [...(state.data.recurring ?? []), recurring] });
+export function addRecurringExpense(
+  input: Omit<RecurringExpense, "id" | "active" | "lastRunMonth">,
+): Promise<Result<null>> {
+  const recurring: RecurringExpense = {
+    ...input,
+    id: crypto.randomUUID(),
+    active: true,
+    lastRunMonth: null,
+  };
+  return saveFinancialSettings({
+    recurring: [...(state.data.recurring ?? []), recurring],
+  });
 }
 
-export function updateRecurringExpense(id: string, patch: Partial<Pick<RecurringExpense, "active">>): Promise<Result<null>> {
-  const recurring = (state.data.recurring ?? []).map((item) => item.id === id ? { ...item, ...patch } : item);
+export function updateRecurringExpense(
+  id: string,
+  patch: Partial<
+    Pick<RecurringExpense, "active" | "name" | "amountCents" | "category" | "dayOfMonth">
+  >,
+): Promise<Result<null>> {
+  if (patch.name !== undefined && (!patch.name.trim() || patch.name.trim().length > 60))
+    return Promise.resolve({ ok: false, error: "El título no es válido." });
+  if (
+    patch.amountCents !== undefined &&
+    (!Number.isSafeInteger(patch.amountCents) || patch.amountCents <= 0)
+  )
+    return Promise.resolve({ ok: false, error: "El importe no es válido." });
+  if (patch.category !== undefined && !isCategoryKey(patch.category))
+    return Promise.resolve({ ok: false, error: "La categoría no es válida." });
+  if (
+    patch.dayOfMonth !== undefined &&
+    (!Number.isInteger(patch.dayOfMonth) || patch.dayOfMonth < 1 || patch.dayOfMonth > 28)
+  )
+    return Promise.resolve({ ok: false, error: "El día debe estar entre 1 y 28." });
+  const recurring = (state.data.recurring ?? []).map((item) =>
+    item.id === id
+      ? {
+          ...item,
+          ...patch,
+          ...(patch.name === undefined ? {} : { name: patch.name.trim() }),
+        }
+      : item,
+  );
   return saveFinancialSettings({ recurring });
 }
 
-export function createWallet(input: { name: string; kind: WalletKind; openingCents: number }): Promise<Result<null>> {
+export function deleteRecurringExpense(id: string): Promise<Result<null>> {
+  return saveFinancialSettings({
+    recurring: (state.data.recurring ?? []).filter((item) => item.id !== id),
+  });
+}
+
+export function createWallet(input: {
+  name: string;
+  kind: WalletKind;
+  openingCents: number;
+}): Promise<Result<null>> {
   const name = input.name.trim();
-  if (!name || name.length > 60 || !Number.isSafeInteger(input.openingCents) || input.openingCents < 0) return Promise.resolve({ ok: false, error: "Revisa el nombre y el saldo inicial de la cartera." });
-  const wallet: Wallet = { id: crypto.randomUUID(), ...input, name, createdAt: Date.now() };
+  if (
+    !name ||
+    name.length > 60 ||
+    !Number.isSafeInteger(input.openingCents) ||
+    input.openingCents < 0
+  )
+    return Promise.resolve({
+      ok: false,
+      error: "Revisa el nombre y el saldo inicial de la cartera.",
+    });
+  const wallet: Wallet = {
+    id: crypto.randomUUID(),
+    ...input,
+    name,
+    createdAt: Date.now(),
+  };
   return saveFinancialSettings({ wallets: [...(state.data.wallets ?? []), wallet] });
 }
 
 export function getWalletBalance(walletId: string): number {
   const wallet = (state.data.wallets ?? []).find((item) => item.id === walletId);
   if (!wallet) return 0;
-  const spent = state.data.expenses.filter((item) => item.walletId === walletId).reduce((sum, item) => sum + item.amountCents, 0);
-  const transferredOut = (state.data.transfers ?? []).filter((item) => item.fromWalletId === walletId).reduce((sum, item) => sum + item.amountCents, 0);
-  const transferredIn = (state.data.transfers ?? []).filter((item) => item.toWalletId === walletId).reduce((sum, item) => sum + item.amountCents, 0);
+  const spent = state.data.expenses
+    .filter((item) => item.walletId === walletId)
+    .reduce((sum, item) => sum + item.amountCents, 0);
+  const transferredOut = (state.data.transfers ?? [])
+    .filter((item) => item.fromWalletId === walletId)
+    .reduce((sum, item) => sum + item.amountCents, 0);
+  const transferredIn = (state.data.transfers ?? [])
+    .filter((item) => item.toWalletId === walletId)
+    .reduce((sum, item) => sum + item.amountCents, 0);
   return wallet.openingCents - spent - transferredOut + transferredIn;
 }
 
 export function deleteWallet(id: string): Promise<Result<null>> {
-  if (state.data.expenses.some((item) => item.walletId === id) || (state.data.transfers ?? []).some((item) => item.fromWalletId === id || item.toWalletId === id)) {
-    return Promise.resolve({ ok: false, error: "Esta cartera tiene movimientos. Conserva su historial o elimina primero esos movimientos." });
+  if (
+    state.data.expenses.some((item) => item.walletId === id) ||
+    (state.data.transfers ?? []).some(
+      (item) => item.fromWalletId === id || item.toWalletId === id,
+    )
+  ) {
+    return Promise.resolve({
+      ok: false,
+      error:
+        "Esta cartera tiene movimientos. Conserva su historial o elimina primero esos movimientos.",
+    });
   }
-  return saveFinancialSettings({ wallets: (state.data.wallets ?? []).filter((wallet) => wallet.id !== id) });
+  return saveFinancialSettings({
+    wallets: (state.data.wallets ?? []).filter((wallet) => wallet.id !== id),
+  });
 }
 
-export function transferBetweenWallets(input: Omit<WalletTransfer, "id" | "createdAt">): Promise<Result<null>> {
-  if (input.fromWalletId === input.toWalletId || !(state.data.wallets ?? []).some((wallet) => wallet.id === input.fromWalletId) || !(state.data.wallets ?? []).some((wallet) => wallet.id === input.toWalletId) || !Number.isSafeInteger(input.amountCents) || input.amountCents <= 0 || !isValidIsoDate(input.date)) return Promise.resolve({ ok: false, error: "Revisa las carteras, la fecha y el importe del traspaso." });
-  if (getWalletBalance(input.fromWalletId) < input.amountCents) return Promise.resolve({ ok: false, error: "La cartera de origen no tiene saldo suficiente." });
-  const transfer: WalletTransfer = { ...input, id: crypto.randomUUID(), createdAt: Date.now() };
-  return saveFinancialSettings({ transfers: [...(state.data.transfers ?? []), transfer] });
+export function transferBetweenWallets(
+  input: Omit<WalletTransfer, "id" | "createdAt">,
+): Promise<Result<null>> {
+  if (
+    input.fromWalletId === input.toWalletId ||
+    !(state.data.wallets ?? []).some((wallet) => wallet.id === input.fromWalletId) ||
+    !(state.data.wallets ?? []).some((wallet) => wallet.id === input.toWalletId) ||
+    !Number.isSafeInteger(input.amountCents) ||
+    input.amountCents <= 0 ||
+    !isValidIsoDate(input.date)
+  )
+    return Promise.resolve({
+      ok: false,
+      error: "Revisa las carteras, la fecha y el importe del traspaso.",
+    });
+  if (getWalletBalance(input.fromWalletId) < input.amountCents)
+    return Promise.resolve({
+      ok: false,
+      error: "La cartera de origen no tiene saldo suficiente.",
+    });
+  const transfer: WalletTransfer = {
+    ...input,
+    id: crypto.randomUUID(),
+    createdAt: Date.now(),
+  };
+  return saveFinancialSettings({
+    transfers: [...(state.data.transfers ?? []), transfer],
+  });
 }
 
 export async function registerRecurringExpense(id: string): Promise<Result<null>> {
+  const writable = requireWritable();
+  if (!writable.ok) return writable;
   const template = (state.data.recurring ?? []).find((item) => item.id === id);
-  if (template === undefined || !template.active) return { ok: false, error: "Este gasto fijo no está activo." };
+  if (template === undefined || !template.active)
+    return { ok: false, error: "Este gasto fijo no está activo." };
   const month = state.ui.selectedMonth;
-  if (template.lastRunMonth === month) return { ok: false, error: "Este gasto ya está registrado este mes." };
-  const existing = state.data.expenses.find((item) => item.date.startsWith(`${month}-`) && item.note === `Pago fijo: ${template.name}`);
+  const deterministicId = `recurring-${template.id}-${month}`;
+  const alreadyExists = state.data.expenses.some(
+    (item) =>
+      item.id === deterministicId ||
+      (item.recurringId === template.id && item.recurringMonth === month),
+  );
+  if (alreadyExists) {
+    const recurring = (state.data.recurring ?? []).map((item) =>
+      item.id === id ? { ...item, lastRunMonth: month } : item,
+    );
+    return saveFinancialSettings({ recurring });
+  }
+  if (template.lastRunMonth === month)
+    return { ok: false, error: "Este gasto ya está registrado este mes." };
+  const existing = state.data.expenses.find(
+    (item) =>
+      item.date.startsWith(`${month}-`) && item.note === `Pago fijo: ${template.name}`,
+  );
   if (existing === undefined) {
     const date = `${month}-${String(template.dayOfMonth).padStart(2, "0")}`;
-    const created = await addExpense({ amountCents: template.amountCents, category: template.category, date, note: `Pago fijo: ${template.name}`, ...(state.data.wallets?.[0] ? { walletId: state.data.wallets[0].id } : {}) });
-    if (!created.ok) return { ok: false, error: created.error };
+    const now = Date.now();
+    const expense: Expense = {
+      amountCents: template.amountCents,
+      category: template.category,
+      date,
+      note: `Pago fijo: ${template.name}`,
+      ...(state.data.wallets?.[0] ? { walletId: state.data.wallets[0].id } : {}),
+      id: deterministicId,
+      recurringId: template.id,
+      recurringMonth: month,
+      createdAt: now,
+      updatedAt: now,
+    };
+    const created = await repository.createExpense(writable.value, expense);
+    if (!created.ok) return created;
   }
-  const recurring = (state.data.recurring ?? []).map((item) => item.id === id ? { ...item, lastRunMonth: month } : item);
+  const recurring = (state.data.recurring ?? []).map((item) =>
+    item.id === id ? { ...item, lastRunMonth: month } : item,
+  );
   return saveFinancialSettings({ recurring });
 }
 
 export function registerDueRecurringExpenses(today = getTodayIso()): void {
   const month = getMonthKey(today);
-  if (month !== state.ui.selectedMonth || state.sync.status !== "ready") return;
+  if (
+    month !== state.ui.selectedMonth ||
+    state.sync.status !== "ready" ||
+    !state.sync.online ||
+    currentUserId === null
+  )
+    return;
   const day = Number(today.slice(8, 10));
   for (const item of state.data.recurring ?? []) {
     if (item.active && item.dayOfMonth <= day && item.lastRunMonth !== month) {
       void registerRecurringExpense(item.id).then((result) => {
-        if (!result.ok) console.warn(`No se pudo registrar el gasto fijo ${item.name}: ${result.error}`);
+        if (!result.ok)
+          console.warn(
+            `No se pudo registrar el gasto fijo ${item.name}: ${result.error}`,
+          );
       });
     }
   }

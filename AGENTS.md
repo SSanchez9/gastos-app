@@ -38,6 +38,20 @@ Comandos habituales:
 - Los campos financieros añadidos de forma compatible pueden ser opcionales en copias antiguas. Si un cambio rompe el formato existente, aumenta la versión del esquema y añade una migración explícita; no descartes datos antiguos silenciosamente.
 - No subas secretos ni claves privadas al repositorio.
 
+## Protección de la base de datos existente
+
+La base de datos de producción (Firestore, `users/{uid}/...`) contiene datos reales y no se puede perder ni corromper.
+
+- Todo cambio debe ser compatible hacia atrás: los documentos que ya existen deben seguir leyéndose sin errores.
+- Prohibido renombrar, mover o eliminar colecciones, documentos o campos existentes.
+- Prohibido cambiar el tipo o el significado de un campo existente (por ejemplo, los importes siguen siendo céntimos enteros).
+- Solo se pueden AÑADIR campos nuevos, y deben ser opcionales con un valor por defecto seguro en el mapper. Si falta un campo nuevo en un documento antiguo, la app funciona igual.
+- Si algo exige un cambio incompatible, no lo hagas: describe el problema, propón una migración explícita y espera mi confirmación.
+- Ninguna migración se ejecuta sola al arrancar la app sobre datos reales sin que yo lo apruebe. Si hay migración, debe ser idempotente (se puede repetir sin duplicar ni perder nada), no destructiva (no borra el dato antiguo) y estar cubierta por tests.
+- No escribas datos de prueba, ejemplo o semilla en la base de datos real. Los tests y las maquetas usan datos ficticios en memoria.
+- No ejecutes comandos que modifiquen Firebase (`firebase deploy`, importaciones, borrados). Solo código local.
+- Las copias de seguridad JSON/CSV antiguas deben seguir importándose.
+
 ## Reglas de implementación
 
 - No uses `any`. Trata datos externos como `unknown` y valida su forma antes de usarlos.

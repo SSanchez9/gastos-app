@@ -86,15 +86,39 @@ export function watchMonthlyIncomes(
 
 export function watchFinanceSettings(
   userId: string,
-  onData: (settings: Pick<AppData, "budgets" | "goals" | "recurring" | "wallets" | "transfers">) => void,
+  onData: (
+    settings: Pick<
+      AppData,
+      | "budgets"
+      | "goals"
+      | "recurring"
+      | "wallets"
+      | "transfers"
+      | "incomeEntries"
+      | "migratedIncomeMonths"
+    >,
+  ) => void,
   onError: (message: string) => void,
 ): Unsubscribe {
   return onSnapshot(
     doc(getFirebaseDb(), financeSettingsPath(userId)),
     (snapshot) => {
       const raw = snapshot.exists() ? snapshot.data() : {};
-      const parsed = parseAppData({ version: 1, expenses: [], income: { byMonth: {} }, ...raw });
-      onData({ budgets: parsed?.budgets ?? {}, goals: parsed?.goals ?? [], recurring: parsed?.recurring ?? [], wallets: parsed?.wallets ?? [], transfers: parsed?.transfers ?? [] });
+      const parsed = parseAppData({
+        version: 1,
+        expenses: [],
+        income: { byMonth: {} },
+        ...raw,
+      });
+      onData({
+        budgets: parsed?.budgets ?? {},
+        goals: parsed?.goals ?? [],
+        recurring: parsed?.recurring ?? [],
+        wallets: parsed?.wallets ?? [],
+        transfers: parsed?.transfers ?? [],
+        incomeEntries: parsed?.incomeEntries ?? [],
+        migratedIncomeMonths: parsed?.migratedIncomeMonths ?? [],
+      });
     },
     (error) => onError(describeFirestoreError(error)),
   );
@@ -102,9 +126,20 @@ export function watchFinanceSettings(
 
 export function saveFinanceSettings(
   userId: string,
-  settings: Pick<AppData, "budgets" | "goals" | "recurring" | "wallets" | "transfers">,
+  settings: Pick<
+    AppData,
+    | "budgets"
+    | "goals"
+    | "recurring"
+    | "wallets"
+    | "transfers"
+    | "incomeEntries"
+    | "migratedIncomeMonths"
+  >,
 ): Promise<Result<null>> {
-  return attempt(() => setDoc(doc(getFirebaseDb(), financeSettingsPath(userId)), settings));
+  return attempt(() =>
+    setDoc(doc(getFirebaseDb(), financeSettingsPath(userId)), settings, { merge: true }),
+  );
 }
 
 // ---------- Gastos ----------
@@ -200,13 +235,19 @@ export function replaceAppData(
     });
   }
   operations.push((batch) => {
-    batch.set(doc(db, financeSettingsPath(userId)), {
-      budgets: next.budgets ?? {},
-      goals: next.goals ?? [],
-      recurring: next.recurring ?? [],
-      wallets: next.wallets ?? [],
-      transfers: next.transfers ?? [],
-    });
+    batch.set(
+      doc(db, financeSettingsPath(userId)),
+      {
+        budgets: next.budgets ?? {},
+        goals: next.goals ?? [],
+        recurring: next.recurring ?? [],
+        wallets: next.wallets ?? [],
+        transfers: next.transfers ?? [],
+        incomeEntries: next.incomeEntries ?? [],
+        migratedIncomeMonths: next.migratedIncomeMonths ?? [],
+      },
+      { merge: true },
+    );
   });
 
   return attempt(async () => {

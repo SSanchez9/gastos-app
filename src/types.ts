@@ -24,6 +24,8 @@ export interface Expense {
   date: IsoDate;
   note: string;
   walletId?: string;
+  recurringId?: string;
+  recurringMonth?: MonthKey;
   createdAt: number;
   updatedAt: number;
 }
@@ -36,6 +38,24 @@ export interface Income {
   byMonth: Record<MonthKey, number>;
 }
 
+export interface IncomeEntry {
+  id: string;
+  title: string;
+  amountCents: number;
+  date: IsoDate;
+  createdAt: number;
+  updatedAt: number;
+  /** Identifica una copia explícita del sueldo legado; el documento mensual se conserva. */
+  legacySourceMonth?: MonthKey;
+}
+
+export interface GoalContribution {
+  id: string;
+  amountCents: number;
+  date: IsoDate;
+  createdAt: number;
+}
+
 export interface SavingsGoal {
   id: string;
   name: string;
@@ -43,6 +63,7 @@ export interface SavingsGoal {
   savedCents: number;
   dueDate: IsoDate | null;
   createdAt: number;
+  contributions?: GoalContribution[];
 }
 
 export interface RecurringExpense {
@@ -84,6 +105,8 @@ export interface AppData {
   recurring?: RecurringExpense[];
   wallets?: Wallet[];
   transfers?: WalletTransfer[];
+  incomeEntries?: IncomeEntry[];
+  migratedIncomeMonths?: MonthKey[];
 }
 
 /** Ajustes de pantalla: no se guardan ni se exportan. */

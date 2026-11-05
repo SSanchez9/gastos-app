@@ -11,7 +11,7 @@ import { eurosToCents, getMonthKey, getTodayIso } from "./format";
 import { subscribeSession } from "./session";
 import * as state from "./state";
 import { initSyncUi } from "./sync-ui";
-import type { AppState } from "./types";
+import type { AppState, WalletKind } from "./types";
 import {
   clearIncomeError,
   dom,
@@ -24,6 +24,7 @@ import {
   setEditMode,
   showFormError,
   showIncomeError,
+  setAmountsHidden,
 } from "./ui";
 
 declare global {
@@ -41,14 +42,87 @@ if (import.meta.env.DEV) {
 function render(appState: AppState): void {
   renderApp(appState);
   renderChart(appState);
+  syncScreenNavigation();
 }
+
+function syncScreenNavigation(): void {
+  const current = window.location.hash.slice(1) || "home";
+  const available = [...document.querySelectorAll<HTMLElement>("[data-screen]")].some(
+    (screen) => screen.dataset["screen"] === current,
+  );
+  const target = available ? current : "home";
+  const navTarget = [
+    "income",
+    "budget",
+    "goals",
+    "recurring",
+    "wallets",
+    "backups",
+  ].includes(target)
+    ? "more"
+    : target;
+  document.querySelectorAll<HTMLElement>("[data-screen]").forEach((screen) => {
+    screen.hidden = screen.dataset["screen"] !== target;
+  });
+  document.querySelectorAll<HTMLAnchorElement>("[data-screen-target]").forEach((link) => {
+    const active = link.dataset["screenTarget"] === navTarget;
+    if (active && link.matches(".nav-link, .mobile-nav__link"))
+      link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+    link.classList.toggle(
+      "nav-link--active",
+      active && link.classList.contains("nav-link"),
+    );
+    link.classList.toggle(
+      "mobile-nav__link--active",
+      active && link.classList.contains("mobile-nav__link"),
+    );
+  });
+}
+
+document.addEventListener("click", (event) => {
+  if (!(event.target instanceof Element)) return;
+  const link = event.target.closest<HTMLAnchorElement>("[data-screen-target]");
+  if (!link) return;
+  event.preventDefault();
+  const screen = link.dataset["screenTarget"];
+  if (screen === "add") {
+    const dialog = document.getElementById("expense-dialog");
+    if (dialog instanceof HTMLDialogElement && !dialog.open) dialog.showModal();
+    return;
+  }
+  if (screen) window.location.hash = screen;
+  syncScreenNavigation();
+});
+window.addEventListener("hashchange", syncScreenNavigation);
+dom.eyeToggle.addEventListener("click", () => {
+  setAmountsHidden(dom.eyeToggle.getAttribute("aria-pressed") !== "true");
+});
 
 let editingId: string | null = null;
 
-function cancelEditing(): void {
+function cancelEditing(closeDialog = true): void {
   editingId = null;
   setEditMode(false);
   resetForm({ keepContext: false });
+  const dialog = document.getElementById("expense-dialog");
+  if (closeDialog && dialog instanceof HTMLDialogElement && dialog.open) dialog.close();
+}
+
+const expenseDialog = document.getElementById("expense-dialog");
+if (expenseDialog instanceof HTMLDialogElement) {
+  document
+    .getElementById("expense-dialog-close")
+    ?.addEventListener("click", () => cancelEditing());
+  expenseDialog.addEventListener("click", (event) => {
+    if (event.target === expenseDialog) cancelEditing();
+  });
+  expenseDialog.addEventListener("cancel", () => {
+    const wasEditing = editingId !== null;
+    editingId = null;
+    setEditMode(false);
+    resetForm({ keepContext: !wasEditing });
+  });
 }
 
 // ---------- Formulario de gastos ----------
@@ -92,12 +166,15 @@ dom.form.addEventListener("submit", (event) => {
   void handleExpenseSubmit();
 });
 
-dom.cancel.addEventListener("click", cancelEditing);
+dom.cancel.addEventListener("click", () => cancelEditing());
 
 // Entrada rápida inspirada en el registro conversacional de Boti.
 const quickEntryInput = document.getElementById("quick-entry-input");
 const quickEntrySubmit = document.getElementById("quick-entry-submit");
-if (quickEntryInput instanceof HTMLInputElement && quickEntrySubmit instanceof HTMLButtonElement) {
+if (
+  quickEntryInput instanceof HTMLInputElement &&
+  quickEntrySubmit instanceof HTMLButtonElement
+) {
   const addQuickEntry = (): void => {
     const raw = quickEntryInput.value.trim();
     const amountMatch = raw.match(/(?:^|\s)(\d+(?:[.,]\d{1,2})?)(?:\s|€|$)/);
@@ -109,28 +186,45 @@ if (quickEntryInput instanceof HTMLInputElement && quickEntrySubmit instanceof H
     quickEntryInput.setCustomValidity("");
     const amount = amountMatch[1];
     if (amount === undefined) return;
-    const words = raw.replace(amountMatch[0], " ").replace(/\b(?:hoy|ayer)\b/gi, " ").replace(/\s+/g, " ").trim();
+    const words = raw
+      .replace(amountMatch[0], " ")
+      .replace(/\b(?:hoy|ayer)\b/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
     const lower = raw.toLocaleLowerCase("es");
-    const category = /gasolina|combustible|fuel/.test(lower) ? "gasolina"
-      : /supermercado|mercadona|carrefour|lidl|compra/.test(lower) ? "supermercado"
-        : /alquiler/.test(lower) ? "alquiler"
-          : /coche|parking|aparcamiento|taller/.test(lower) ? "coche"
-            : /casa|luz|agua|internet|hogar/.test(lower) ? "casa"
-              : /amigo|amiga|cena|bar|restaurante|cine/.test(lower) ? "social"
-                : /ropa|farmacia|café|cafe|gimnasio|personal/.test(lower) ? "personal" : "otros";
+    const category = /gasolina|combustible|fuel/.test(lower)
+      ? "gasolina"
+      : /supermercado|mercadona|carrefour|lidl|compra/.test(lower)
+        ? "supermercado"
+        : /alquiler/.test(lower)
+          ? "alquiler"
+          : /coche|parking|aparcamiento|taller/.test(lower)
+            ? "coche"
+            : /casa|luz|agua|internet|hogar/.test(lower)
+              ? "casa"
+              : /amigo|amiga|cena|bar|restaurante|cine/.test(lower)
+                ? "social"
+                : /ropa|farmacia|café|cafe|gimnasio|personal/.test(lower)
+                  ? "personal"
+                  : "otros";
     const date = new Date();
     if (/\bayer\b/i.test(raw)) date.setDate(date.getDate() - 1);
-    cancelEditing();
+    cancelEditing(false);
     dom.amount.value = amount.replace(".", ",");
     dom.note.value = words;
-    dom.categoryPicker.querySelector<HTMLButtonElement>(`[data-category="${category}"]`)?.click();
+    dom.categoryPicker
+      .querySelector<HTMLButtonElement>(`[data-category="${category}"]`)
+      ?.click();
     dom.date.value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
     dom.form.requestSubmit();
     quickEntryInput.value = "";
   };
   quickEntrySubmit.addEventListener("click", addQuickEntry);
   quickEntryInput.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") { event.preventDefault(); addQuickEntry(); }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      addQuickEntry();
+    }
   });
   quickEntryInput.addEventListener("input", () => quickEntryInput.setCustomValidity(""));
 }
@@ -160,6 +254,8 @@ dom.rows.addEventListener("click", (event) => {
     editingId = id;
     setEditMode(true);
     fillForm(expense);
+    if (expenseDialog instanceof HTMLDialogElement && !expenseDialog.open)
+      expenseDialog.showModal();
   } else if (button.dataset["action"] === "delete") {
     if (window.confirm("¿Eliminar este gasto? Esta acción no se puede deshacer.")) {
       void handleDelete(id);
@@ -187,6 +283,92 @@ async function handleIncomeSubmit(): Promise<void> {
 dom.incomeForm.addEventListener("submit", (event) => {
   event.preventDefault();
   void handleIncomeSubmit();
+});
+
+const incomeEntryForm = document.getElementById("income-entry-form");
+const incomeEntryDate = document.getElementById("income-entry-date");
+const incomeEntryAmount = document.getElementById("income-entry-amount");
+const incomeEntryTitle = document.getElementById("income-entry-title");
+const incomeEntryError = document.getElementById("income-entry-error");
+if (incomeEntryDate instanceof HTMLInputElement) incomeEntryDate.value = getTodayIso();
+if (incomeEntryForm instanceof HTMLFormElement) {
+  incomeEntryForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (
+      !(incomeEntryTitle instanceof HTMLInputElement) ||
+      !(incomeEntryAmount instanceof HTMLInputElement) ||
+      !(incomeEntryDate instanceof HTMLInputElement)
+    )
+      return;
+    const amountCents = eurosToCents(incomeEntryAmount.value);
+    if (amountCents === null) {
+      if (incomeEntryError instanceof HTMLParagraphElement) {
+        incomeEntryError.textContent = "Introduce un importe válido.";
+        incomeEntryError.hidden = false;
+      }
+      return;
+    }
+    void state
+      .addIncomeEntry({
+        title: incomeEntryTitle.value,
+        amountCents,
+        date: incomeEntryDate.value,
+      })
+      .then((result) => {
+        if (!result.ok) {
+          if (incomeEntryError instanceof HTMLParagraphElement) {
+            incomeEntryError.textContent = result.error;
+            incomeEntryError.hidden = false;
+          }
+          return;
+        }
+        incomeEntryForm.reset();
+        incomeEntryDate.value = getTodayIso();
+        if (incomeEntryError instanceof HTMLParagraphElement)
+          incomeEntryError.hidden = true;
+      });
+  });
+}
+
+document.getElementById("income-migrate")?.addEventListener("click", () => {
+  void state.migrateLegacyIncome(state.getState().ui.selectedMonth).then((result) => {
+    if (!result.ok && incomeEntryError instanceof HTMLParagraphElement) {
+      incomeEntryError.textContent = result.error;
+      incomeEntryError.hidden = false;
+    }
+  });
+});
+
+document.getElementById("income-entry-list")?.addEventListener("click", (event) => {
+  if (!(event.target instanceof Element)) return;
+  const button = event.target.closest<HTMLButtonElement>("button[data-action]");
+  const id = button?.dataset["id"];
+  const entry = (state.getState().data.incomeEntries ?? []).find(
+    (item) => item.id === id,
+  );
+  if (!button || !id || !entry) return;
+  if (button.dataset["action"] === "income-delete") {
+    if (window.confirm(`¿Eliminar el ingreso «${entry.title}»?`))
+      void state.deleteIncomeEntry(id);
+  }
+  if (button.dataset["action"] === "income-edit") {
+    const title = window.prompt("Título", entry.title);
+    if (title === null) return;
+    const amount = window.prompt(
+      "Importe",
+      (entry.amountCents / 100).toFixed(2).replace(".", ","),
+    );
+    if (amount === null) return;
+    const amountCents = eurosToCents(amount);
+    const date = window.prompt("Fecha (AAAA-MM-DD)", entry.date);
+    if (date === null || amountCents === null) return;
+    void state.updateIncomeEntry(id, { title, amountCents, date }).then((result) => {
+      if (!result.ok && incomeEntryError instanceof HTMLParagraphElement) {
+        incomeEntryError.textContent = result.error;
+        incomeEntryError.hidden = false;
+      }
+    });
+  }
 });
 
 async function handleIncomeCopy(): Promise<void> {
@@ -224,11 +406,17 @@ dom.incomeClear.addEventListener("click", () => {
 
 function showPlannerError(id: string, message: string): void {
   const target = document.getElementById(id);
-  if (target instanceof HTMLParagraphElement) { target.textContent = message; target.hidden = false; }
+  if (target instanceof HTMLParagraphElement) {
+    target.textContent = message;
+    target.hidden = false;
+  }
 }
 function clearPlannerError(id: string): void {
   const target = document.getElementById(id);
-  if (target instanceof HTMLParagraphElement) { target.textContent = ""; target.hidden = true; }
+  if (target instanceof HTMLParagraphElement) {
+    target.textContent = "";
+    target.hidden = true;
+  }
 }
 function input(id: string): HTMLInputElement | null {
   const element = document.getElementById(id);
@@ -241,27 +429,42 @@ function form(id: string): HTMLFormElement | null {
 
 const recurringCategory = document.getElementById("recurring-category");
 if (recurringCategory instanceof HTMLSelectElement) {
-  recurringCategory.replaceChildren(...CATEGORY_KEYS.map((key) => {
-    const option = document.createElement("option"); option.value = key; option.textContent = CATEGORIES[key].label; return option;
-  }));
+  recurringCategory.replaceChildren(
+    ...CATEGORY_KEYS.map((key) => {
+      const option = document.createElement("option");
+      option.value = key;
+      option.textContent = CATEGORIES[key].label;
+      return option;
+    }),
+  );
 }
 
 form("budget-form")?.addEventListener("submit", (event) => {
-  event.preventDefault(); clearPlannerError("budget-error");
+  event.preventDefault();
+  clearPlannerError("budget-error");
   const cents = eurosToCents(input("budget-amount")?.value ?? "");
-  if (cents === null) { showPlannerError("budget-error", "Introduce un límite válido, por ejemplo 1.200,00."); return; }
-  void state.setMonthlyBudget(state.getState().ui.selectedMonth, cents).then((result) => { if (!result.ok) showPlannerError("budget-error", result.error); });
+  if (cents === null) {
+    showPlannerError("budget-error", "Introduce un límite válido, por ejemplo 1.200,00.");
+    return;
+  }
+  void state.setMonthlyBudget(state.getState().ui.selectedMonth, cents).then((result) => {
+    if (!result.ok) showPlannerError("budget-error", result.error);
+  });
 });
 document.getElementById("budget-clear")?.addEventListener("click", () => {
   void state.clearMonthlyBudget(state.getState().ui.selectedMonth);
 });
 
 form("goal-form")?.addEventListener("submit", (event) => {
-  event.preventDefault(); clearPlannerError("goal-error");
+  event.preventDefault();
+  clearPlannerError("goal-error");
   const name = input("goal-name")?.value.trim() ?? "";
   const cents = eurosToCents(input("goal-target")?.value ?? "");
   const dueDate = input("goal-date")?.value || null;
-  if (!name || cents === null) { showPlannerError("goal-error", "Añade un nombre y un importe objetivo válido."); return; }
+  if (!name || cents === null) {
+    showPlannerError("goal-error", "Añade un nombre y un importe objetivo válido.");
+    return;
+  }
   void state.addSavingsGoal({ name, targetCents: cents, dueDate }).then((result) => {
     if (!result.ok) showPlannerError("goal-error", result.error);
     else form("goal-form")?.reset();
@@ -269,33 +472,88 @@ form("goal-form")?.addEventListener("submit", (event) => {
 });
 
 form("recurring-form")?.addEventListener("submit", (event) => {
-  event.preventDefault(); clearPlannerError("recurring-error");
+  event.preventDefault();
+  clearPlannerError("recurring-error");
   const name = input("recurring-name")?.value.trim() ?? "";
   const cents = eurosToCents(input("recurring-amount")?.value ?? "");
   const dayOfMonth = Number(input("recurring-day")?.value);
-  const categoryValue = recurringCategory instanceof HTMLSelectElement ? recurringCategory.value : "";
-  if (!name || cents === null || !Number.isInteger(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 28 || !CATEGORY_KEYS.includes(categoryValue as (typeof CATEGORY_KEYS)[number])) {
-    showPlannerError("recurring-error", "Revisa el nombre, el importe, la categoría y el día (1–28)."); return;
+  const categoryValue =
+    recurringCategory instanceof HTMLSelectElement ? recurringCategory.value : "";
+  if (
+    !name ||
+    cents === null ||
+    !Number.isInteger(dayOfMonth) ||
+    dayOfMonth < 1 ||
+    dayOfMonth > 28 ||
+    !CATEGORY_KEYS.includes(categoryValue as (typeof CATEGORY_KEYS)[number])
+  ) {
+    showPlannerError(
+      "recurring-error",
+      "Revisa el nombre, el importe, la categoría y el día (1–28).",
+    );
+    return;
   }
-  const result = state.addRecurringExpense({ name, amountCents: cents, category: categoryValue as (typeof CATEGORY_KEYS)[number], dayOfMonth });
-  void result.then((saved) => { if (!saved.ok) showPlannerError("recurring-error", saved.error); else form("recurring-form")?.reset(); });
+  const result = state.addRecurringExpense({
+    name,
+    amountCents: cents,
+    category: categoryValue as (typeof CATEGORY_KEYS)[number],
+    dayOfMonth,
+  });
+  void result.then((saved) => {
+    if (!saved.ok) showPlannerError("recurring-error", saved.error);
+    else form("recurring-form")?.reset();
+  });
 });
 
 form("wallet-form")?.addEventListener("submit", (event) => {
-  event.preventDefault(); clearPlannerError("wallet-error");
+  event.preventDefault();
+  clearPlannerError("wallet-error");
   const name = input("wallet-name")?.value.trim() ?? "";
   const openingCents = eurosToCents(input("wallet-opening")?.value ?? "");
   const kind = document.getElementById("wallet-kind");
-  if (!name || openingCents === null || !(kind instanceof HTMLSelectElement)) { showPlannerError("wallet-error", "Introduce un nombre y saldo inicial válido."); return; }
-  void state.createWallet({ name, openingCents, kind: kind.value as import("./types").WalletKind }).then((result) => { if (!result.ok) showPlannerError("wallet-error", result.error); else form("wallet-form")?.reset(); });
+  if (!name || openingCents === null || !(kind instanceof HTMLSelectElement)) {
+    showPlannerError("wallet-error", "Introduce un nombre y saldo inicial válido.");
+    return;
+  }
+  void state
+    .createWallet({ name, openingCents, kind: kind.value as WalletKind })
+    .then((result) => {
+      if (!result.ok) showPlannerError("wallet-error", result.error);
+      else form("wallet-form")?.reset();
+    });
 });
 
 form("transfer-form")?.addEventListener("submit", (event) => {
-  event.preventDefault(); clearPlannerError("transfer-error");
-  const from = document.getElementById("transfer-from"); const to = document.getElementById("transfer-to");
+  event.preventDefault();
+  clearPlannerError("transfer-error");
+  const from = document.getElementById("transfer-from");
+  const to = document.getElementById("transfer-to");
   const amountCents = eurosToCents(input("transfer-amount")?.value ?? "");
-  if (!(from instanceof HTMLSelectElement) || !(to instanceof HTMLSelectElement) || !from.value || !to.value || amountCents === null) { showPlannerError("transfer-error", "Elige dos carteras distintas e introduce un importe válido."); return; }
-  void state.transferBetweenWallets({ fromWalletId: from.value, toWalletId: to.value, amountCents, date: getTodayIso(), note: "Traspaso" }).then((result) => { if (!result.ok) showPlannerError("transfer-error", result.error); else input("transfer-amount")!.value = ""; });
+  if (
+    !(from instanceof HTMLSelectElement) ||
+    !(to instanceof HTMLSelectElement) ||
+    !from.value ||
+    !to.value ||
+    amountCents === null
+  ) {
+    showPlannerError(
+      "transfer-error",
+      "Elige dos carteras distintas e introduce un importe válido.",
+    );
+    return;
+  }
+  void state
+    .transferBetweenWallets({
+      fromWalletId: from.value,
+      toWalletId: to.value,
+      amountCents,
+      date: getTodayIso(),
+      note: "Traspaso",
+    })
+    .then((result) => {
+      if (!result.ok) showPlannerError("transfer-error", result.error);
+      else input("transfer-amount")!.value = "";
+    });
 });
 
 document.getElementById("goals-list")?.addEventListener("click", (event) => {
@@ -305,36 +563,100 @@ document.getElementById("goals-list")?.addEventListener("click", (event) => {
   const id = button.dataset["id"];
   const action = button.dataset["action"];
   if (action === "goal-delete") {
-    if (window.confirm("¿Eliminar esta meta de ahorro?")) void state.deleteSavingsGoal(id).then((result) => { if (!result.ok) window.alert(result.error); });
+    if (window.confirm("¿Eliminar esta meta de ahorro?"))
+      void state.deleteSavingsGoal(id).then((result) => {
+        if (!result.ok) window.alert(result.error);
+      });
   }
   if (action === "goal-add") {
-    const contribution = document.querySelector<HTMLInputElement>(`[data-goal-contribution="${id}"]`);
+    const contribution = document.querySelector<HTMLInputElement>(
+      `[data-goal-contribution="${id}"]`,
+    );
     const cents = eurosToCents(contribution?.value ?? "");
-    if (cents === null) { contribution?.reportValidity(); contribution?.focus(); return; }
-    void state.contributeToGoal(id, cents).then((result) => { if (!result.ok) window.alert(result.error); else if (contribution) contribution.value = ""; });
+    if (cents === null) {
+      contribution?.reportValidity();
+      contribution?.focus();
+      return;
+    }
+    void state.contributeToGoal(id, cents).then((result) => {
+      if (!result.ok) window.alert(result.error);
+      else if (contribution) contribution.value = "";
+    });
   }
 });
 
-document.getElementById("recurring-list")?.addEventListener("click", (event) => {
+document.getElementById("recurring-list")?.addEventListener("click", async (event) => {
   if (!(event.target instanceof Element)) return;
   const button = event.target.closest<HTMLButtonElement>("button[data-action]");
   const id = button?.dataset["id"];
   if (!button || !id) return;
   const action = button.dataset["action"];
-  const operation = action === "recurring-run"
-    ? state.registerRecurringExpense(id)
-    : action === "recurring-toggle"
-      ? state.updateRecurringExpense(id, { active: button.dataset["active"] === "true" })
-      : null;
-  if (operation) void operation.then((result) => { if (!result.ok) window.alert(result.error); });
+  if (action === "recurring-edit") {
+    const template = (state.getState().data.recurring ?? []).find(
+      (item) => item.id === id,
+    );
+    if (!template) return;
+    const name = window.prompt("Título", template.name);
+    if (name === null) return;
+    const amount = window.prompt(
+      "Importe",
+      (template.amountCents / 100).toFixed(2).replace(".", ","),
+    );
+    if (amount === null) return;
+    const amountCents = eurosToCents(amount);
+    const categoryChoice = window.prompt(
+      "Categoría (" + CATEGORY_KEYS.map((key) => CATEGORIES[key].label).join(", ") + ")",
+      CATEGORIES[template.category].label,
+    );
+    if (categoryChoice === null) return;
+    const category = CATEGORY_KEYS.find(
+      (key) =>
+        CATEGORIES[key].label.toLocaleLowerCase("es") ===
+        categoryChoice.trim().toLocaleLowerCase("es"),
+    );
+    const day = window.prompt("Día del mes (1–28)", String(template.dayOfMonth));
+    if (
+      day === null ||
+      amountCents === null ||
+      !category ||
+      !Number.isInteger(Number(day))
+    )
+      return;
+    const result = await state.updateRecurringExpense(id, {
+      name,
+      amountCents,
+      category,
+      dayOfMonth: Number(day),
+    });
+    if (!result.ok) window.alert(result.error);
+    return;
+  }
+  const operation =
+    action === "recurring-run"
+      ? state.registerRecurringExpense(id)
+      : action === "recurring-toggle"
+        ? state.updateRecurringExpense(id, {
+            active: button.dataset["active"] === "true",
+          })
+        : action === "recurring-delete"
+          ? state.deleteRecurringExpense(id)
+          : null;
+  if (operation)
+    void operation.then((result) => {
+      if (!result.ok) window.alert(result.error);
+    });
 });
 
 document.getElementById("wallets-list")?.addEventListener("click", (event) => {
   if (!(event.target instanceof Element)) return;
-  const button = event.target.closest<HTMLButtonElement>("button[data-action='wallet-delete']");
+  const button = event.target.closest<HTMLButtonElement>(
+    "button[data-action='wallet-delete']",
+  );
   const id = button?.dataset["id"];
   if (!id || !window.confirm("¿Eliminar esta cartera?")) return;
-  void state.deleteWallet(id).then((result) => { if (!result.ok) window.alert(result.error); });
+  void state.deleteWallet(id).then((result) => {
+    if (!result.ok) window.alert(result.error);
+  });
 });
 
 // ---------- Mes y filtro ----------
@@ -354,12 +676,17 @@ dom.filterCategory.addEventListener("change", () => {
 
 initCategorySelects();
 dom.date.value = getTodayIso();
-let automaticRecurringMonth = "";
+let automaticRecurringTrigger = "";
 state.subscribe((appState) => {
   render(appState);
   const month = appState.ui.selectedMonth;
-  if (appState.sync.status === "ready" && month !== automaticRecurringMonth) {
-    automaticRecurringMonth = month;
+  const trigger = `${appState.sync.status}|${appState.sync.online}|${month}`;
+  if (
+    appState.sync.status === "ready" &&
+    appState.sync.online &&
+    trigger !== automaticRecurringTrigger
+  ) {
+    automaticRecurringTrigger = trigger;
     state.registerDueRecurringExpenses();
   }
 });

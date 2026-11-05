@@ -1,6 +1,7 @@
 import type { CategoryFilter, CategoryKey } from "./types";
 
 export const DATA_VERSION = 1;
+export const BACKUP_VERSION = 2;
 export const STORAGE_KEY = "gastos-app:v1";
 export const LOCALE = "es-ES";
 export const CURRENCY = "EUR";
@@ -14,14 +15,14 @@ export interface CategoryInfo {
 
 /** Record<CategoryKey, ...> obliga a definir todas las categorías. */
 export const CATEGORIES: Record<CategoryKey, CategoryInfo> = {
-  personal: { label: "Personal", color: "#c084fc" },
-  social: { label: "Social", color: "#f0abfc" },
   supermercado: { label: "Supermercado", color: "#f6ad55" },
-  casa: { label: "Casa", color: "#7aa2f7" },
-  alquiler: { label: "Alquiler", color: "#5fd0c2" },
-  gasolina: { label: "Gasolina", color: "#f08a9d" },
+  personal: { label: "Personal", color: "#c084fc" },
   coche: { label: "Coche", color: "#6db7e8" },
+  gasolina: { label: "Gasolina", color: "#f08a9d" },
+  alquiler: { label: "Alquiler", color: "#5fd0c2" },
+  casa: { label: "Casa", color: "#7aa2f7" },
   otros: { label: "Otros", color: "#a7a0b5" },
+  social: { label: "Social", color: "#f0abfc" },
 };
 
 export const CATEGORY_KEYS = Object.keys(CATEGORIES) as CategoryKey[];

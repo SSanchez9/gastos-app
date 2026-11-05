@@ -1,0 +1,1241 @@
+﻿<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Boti · Maqueta funcional</title>
+    <link rel="stylesheet" href="./mockup.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" aria-label="Navegación principal">
+        <a class="brand" href="#inicio" data-screen-link="inicio"
+          ><span class="brand-mark" aria-hidden="true">B</span>boti</a
+        >
+        <div class="nav-caption">TU DINERO</div>
+        <nav class="nav" aria-label="Pantallas principales">
+          <a href="#inicio" data-screen-link="inicio"
+            ><span class="nav-icon" aria-hidden="true">⌂</span>Inicio</a
+          >
+          <a href="#movimientos" data-screen-link="movimientos"
+            ><span class="nav-icon" aria-hidden="true">≡</span>Movimientos</a
+          >
+          <a href="#analisis" data-screen-link="analisis"
+            ><span class="nav-icon" aria-hidden="true">◒</span>Análisis</a
+          >
+          <a href="#mas" data-screen-link="mas"
+            ><span class="nav-icon" aria-hidden="true">•••</span>Más</a
+          >
+          <a class="add-link" href="#anadir" data-screen-link="anadir"
+            ><span class="nav-icon" aria-hidden="true">＋</span>Añadir movimiento</a
+          >
+        </nav>
+        <div class="sidebar-bottom">
+          Prototipo visual · datos ilustrativos<br />Sin conexión a Firebase
+        </div>
+      </aside>
+
+      <div class="stage">
+        <header class="topbar">
+          <div>
+            <h1>Boti</h1>
+            <p>Control de gastos</p>
+          </div>
+          <div class="top-controls">
+            <label class="date-label" for="month-select">Mes</label
+            ><input
+              class="month-control"
+              type="month"
+              id="month-select"
+              value="2026-11"
+              aria-label="Mes seleccionado"
+            /><button class="session-chip" aria-label="Perfil de ejemplo">S</button>
+          </div>
+        </header>
+
+        <main>
+          <section class="screen" data-screen="inicio" aria-labelledby="home-title">
+            <div class="page-top">
+              <div>
+                <h2 class="screen-title" id="home-title" tabindex="-1">Inicio</h2>
+                <p class="screen-intro">Tu resumen de noviembre · Datos de maqueta</p>
+              </div>
+              <span class="pill">noviembre de 2026</span>
+            </div>
+            <div class="hero-layout">
+              <div class="home-main">
+                <section class="hero" aria-label="Ahorro y balance mensual">
+                  <div class="hero-top">
+                    <span class="eyebrow">Ahorro del mes · disponible</span
+                    ><button
+                      class="icon-button"
+                      type="button"
+                      data-eye
+                      aria-label="Ocultar importes"
+                      aria-pressed="false"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p class="balance maskable">1.717<small>,27 €</small></p>
+                  <div class="hero-bottom">
+                    <div>Lo que queda<strong class="maskable">1.717,27 €</strong></div>
+                    <div>Lo gastado<strong class="maskable">1.183,42 €</strong></div>
+                  </div>
+                </section>
+                <div class="notice">
+                  En el modelo actual, “ahorro” y “lo que queda” son el mismo cálculo:
+                  ingresos menos gastos.
+                </div>
+                <div class="quick-actions" aria-label="Acciones rápidas">
+                  <a href="#anadir" data-screen-link="anadir"
+                    ><span class="quick-icon">＋</span>Añadir movimiento</a
+                  ><a href="#analisis" data-screen-link="analisis"
+                    ><span class="quick-icon">◒</span>Análisis</a
+                  ><a href="#mas" data-screen-link="mas"
+                    ><span class="quick-icon">•••</span>Más</a
+                  ><a href="#movimientos" data-screen-link="movimientos"
+                    ><span class="quick-icon">≡</span>Movimientos</a
+                  >
+                </div>
+                <section class="stat-grid" aria-label="Resumen del mes">
+                  <article class="stat">
+                    <span>Ahorro</span><strong class="maskable">1.717,27 €</strong>
+                  </article>
+                  <article class="stat stat-saved">
+                    <span>Lo que queda</span><strong class="maskable">1.717,27 €</strong>
+                  </article>
+                  <article class="stat">
+                    <span>Lo gastado</span><strong class="maskable">1.183,42 €</strong>
+                  </article>
+                </section>
+              </div>
+              <aside class="home-aside">
+                <section class="panel">
+                  <div class="section-head">
+                    <h3 class="panel-title">Últimos movimientos</h3>
+                    <a href="#movimientos" data-screen-link="movimientos">Ver todo →</a>
+                  </div>
+                  <div class="recent-row">
+                    <span class="round-icon" aria-hidden="true">●</span>
+                    <div><strong>Cena</strong><small>Social · 4 nov</small></div>
+                    <span class="money">− 68,17 €</span>
+                  </div>
+                  <div class="recent-row">
+                    <span class="round-icon" aria-hidden="true">🛒</span>
+                    <div>
+                      <strong>Compra semanal</strong><small>Supermercado · 3 nov</small>
+                    </div>
+                    <span class="money">− 67,84 €</span>
+                  </div>
+                  <div class="recent-row">
+                    <span class="round-icon" aria-hidden="true">●</span>
+                    <div>
+                      <strong>Compra personal</strong><small>Personal · 2 nov</small>
+                    </div>
+                    <span class="money">− 86,99 €</span>
+                  </div>
+                  <div class="recent-row">
+                    <span class="round-icon" aria-hidden="true">⌂</span>
+                    <div><strong>Hogar</strong><small>Casa · 1 nov</small></div>
+                    <span class="money">− 60,42 €</span>
+                  </div>
+                  <div class="recent-row">
+                    <span class="round-icon" aria-hidden="true">⌂</span>
+                    <div><strong>Alquiler</strong><small>Alquiler · 1 nov</small></div>
+                    <span class="money">− 900,00 €</span>
+                  </div>
+                </section>
+              </aside>
+            </div>
+            <details class="state-demo">
+              <summary>Estados de la pantalla (maqueta)</summary>
+              <div class="state-examples">
+                <div class="state-example">
+                  <strong>Cargando</strong
+                  ><span aria-live="polite">Sincronizando datos…</span>
+                </div>
+                <div class="state-example">
+                  <strong>Error</strong><span aria-live="polite">No se pudo cargar.</span
+                  ><br /><button type="button" data-retry>Reintentar</button>
+                </div>
+                <div class="state-example">
+                  <strong>Vacío / sin sueldo</strong
+                  ><span>Sin sueldo: ahorro — · Aún no hay movimientos.</span>
+                </div>
+              </div>
+            </details>
+          </section>
+
+          <section class="screen" data-screen="anadir" aria-labelledby="add-title" hidden>
+            <h2 class="screen-title" id="add-title" tabindex="-1">Añadir movimiento</h2>
+            <p class="screen-intro">
+              Selecciona una categoría e importe. Puedes seguir añadiendo movimientos.
+            </p>
+            <form
+              class="panel"
+              onsubmit="
+                event.preventDefault();
+                this.querySelector('[aria-live]').textContent =
+                  'Movimiento de ejemplo añadido. Puedes registrar otro.';
+              "
+            >
+              <div class="field">
+                <label>Elige una categoría</label>
+                <div
+                  class="chip-group"
+                  role="group"
+                  aria-label="Categorías del movimiento"
+                >
+                  <button class="category-chip" type="button" aria-pressed="true">
+                    <i class="chip-dot" style="--dot: var(--cat-supermercado)"></i
+                    >Supermercado</button
+                  ><button class="category-chip" type="button" aria-pressed="false">
+                    <i class="chip-dot" style="--dot: var(--cat-personal)"></i
+                    >Personal</button
+                  ><button class="category-chip" type="button" aria-pressed="false">
+                    <i class="chip-dot" style="--dot: var(--cat-coche)"></i>Coche</button
+                  ><button class="category-chip" type="button" aria-pressed="false">
+                    <i class="chip-dot" style="--dot: var(--cat-gasolina)"></i
+                    >Gasolina</button
+                  ><button class="category-chip" type="button" aria-pressed="false">
+                    <i class="chip-dot" style="--dot: var(--cat-alquiler)"></i
+                    >Alquiler</button
+                  ><button class="category-chip" type="button" aria-pressed="false">
+                    <i class="chip-dot" style="--dot: var(--cat-casa)"></i>Casa</button
+                  ><button class="category-chip" type="button" aria-pressed="false">
+                    <i class="chip-dot" style="--dot: var(--cat-otros)"></i>Otros</button
+                  ><button class="category-chip" type="button" aria-pressed="false">
+                    <i class="chip-dot" style="--dot: var(--cat-social)"></i>Social
+                  </button>
+                </div>
+              </div>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="expense-amount">Importe (€)</label
+                  ><input
+                    id="expense-amount"
+                    inputmode="decimal"
+                    placeholder="0,00"
+                    required
+                  />
+                </div>
+                <div class="field">
+                  <label for="expense-date">Fecha</label
+                  ><input id="expense-date" type="date" value="2026-11-04" />
+                </div>
+                <div class="field">
+                  <label for="expense-note">Nota (opcional)</label
+                  ><input id="expense-note" placeholder="Añade un detalle" />
+                </div>
+                <div class="field">
+                  <label for="expense-wallet">Cartera</label
+                  ><select id="expense-wallet">
+                    <option>Sin asignar</option>
+                    <option>Cuenta principal</option>
+                  </select>
+                </div>
+              </div>
+              <label class="checkline"
+                ><input type="checkbox" checked /> Conservar categoría y fecha para el
+                siguiente movimiento</label
+              >
+              <div class="button-row">
+                <button class="button" type="submit">Añadir movimiento</button
+                ><button
+                  class="button-secondary"
+                  type="button"
+                  data-screen-link="movimientos"
+                >
+                  Ver movimientos
+                </button>
+              </div>
+              <p class="small" aria-live="polite"></p>
+            </form>
+            <details class="state-demo">
+              <summary>Estados de la pantalla (maqueta)</summary>
+              <div class="state-examples">
+                <div class="state-example">
+                  <strong>Cargando</strong
+                  ><span aria-live="polite">Preparando formulario…</span>
+                </div>
+                <div class="state-example">
+                  <strong>Error</strong><span aria-live="polite">No se pudo cargar.</span
+                  ><br /><button type="button" data-retry>Reintentar</button>
+                </div>
+                <div class="state-example">
+                  <strong>Vacío</strong><span>Elige una categoría para empezar.</span>
+                </div>
+              </div>
+            </details>
+          </section>
+
+          <section
+            class="screen"
+            data-screen="movimientos"
+            aria-labelledby="movements-title"
+            hidden
+          >
+            <div class="page-top">
+              <div>
+                <h2 class="screen-title" id="movements-title" tabindex="-1">
+                  Movimientos del mes
+                </h2>
+                <p class="screen-intro">
+                  Listado mensual · edición y borrado conservados
+                </p>
+              </div>
+              <label class="field filter"
+                ><span class="eyebrow">Categoría</span
+                ><select aria-label="Filtrar por categoría">
+                  <option>Todos</option>
+                  <option>Supermercado</option>
+                  <option>Personal</option>
+                  <option>Coche</option>
+                  <option>Gasolina</option>
+                  <option>Alquiler</option>
+                  <option>Casa</option>
+                  <option>Otros</option>
+                  <option>Social</option>
+                </select></label
+              >
+            </div>
+            <section class="panel">
+              <div class="movement-head">
+                <span class="eyebrow">Detalle del movimiento</span
+                ><span class="eyebrow">Importe</span><span class="eyebrow">Acciones</span>
+              </div>
+              <div class="movement-row">
+                <div class="movement-label">
+                  <strong
+                    ><i class="category-dot" style="--dot: var(--cat-otros)"></i
+                    >Otros</strong
+                  ><small>29 oct 2026 · por si acaso</small>
+                </div>
+                <span class="money">50,00 €</span>
+                <div class="movement-actions">
+                  <button>Editar</button><button class="delete">Eliminar</button>
+                </div>
+              </div>
+              <div class="movement-row">
+                <div class="movement-label">
+                  <strong
+                    ><i class="category-dot" style="--dot: var(--cat-supermercado)"></i
+                    >Supermercado</strong
+                  ><small>29 oct 2026</small>
+                </div>
+                <span class="money">2,45 €</span>
+                <div class="movement-actions">
+                  <button>Editar</button><button class="delete">Eliminar</button>
+                </div>
+              </div>
+              <div class="movement-row">
+                <div class="movement-label">
+                  <strong
+                    ><i class="category-dot" style="--dot: var(--cat-supermercado)"></i
+                    >Supermercado</strong
+                  ><small>29 oct 2026 · compra semanal</small>
+                </div>
+                <span class="money">67,84 €</span>
+                <div class="movement-actions">
+                  <button>Editar</button><button class="delete">Eliminar</button>
+                </div>
+              </div>
+              <div class="movement-row">
+                <div class="movement-label">
+                  <strong
+                    ><i class="category-dot" style="--dot: var(--cat-social)"></i
+                    >Social</strong
+                  ><small>28 oct 2026 · cena</small>
+                </div>
+                <span class="money">40,00 €</span>
+                <div class="movement-actions">
+                  <button>Editar</button><button class="delete">Eliminar</button>
+                </div>
+              </div>
+              <div class="movement-row">
+                <div class="movement-label">
+                  <strong
+                    ><i class="category-dot" style="--dot: var(--cat-personal)"></i
+                    >Personal</strong
+                  ><small>27 oct 2026</small>
+                </div>
+                <span class="money">86,99 €</span>
+                <div class="movement-actions">
+                  <button>Editar</button><button class="delete">Eliminar</button>
+                </div>
+              </div>
+            </section>
+            <details class="state-demo">
+              <summary>Estados de la pantalla (maqueta)</summary>
+              <div class="state-examples">
+                <div class="state-example">
+                  <strong>Cargando</strong
+                  ><span aria-live="polite">Cargando movimientos…</span>
+                </div>
+                <div class="state-example">
+                  <strong>Error</strong><span aria-live="polite">No se pudo cargar.</span
+                  ><br /><button type="button" data-retry>Reintentar</button>
+                </div>
+                <div class="state-example">
+                  <strong>Vacío</strong><span>Aún no hay movimientos este mes.</span>
+                </div>
+              </div>
+            </details>
+          </section>
+
+          <section
+            class="screen"
+            data-screen="analisis"
+            aria-labelledby="analysis-title"
+            hidden
+          >
+            <div class="page-top">
+              <div>
+                <h2 class="screen-title" id="analysis-title" tabindex="-1">Análisis</h2>
+                <p class="screen-intro">
+                  Gasto, ahorro y reparto del sueldo · datos visuales de referencia
+                </p>
+              </div>
+              <span class="pill">noviembre de 2026</span>
+            </div>
+            <section class="panel">
+              <div class="section-head">
+                <h3 class="panel-title">Gastos por categoría y ahorro</h3>
+                <span class="eyebrow">Mes seleccionado</span>
+              </div>
+              <div class="donut-layout">
+                <svg
+                  class="donut"
+                  viewBox="0 0 220 220"
+                  role="img"
+                  aria-labelledby="donut-title donut-desc"
+                >
+                  <title id="donut-title">Reparto ilustrativo de gastos y ahorro</title>
+                  <desc id="donut-desc">
+                    Etiquetas y porcentajes visibles en la leyenda.
+                  </desc>
+                  <circle
+                    class="donut-bg"
+                    cx="110"
+                    cy="110"
+                    r="80"
+                    fill="none"
+                    stroke-width="27"
+                  />
+                  <g transform="rotate(-90 110 110)" fill="none" stroke-width="27">
+                    <circle
+                      cx="110"
+                      cy="110"
+                      r="80"
+                      stroke="var(--cat-alquiler)"
+                      stroke-dasharray="155.8 502.7"
+                      stroke-dashoffset="0"
+                    />
+                    <circle
+                      cx="110"
+                      cy="110"
+                      r="80"
+                      stroke="var(--cat-personal)"
+                      stroke-dasharray="15.1 502.7"
+                      stroke-dashoffset="-155.8"
+                    />
+                    <circle
+                      cx="110"
+                      cy="110"
+                      r="80"
+                      stroke="var(--cat-social)"
+                      stroke-dasharray="12.1 502.7"
+                      stroke-dashoffset="-170.9"
+                    />
+                    <circle
+                      cx="110"
+                      cy="110"
+                      r="80"
+                      stroke="var(--cat-supermercado)"
+                      stroke-dasharray="11.6 502.7"
+                      stroke-dashoffset="-183"
+                    />
+                    <circle
+                      cx="110"
+                      cy="110"
+                      r="80"
+                      stroke="var(--cat-casa)"
+                      stroke-dasharray="10.6 502.7"
+                      stroke-dashoffset="-194.6"
+                    />
+                    <circle
+                      cx="110"
+                      cy="110"
+                      r="80"
+                      stroke="var(--cat-ahorro)"
+                      stroke-dasharray="297.5 502.7"
+                      stroke-dashoffset="-205.2"
+                    />
+                  </g>
+                  <text class="donut-center" x="110" y="106">59,2 %</text>
+                  <text class="donut-label" x="110" y="126">ahorro</text>
+                </svg>
+                <div class="legend-list">
+                  <div class="legend-row">
+                    <span class="swatch"
+                      ><i class="category-dot" style="--dot: var(--cat-alquiler)"></i
+                      >Alquiler</span
+                    ><strong>31 %</strong><span class="legend-amount">900 €</span>
+                  </div>
+                  <div class="legend-row">
+                    <span class="swatch"
+                      ><i class="category-dot" style="--dot: var(--cat-personal)"></i
+                      >Personal</span
+                    ><strong>3 %</strong><span class="legend-amount">87 €</span>
+                  </div>
+                  <div class="legend-row">
+                    <span class="swatch"
+                      ><i class="category-dot" style="--dot: var(--cat-social)"></i
+                      >Social</span
+                    ><strong>2,4 %</strong><span class="legend-amount">68 €</span>
+                  </div>
+                  <div class="legend-row">
+                    <span class="swatch"
+                      ><i class="category-dot" style="--dot: var(--cat-supermercado)"></i
+                      >Supermercado</span
+                    ><strong>2,3 %</strong><span class="legend-amount">67 €</span>
+                  </div>
+                  <div class="legend-row">
+                    <span class="swatch"
+                      ><i class="category-dot" style="--dot: var(--cat-casa)"></i
+                      >Casa</span
+                    ><strong>2,1 %</strong><span class="legend-amount">60 €</span>
+                  </div>
+                  <div class="legend-row">
+                    <span class="swatch"
+                      ><i class="category-dot" style="--dot: var(--cat-ahorro)"></i
+                      >Ahorro</span
+                    ><strong>59,2 %</strong><span class="legend-amount">1.717 €</span>
+                  </div>
+                </div>
+              </div>
+              <p class="chart-note">
+                Reparto del sueldo registrado en noviembre. En la aplicación, importes
+                derivados de tus datos.
+              </p>
+            </section>
+            <section class="panel" style="margin-top: var(--space)">
+              <div class="section-head">
+                <div>
+                  <h3 class="panel-title">Desglose por categoría</h3>
+                  <span class="small muted"
+                    >Proporción del gasto y porcentaje del sueldo</span
+                  >
+                </div>
+                <span class="small">Gasto total <strong>1.183,42 €</strong></span>
+              </div>
+              <div class="bar-list">
+                <div class="breakdown-row">
+                  <span class="category"
+                    ><i class="category-dot" style="--dot: var(--cat-alquiler)"></i
+                    >Alquiler</span
+                  ><strong>900,00 €</strong><span>31,0 % sueldo</span>
+                  <div class="breakdown-track">
+                    <i style="--w: 76.1%; --bar-color: var(--cat-alquiler)"></i>
+                  </div>
+                </div>
+                <div class="breakdown-row">
+                  <span class="category"
+                    ><i class="category-dot" style="--dot: var(--cat-personal)"></i
+                    >Personal</span
+                  ><strong>86,99 €</strong><span>3,0 % sueldo</span>
+                  <div class="breakdown-track">
+                    <i style="--w: 7.3%; --bar-color: var(--cat-personal)"></i>
+                  </div>
+                </div>
+                <div class="breakdown-row">
+                  <span class="category"
+                    ><i class="category-dot" style="--dot: var(--cat-social)"></i
+                    >Social</span
+                  ><strong>68,17 €</strong><span>2,3 % sueldo</span>
+                  <div class="breakdown-track">
+                    <i style="--w: 5.8%; --bar-color: var(--cat-social)"></i>
+                  </div>
+                </div>
+                <div class="breakdown-row">
+                  <span class="category"
+                    ><i class="category-dot" style="--dot: var(--cat-supermercado)"></i
+                    >Supermercado</span
+                  ><strong>67,84 €</strong><span>2,3 % sueldo</span>
+                  <div class="breakdown-track">
+                    <i style="--w: 5.7%; --bar-color: var(--cat-supermercado)"></i>
+                  </div>
+                </div>
+                <div class="breakdown-row">
+                  <span class="category"
+                    ><i class="category-dot" style="--dot: var(--cat-casa)"></i>Casa</span
+                  ><strong>60,42 €</strong><span>2,1 % sueldo</span>
+                  <div class="breakdown-track">
+                    <i style="--w: 5.1%; --bar-color: var(--cat-casa)"></i>
+                  </div>
+                </div>
+              </div>
+              <p class="notice" style="margin-top: var(--space)">
+                Sin sueldo registrado en el mes: el porcentaje del sueldo se muestra como
+                “—”.
+              </p>
+            </section>
+            <section class="panel" style="margin-top: var(--space)">
+              <div class="section-head">
+                <div>
+                  <h3 class="panel-title">Ahorro de los últimos 6 meses</h3>
+                  <span class="small muted"
+                    >Ratón: pasar por barra · Teclado: enfocar · Táctil: tocar</span
+                  >
+                </div>
+              </div>
+              <div
+                class="chart-grid"
+                role="group"
+                aria-label="Ahorro y gasto de los últimos seis meses. En meses sin sueldo, el ahorro figura como Sin sueldo."
+              >
+                <button
+                  class="month-bar"
+                  type="button"
+                  aria-label="Junio: gastado 1.200 euros, sin sueldo"
+                  aria-describedby="tip-jun"
+                  aria-expanded="false"
+                >
+                  <span class="bar-value">—</span
+                  ><span class="bar-track"
+                    ><i class="bar-spent"></i
+                    ><i class="bar-saved" style="--saved: 0%"></i></span
+                  ><span class="bar-month">jun</span
+                  ><span class="tooltip" id="tip-jun" role="tooltip"
+                    ><strong>junio</strong>Gastado: 1.200,00 €<br />Ahorrado: Sin
+                    sueldo</span
+                  >
+                </button>
+                <button
+                  class="month-bar"
+                  type="button"
+                  aria-label="Julio: gastado 1.100 euros, sin sueldo"
+                  aria-describedby="tip-jul"
+                  aria-expanded="false"
+                >
+                  <span class="bar-value">—</span
+                  ><span class="bar-track"
+                    ><i class="bar-spent"></i
+                    ><i class="bar-saved" style="--saved: 0%"></i></span
+                  ><span class="bar-month">jul</span
+                  ><span class="tooltip" id="tip-jul" role="tooltip"
+                    ><strong>julio</strong>Gastado: 1.100,00 €<br />Ahorrado: Sin
+                    sueldo</span
+                  >
+                </button>
+                <button
+                  class="month-bar"
+                  type="button"
+                  aria-label="Agosto: gastado 1.400 euros, sin sueldo"
+                  aria-describedby="tip-ago"
+                  aria-expanded="false"
+                >
+                  <span class="bar-value">—</span
+                  ><span class="bar-track"
+                    ><i class="bar-spent"></i
+                    ><i class="bar-saved" style="--saved: 0%"></i></span
+                  ><span class="bar-month">ago</span
+                  ><span class="tooltip" id="tip-ago" role="tooltip"
+                    ><strong>agosto</strong>Gastado: 1.400,00 €<br />Ahorrado: Sin
+                    sueldo</span
+                  >
+                </button>
+                <button
+                  class="month-bar"
+                  type="button"
+                  aria-label="Septiembre: gastado 1.300 euros, sin sueldo"
+                  aria-describedby="tip-sep"
+                  aria-expanded="false"
+                >
+                  <span class="bar-value">—</span
+                  ><span class="bar-track"
+                    ><i class="bar-spent"></i
+                    ><i class="bar-saved" style="--saved: 0%"></i></span
+                  ><span class="bar-month">sep</span
+                  ><span class="tooltip" id="tip-sep" role="tooltip"
+                    ><strong>septiembre</strong>Gastado: 1.300,00 €<br />Ahorrado: Sin
+                    sueldo</span
+                  >
+                </button>
+                <button
+                  class="month-bar"
+                  type="button"
+                  aria-label="Octubre: gastado 2.119,44 euros, ahorrado 945,56 euros"
+                  aria-describedby="tip-oct"
+                  aria-expanded="false"
+                >
+                  <span class="bar-value">946 €</span
+                  ><span class="bar-track"
+                    ><i class="bar-spent"></i
+                    ><i class="bar-saved" style="--saved: 45%"></i></span
+                  ><span class="bar-month">oct</span
+                  ><span class="tooltip" id="tip-oct" role="tooltip"
+                    ><strong>octubre</strong>Gastado: 2.119,44 €<br />Ahorrado: 945,56
+                    €</span
+                  >
+                </button>
+                <button
+                  class="month-bar"
+                  type="button"
+                  aria-current="true"
+                  aria-label="Noviembre: gastado 1.183,42 euros, ahorrado 1.717,27 euros"
+                  aria-describedby="tip-nov"
+                  aria-expanded="false"
+                >
+                  <span class="bar-value">1.717 €</span
+                  ><span class="bar-track"
+                    ><i class="bar-spent"></i
+                    ><i class="bar-saved" style="--saved: 59%"></i></span
+                  ><span class="bar-month">nov</span
+                  ><span class="tooltip" id="tip-nov" role="tooltip"
+                    ><strong>noviembre</strong>Gastado: 1.183,42 €<br />Ahorrado: 1.717,27
+                    €</span
+                  >
+                </button>
+              </div>
+            </section>
+            <details class="state-demo">
+              <summary>Estados de la pantalla (maqueta)</summary>
+              <div class="state-examples">
+                <div class="state-example">
+                  <strong>Cargando</strong><span aria-live="polite">Calculando…</span>
+                </div>
+                <div class="state-example">
+                  <strong>Error</strong
+                  ><span aria-live="polite">No se pudo cargar el análisis.</span
+                  ><br /><button type="button" data-retry>Reintentar</button>
+                </div>
+                <div class="state-example">
+                  <strong>Sin datos</strong
+                  ><span>Sin sueldo: Sin sueldo. % sueldo: —.</span>
+                </div>
+              </div>
+            </details>
+          </section>
+
+          <section class="screen" data-screen="mas" aria-labelledby="more-title" hidden>
+            <h2 class="screen-title" id="more-title" tabindex="-1">Más</h2>
+            <p class="screen-intro">Herramientas y planificación financiera</p>
+            <div class="tool-grid">
+              <a class="tool-card" href="#ingresos" data-screen-link="ingresos"
+                ><strong>Ingresos</strong
+                ><small>Ingresos con título y sueldo mensual actual</small></a
+              ><a class="tool-card" href="#recurrentes" data-screen-link="recurrentes"
+                ><strong>Gastos fijos</strong
+                ><small>Pagos recurrentes y registro mensual</small></a
+              ><a class="tool-card" href="#metas" data-screen-link="metas"
+                ><strong>Metas de ahorro</strong
+                ><small>Objetivos, aportaciones y progreso</small></a
+              ><a class="tool-card" href="#presupuestos" data-screen-link="presupuestos"
+                ><strong>Presupuestos</strong><small>Límites de gasto mensuales</small></a
+              ><a class="tool-card" href="#carteras" data-screen-link="carteras"
+                ><strong>Carteras</strong><small>Saldos y traspasos</small></a
+              ><a class="tool-card" href="#copias" data-screen-link="copias"
+                ><strong>Copias de seguridad</strong
+                ><small>Importar y exportar JSON / CSV</small></a
+              >
+            </div>
+            <details class="state-demo">
+              <summary>Estados de la pantalla (maqueta)</summary>
+              <div class="state-examples">
+                <div class="state-example">
+                  <strong>Cargando</strong
+                  ><span aria-live="polite">Cargando herramientas…</span>
+                </div>
+                <div class="state-example">
+                  <strong>Error</strong
+                  ><span aria-live="polite">No se pudieron cargar las opciones.</span
+                  ><br /><button type="button" data-retry>Reintentar</button>
+                </div>
+                <div class="state-example">
+                  <strong>Vacío</strong><span>Elige una herramienta.</span>
+                </div>
+              </div>
+            </details>
+          </section>
+
+          <section
+            class="screen"
+            data-screen="ingresos"
+            aria-labelledby="income-title"
+            hidden
+          >
+            <a class="back" href="#mas" data-screen-link="mas">← Volver a Más</a>
+            <h2 class="sub-title" id="income-title" tabindex="-1">Ingresos</h2>
+            <p class="screen-intro">
+              Elige mes, conserva el sueldo heredado y añade ingresos con título.
+            </p>
+            <div class="stack">
+              <section class="panel">
+                <div class="section-head">
+                  <div>
+                    <h3 class="panel-title">Sueldo mensual existente</h3>
+                    <span class="small muted">income.byMonth · noviembre de 2026</span>
+                  </div>
+                  <strong class="maskable">2.900,69 €</strong>
+                </div>
+                <p class="notice">
+                  Se lee desde la estructura actual. Este dato no se transforma ni se
+                  borra.
+                </p>
+                <div class="field">
+                  <label for="legacy-income">Importe heredado (€)</label
+                  ><input id="legacy-income" value="2.900,69" />
+                </div>
+                <button class="button-secondary" type="button">
+                  Guardar sueldo del mes
+                </button>
+              </section>
+              <section class="panel">
+                <div class="section-head">
+                  <h3 class="panel-title">Ingresos con título</h3>
+                  <span class="pill">Estructura nueva · aditiva</span>
+                </div>
+                <div class="empty-state">
+                  Todavía no hay ingresos con título para noviembre.
+                </div>
+                <div class="form-grid">
+                  <div class="field">
+                    <label for="income-name">Título</label
+                    ><input id="income-name" placeholder="Nómina, devolución…" />
+                  </div>
+                  <div class="field">
+                    <label for="income-amount">Importe (€)</label
+                    ><input id="income-amount" inputmode="decimal" placeholder="0,00" />
+                  </div>
+                  <div class="field">
+                    <label for="income-date">Fecha</label
+                    ><input id="income-date" type="date" value="2026-11-04" />
+                  </div>
+                  <div class="field">
+                    <label for="income-month">Mes</label
+                    ><input id="income-month" type="month" value="2026-11" />
+                  </div>
+                </div>
+                <button class="button" type="button">＋ Añadir ingreso</button
+                ><button
+                  class="button-secondary"
+                  type="button"
+                  style="margin-left: var(--space-sm)"
+                >
+                  Migrar sueldo heredado…
+                </button>
+                <p class="small muted">
+                  La migración será una acción explícita y conservará el registro
+                  original.
+                </p>
+              </section>
+            </div>
+            <details class="state-demo">
+              <summary>Estados de la pantalla (maqueta)</summary>
+              <div class="state-examples">
+                <div class="state-example">
+                  <strong>Cargando</strong
+                  ><span aria-live="polite">Cargando ingresos…</span>
+                </div>
+                <div class="state-example">
+                  <strong>Error</strong
+                  ><span aria-live="polite">No se pudieron cargar los ingresos.</span
+                  ><br /><button type="button" data-retry>Reintentar</button>
+                </div>
+                <div class="state-example">
+                  <strong>Vacío</strong
+                  ><span>Sin sueldo ni ingresos del mes: ahorro —.</span>
+                </div>
+              </div>
+            </details>
+          </section>
+
+          <section
+            class="screen"
+            data-screen="recurrentes"
+            aria-labelledby="recurring-title"
+            hidden
+          >
+            <a class="back" href="#mas" data-screen-link="mas">← Volver a Más</a>
+            <h2 class="sub-title" id="recurring-title" tabindex="-1">
+              Gastos fijos recurrentes
+            </h2>
+            <p class="screen-intro">
+              Plantillas existentes con registro mensual al llegar el día indicado.
+            </p>
+            <section class="panel">
+              <div class="section-head">
+                <h3 class="panel-title">Plantillas activas</h3>
+                <span class="pill">Noviembre</span>
+              </div>
+              <div class="stack">
+                <article class="recurring-card">
+                  <div class="section-head">
+                    <div>
+                      <strong>Alquiler</strong>
+                      <div class="small muted">900,00 € · Alquiler · Día 1</div>
+                    </div>
+                    <span class="pill">Registrado este mes</span>
+                  </div>
+                  <div class="button-row">
+                    <button class="button-secondary">Editar</button
+                    ><button class="button-secondary">Pausar</button
+                    ><button class="button-secondary button-danger">Borrar</button>
+                  </div>
+                </article>
+                <article class="recurring-card">
+                  <div class="section-head">
+                    <div>
+                      <strong>Internet</strong>
+                      <div class="small muted">45,00 € · Casa · Día 12</div>
+                    </div>
+                    <span class="pill">Pendiente</span>
+                  </div>
+                  <div class="button-row">
+                    <button class="button-secondary">Editar</button
+                    ><button class="button-secondary">Pausar</button
+                    ><button class="button-secondary button-danger">Borrar</button>
+                  </div>
+                </article>
+              </div>
+            </section>
+            <section class="panel" style="margin-top: var(--space)">
+              <h3 class="panel-title">Añadir gasto fijo</h3>
+              <div class="form-grid">
+                <div class="field">
+                  <label>Título</label><input placeholder="Alquiler, suscripción…" />
+                </div>
+                <div class="field">
+                  <label>Importe (€)</label><input placeholder="0,00" />
+                </div>
+                <div class="field">
+                  <label>Categoría</label
+                  ><select>
+                    <option>Elige categoría</option>
+                    <option>Alquiler</option>
+                    <option>Casa</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Día del mes</label
+                  ><input type="number" min="1" max="28" value="1" />
+                </div>
+              </div>
+              <button class="button">Crear gasto fijo</button>
+              <p class="small muted">
+                Precarga ilustrativa al llegar la fecha; cada plantilla y mes debe
+                producir como máximo un movimiento.
+              </p>
+            </section>
+            <details class="state-demo">
+              <summary>Estados de la pantalla (maqueta)</summary>
+              <div class="state-examples">
+                <div class="state-example">
+                  <strong>Cargando</strong
+                  ><span aria-live="polite">Cargando plantillas…</span>
+                </div>
+                <div class="state-example">
+                  <strong>Error</strong
+                  ><span aria-live="polite">No se pudieron cargar.</span><br /><button
+                    type="button"
+                    data-retry
+                  >
+                    Reintentar
+                  </button>
+                </div>
+                <div class="state-example">
+                  <strong>Vacío</strong><span>Aún no has creado gastos fijos.</span>
+                </div>
+              </div>
+            </details>
+          </section>
+
+          <section
+            class="screen"
+            data-screen="metas"
+            aria-labelledby="goals-title"
+            hidden
+          >
+            <a class="back" href="#mas" data-screen-link="mas">← Volver a Más</a>
+            <h2 class="sub-title" id="goals-title" tabindex="-1">Metas de ahorro</h2>
+            <p class="screen-intro">Objetivos, aportaciones y progreso acumulado.</p>
+            <section class="panel">
+              <div class="stack">
+                <article class="goal-card">
+                  <div class="section-head">
+                    <div>
+                      <strong>Fondo de emergencia</strong
+                      ><span class="small muted">Objetivo 3.000 €</span>
+                    </div>
+                    <span class="pill">En progreso</span>
+                  </div>
+                  <div class="progress"><i style="--w: 58%"></i></div>
+                  <div class="section-head">
+                    <span class="small">1.740 € aportados · 58 %</span
+                    ><span class="pill">Vence: sin fecha</span>
+                  </div>
+                  <div class="button-row">
+                    <button class="button-secondary">Añadir aportación</button
+                    ><button class="button-secondary">Editar</button
+                    ><button class="button-secondary button-danger">Borrar</button>
+                  </div>
+                </article>
+                <article class="goal-card">
+                  <div class="section-head">
+                    <div>
+                      <strong>Viaje</strong
+                      ><span class="small muted">Objetivo 1.000 €</span>
+                    </div>
+                    <span class="pill">Cumplida</span>
+                  </div>
+                  <div class="progress"><i style="--w: 100%"></i></div>
+                  <span class="small">1.000 € aportados · 100 %</span>
+                </article>
+              </div>
+            </section>
+            <section class="panel" style="margin-top: var(--space)">
+              <h3 class="panel-title">Crear meta</h3>
+              <div class="form-grid">
+                <div class="field">
+                  <label>Título</label><input placeholder="¿Para qué ahorras?" />
+                </div>
+                <div class="field">
+                  <label>Objetivo (€)</label><input placeholder="0,00" />
+                </div>
+                <div class="field">
+                  <label>Fecha objetivo (opcional)</label><input type="date" />
+                </div>
+              </div>
+              <button class="button">Crear meta</button>
+            </section>
+            <details class="state-demo">
+              <summary>Estados de la pantalla (maqueta)</summary>
+              <div class="state-examples">
+                <div class="state-example">
+                  <strong>Cargando</strong><span aria-live="polite">Cargando metas…</span>
+                </div>
+                <div class="state-example">
+                  <strong>Error</strong
+                  ><span aria-live="polite">No se pudieron cargar.</span><br /><button
+                    type="button"
+                    data-retry
+                  >
+                    Reintentar
+                  </button>
+                </div>
+                <div class="state-example">
+                  <strong>Vacío</strong><span>Crea una meta para empezar.</span>
+                </div>
+              </div>
+            </details>
+          </section>
+
+          <section
+            class="screen"
+            data-screen="presupuestos"
+            aria-labelledby="budget-title"
+            hidden
+          >
+            <a class="back" href="#mas" data-screen-link="mas">← Volver a Más</a>
+            <h2 class="sub-title" id="budget-title" tabindex="-1">Presupuestos</h2>
+            <p class="screen-intro">Límite mensual y gasto registrado.</p>
+            <section class="panel">
+              <div class="section-head">
+                <h3 class="panel-title">Presupuesto de noviembre</h3>
+                <span class="pill">Este mes</span>
+              </div>
+              <div class="section-head">
+                <span>1.183,42 € gastados</span><strong>de 1.500,00 €</strong>
+              </div>
+              <div class="progress"><i style="--w: 79%"></i></div>
+              <p class="small muted">316,58 € disponibles dentro del límite.</p>
+              <div class="field"><label>Límite (€)</label><input value="1.500,00" /></div>
+              <button class="button">Guardar límite</button>
+            </section>
+            <details class="state-demo">
+              <summary>Estados de la pantalla (maqueta)</summary>
+              <div class="state-examples">
+                <div class="state-example">
+                  <strong>Cargando</strong
+                  ><span aria-live="polite">Cargando presupuestos…</span>
+                </div>
+                <div class="state-example">
+                  <strong>Error</strong
+                  ><span aria-live="polite">No se pudieron cargar.</span><br /><button
+                    type="button"
+                    data-retry
+                  >
+                    Reintentar
+                  </button>
+                </div>
+                <div class="state-example">
+                  <strong>Vacío</strong><span>No hay límite para este mes.</span>
+                </div>
+              </div>
+            </details>
+          </section>
+
+          <section
+            class="screen"
+            data-screen="carteras"
+            aria-labelledby="wallet-title"
+            hidden
+          >
+            <a class="back" href="#mas" data-screen-link="mas">← Volver a Más</a>
+            <h2 class="sub-title" id="wallet-title" tabindex="-1">Carteras</h2>
+            <p class="screen-intro">Saldos derivados de movimientos y traspasos.</p>
+            <section class="panel">
+              <div class="stack">
+                <article class="goal-card">
+                  <div class="section-head">
+                    <strong>Cuenta principal</strong><strong>1.717,27 €</strong>
+                  </div>
+                  <span class="small muted">Banco · saldo de ejemplo</span>
+                </article>
+                <article class="goal-card">
+                  <div class="section-head">
+                    <strong>Efectivo</strong><strong>80,00 €</strong>
+                  </div>
+                  <span class="small muted">Efectivo · saldo de ejemplo</span>
+                </article>
+              </div>
+              <div class="form-grid">
+                <div class="field">
+                  <label>Nombre</label><input placeholder="Nueva cartera" />
+                </div>
+                <div class="field">
+                  <label>Tipo</label
+                  ><select>
+                    <option>Banco</option>
+                    <option>Efectivo</option>
+                    <option>Ahorro</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Saldo inicial (€)</label><input placeholder="0,00" />
+                </div>
+              </div>
+              <button class="button">Añadir cartera</button>
+              <h3 class="panel-title" style="margin-top: var(--space)">
+                Traspasar dinero
+              </h3>
+              <div class="form-grid">
+                <div class="field">
+                  <label>Desde</label
+                  ><select>
+                    <option>Cuenta principal</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Hacia</label
+                  ><select>
+                    <option>Efectivo</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Importe (€)</label><input placeholder="0,00" />
+                </div>
+              </div>
+              <button class="button-secondary">Hacer traspaso</button>
+            </section>
+            <details class="state-demo">
+              <summary>Estados de la pantalla (maqueta)</summary>
+              <div class="state-examples">
+                <div class="state-example">
+                  <strong>Cargando</strong
+                  ><span aria-live="polite">Cargando carteras…</span>
+                </div>
+                <div class="state-example">
+                  <strong>Error</strong
+                  ><span aria-live="polite">No se pudieron cargar.</span><br /><button
+                    type="button"
+                    data-retry
+                  >
+                    Reintentar
+                  </button>
+                </div>
+                <div class="state-example">
+                  <strong>Vacío</strong><span>Añade tu primera cartera.</span>
+                </div>
+              </div>
+            </details>
+          </section>
+
+          <section
+            class="screen"
+            data-screen="copias"
+            aria-labelledby="backup-title"
+            hidden
+          >
+            <a class="back" href="#mas" data-screen-link="mas">← Volver a Más</a>
+            <h2 class="sub-title" id="backup-title" tabindex="-1">Copias de seguridad</h2>
+            <p class="screen-intro">
+              Exporta o importa una copia JSON; los gastos también se exportan a CSV.
+            </p>
+            <section class="panel">
+              <div class="button-row">
+                <button class="button">Exportar JSON</button
+                ><button class="button-secondary">Exportar gastos CSV</button>
+              </div>
+              <div class="field">
+                <label for="backup-file">Importar copia JSON</label
+                ><input id="backup-file" type="file" accept="application/json,.json" />
+              </div>
+              <div class="notice">
+                Antes de reemplazar, la app muestra qué datos se eliminarían. Combinar
+                conserva los actuales ante conflictos.
+              </div>
+              <p class="small muted" role="status" aria-live="polite">
+                Estado de maqueta: listo para exportar o seleccionar un archivo.
+              </p>
+            </section>
+            <details class="state-demo">
+              <summary>Estados de la pantalla (maqueta)</summary>
+              <div class="state-examples">
+                <div class="state-example">
+                  <strong>Cargando</strong
+                  ><span aria-live="polite"
+                    >Esperando a que terminen de cargar los datos…</span
+                  >
+                </div>
+                <div class="state-example">
+                  <strong>Error</strong
+                  ><span aria-live="polite">No se pudo procesar la copia.</span
+                  ><br /><button type="button" data-retry>Reintentar</button>
+                </div>
+                <div class="state-example">
+                  <strong>Vacío</strong
+                  ><span>No hay movimientos que exportar a CSV.</span>
+                </div>
+              </div>
+            </details>
+          </section>
+        </main>
+      </div>
+    </div>
+    <nav class="mobile-nav" aria-label="Navegación principal">
+      <a href="#inicio" data-screen-link="inicio"
+        ><span class="nav-icon" aria-hidden="true">⌂</span>Inicio</a
+      ><a href="#movimientos" data-screen-link="movimientos"
+        ><span class="nav-icon" aria-hidden="true">≡</span>Movimientos</a
+      ><a
+        class="add-link"
+        href="#anadir"
+        data-screen-link="anadir"
+        aria-label="Añadir movimiento"
+        ><span class="nav-icon" aria-hidden="true">＋</span></a
+      ><a href="#analisis" data-screen-link="analisis"
+        ><span class="nav-icon" aria-hidden="true">◒</span>Análisis</a
+      ><a href="#mas" data-screen-link="mas"
+        ><span class="nav-icon" aria-hidden="true">•••</span>Más</a
+      >
+    </nav>
+    <script src="./mockup.js"></script>
+  </body>
+</html>

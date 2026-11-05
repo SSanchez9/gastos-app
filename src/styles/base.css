@@ -58,7 +58,11 @@ body {
   line-height: 1.5;
   color: var(--text);
   background-color: var(--bg);
-  background-image: radial-gradient(ellipse at 68% -24%, rgb(126 87 194 / 0.09), transparent 48%);
+  background-image: radial-gradient(
+    ellipse at 68% -24%,
+    rgb(126 87 194 / 0.09),
+    transparent 48%
+  );
 }
 
 h1,
