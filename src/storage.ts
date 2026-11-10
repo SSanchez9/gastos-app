@@ -7,6 +7,11 @@ export function createEmptyData(): AppData {
     version: DATA_VERSION,
     expenses: [],
     income: { byMonth: {} },
+    budgets: {},
+    goals: [],
+    recurring: [],
+    wallets: [],
+    transfers: [],
   };
 }
 
@@ -27,7 +32,9 @@ export function loadLegacyData(): AppData | null {
     const data = parseAppData(JSON.parse(rawText) as unknown);
     if (data === null) return null;
     const isEmpty =
-      data.expenses.length === 0 && Object.keys(data.income.byMonth).length === 0;
+      data.expenses.length === 0 && Object.keys(data.income.byMonth).length === 0 &&
+      (data.goals?.length ?? 0) === 0 && (data.recurring?.length ?? 0) === 0 &&
+      (data.wallets?.length ?? 0) === 0;
     return isEmpty ? null : data;
   } catch {
     return null;

@@ -7,6 +7,9 @@ export interface ExpenseDocument {
   category: CategoryKey;
   date: IsoDate;
   note: string;
+  walletId?: string;
+  recurringId?: string;
+  recurringMonth?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -27,6 +30,9 @@ export function expenseToDocument(expense: Expense): ExpenseDocument {
     category: expense.category,
     date: expense.date,
     note: expense.note,
+    ...(expense.walletId ? { walletId: expense.walletId } : {}),
+    ...(expense.recurringId ? { recurringId: expense.recurringId } : {}),
+    ...(expense.recurringMonth ? { recurringMonth: expense.recurringMonth } : {}),
     createdAt: expense.createdAt,
     updatedAt: expense.updatedAt,
   };
@@ -42,18 +48,48 @@ export function incomeToDocument(
 /** Devuelve null si el documento no tiene la forma esperada. */
 export function documentToExpense(id: string, raw: unknown): Expense | null {
   if (!isRecord(raw)) return null;
-  const { amountCents, category, date, note, createdAt, updatedAt } = raw;
+  const { amountCents, category, date, note, createdAt, updatedAt, walletId } = raw;
 
   if (typeof amountCents !== "number") return null;
   if (!isCategoryKey(category)) return null;
   if (typeof date !== "string" || typeof note !== "string") return null;
   if (typeof createdAt !== "number" || !Number.isFinite(createdAt)) return null;
   if (typeof updatedAt !== "number" || !Number.isFinite(updatedAt)) return null;
+  if (walletId !== undefined && walletId !== null && typeof walletId !== "string")
+    return null;
+  if (
+    raw["recurringId"] !== undefined &&
+    (typeof raw["recurringId"] !== "string" || !raw["recurringId"])
+  )
+    return null;
+  if (
+    raw["recurringMonth"] !== undefined &&
+    (typeof raw["recurringMonth"] !== "string" ||
+      !/^[0-9]{4}-(0[1-9]|1[0-2])$/.test(raw["recurringMonth"]))
+  )
+    return null;
 
-  const checked = validateExpenseInput({ amountCents, category, date, note });
+  const checked = validateExpenseInput({
+    amountCents,
+    category,
+    date,
+    note,
+    ...(typeof walletId === "string" ? { walletId } : {}),
+  });
   if (!checked.ok) return null;
 
-  return { id, ...checked.value, createdAt, updatedAt };
+  return {
+    id,
+    ...checked.value,
+    ...(typeof raw["recurringId"] === "string"
+      ? { recurringId: raw["recurringId"] }
+      : {}),
+    ...(typeof raw["recurringMonth"] === "string"
+      ? { recurringMonth: raw["recurringMonth"] }
+      : {}),
+    createdAt,
+    updatedAt,
+  };
 }
 
 /** Devuelve el sueldo en céntimos, o null si el documento no es válido. */

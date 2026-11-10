@@ -6,6 +6,7 @@ import type {
   CategoryKey,
   Expense,
   Income,
+  IncomeEntry,
   MonthKey,
 } from "./types";
 
@@ -98,6 +99,23 @@ export function totalsByCategory(
   }));
 }
 
+export interface CategoryIncomeShare extends CategoryTotal {
+  /** Porcentaje del ingreso mensual destinado a esta categoría; null si no hay ingreso. */
+  incomePct: number | null;
+}
+
+export function categoryIncomeShares(
+  expenses: readonly Expense[],
+  month: MonthKey,
+  incomeCents: number | null,
+): CategoryIncomeShare[] {
+  return totalsByCategory(expenses, month).map((item) => ({
+    ...item,
+    incomePct:
+      incomeCents === null || incomeCents <= 0 ? null : (item.cents / incomeCents) * 100,
+  }));
+}
+
 export interface MonthlyExpenseTotal {
   month: MonthKey;
   cents: number;
@@ -130,7 +148,7 @@ export function lastSixMonthsSavingsTotals(
   month: MonthKey,
 ): MonthlySavingsTotal[] {
   return lastSixMonthsExpenseTotals(data.expenses, month).map((total) => {
-    const incomeCents = data.income.byMonth[total.month] ?? null;
+    const incomeCents = getIncomeForMonth(data, total.month);
     return {
       month: total.month,
       spentCents: total.cents,
@@ -201,9 +219,50 @@ export interface SavingsSummary {
   isDeficit: boolean;
 }
 
+export function getIncomeForMonth(
+  data: AppData,
+  month: MonthKey,
+  entries: readonly IncomeEntry[] = data.incomeEntries ?? [],
+): number | null {
+  const migrated = (data.migratedIncomeMonths ?? []).includes(month);
+  const legacy = migrated ? 0 : (data.income.byMonth[month] ?? 0);
+  const titled = entries
+    .filter((entry) => entry.date.slice(0, 7) === month)
+    .reduce((total, entry) => total + entry.amountCents, 0);
+  const total = legacy + titled;
+  return total > 0 ? total : null;
+}
+
+export function createLegacyIncomeMigration(
+  data: AppData,
+  month: MonthKey,
+  timestamp: number,
+): Pick<AppData, "incomeEntries" | "migratedIncomeMonths"> | null {
+  const amountCents = data.income.byMonth[month];
+  if (amountCents === undefined || (data.migratedIncomeMonths ?? []).includes(month))
+    return null;
+  const id = `legacy-income:${month}`;
+  const entry: IncomeEntry = {
+    id,
+    title: "Sueldo importado",
+    amountCents,
+    date: `${month}-01`,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    legacySourceMonth: month,
+  };
+  return {
+    incomeEntries: [
+      ...(data.incomeEntries ?? []).filter((item) => item.id !== id),
+      entry,
+    ],
+    migratedIncomeMonths: [...(data.migratedIncomeMonths ?? []), month],
+  };
+}
+
 export function getSavingsSummary(data: AppData, month: MonthKey): SavingsSummary {
   const spentCents = sumCents(expensesOfMonth(data.expenses, month));
-  const incomeCents = data.income.byMonth[month] ?? null;
+  const incomeCents = getIncomeForMonth(data, month);
 
   if (incomeCents === null) {
     return {
@@ -248,7 +307,7 @@ export interface ChartData {
 export function getChartData(data: AppData, month: MonthKey): ChartData {
   const categoryTotals = totalsByCategory(data.expenses, month);
   const spentCents = categoryTotals.reduce((sum, item) => sum + item.cents, 0);
-  const incomeCents = data.income.byMonth[month] ?? null;
+  const incomeCents = getIncomeForMonth(data, month);
 
   if (incomeCents !== null && incomeCents >= spentCents) {
     const savedCents = incomeCents - spentCents;

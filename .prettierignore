@@ -1,3 +1,5 @@
-dist
-node_modules
-package-lock.json
+.agents/
+design/
+AGENTS.md
+REGLAS.md
+src/storage.ts

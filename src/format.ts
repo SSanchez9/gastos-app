@@ -22,6 +22,17 @@ export function formatMoney(cents: number): string {
   return moneyFormatter.format(cents / 100);
 }
 
+const compactMoneyFormatter = new Intl.NumberFormat(LOCALE, {
+  style: "currency",
+  currency: CURRENCY,
+  notation: "compact",
+  maximumFractionDigits: 0,
+});
+
+export function formatCompactMoney(cents: number): string {
+  return compactMoneyFormatter.format(cents / 100);
+}
+
 /** 1250 → "12,50" (para rellenar campos de formulario). */
 export function centsToInputString(cents: number): string {
   const euros = Math.trunc(cents / 100);

@@ -179,7 +179,7 @@ function openImportDialog(incoming: AppData, source: ImportSource): void {
     `${sourceLabel}: ${describeCounts(incomingInfo)}${describeRange(incomingInfo)}.`,
     `Tus datos actuales en la nube: ${describeCounts(currentInfo)}.`,
     describeMerge(report),
-    `Reemplazar: se eliminarán ${plural(replacement.removedExpenses, "gasto", "gastos")} y ${plural(replacement.removedIncomes, "sueldo", "sueldos")} de la nube que no están en estos datos.`,
+    `Reemplazar: se eliminarán ${plural(replacement.removedExpenses, "gasto", "gastos")}, ${plural(replacement.removedIncomes, "sueldo", "sueldos")}, ${plural(replacement.removedGoals ?? 0, "meta", "metas")}, ${plural(replacement.removedRecurring ?? 0, "gasto fijo", "gastos fijos")}, ${plural(replacement.removedWallets ?? 0, "cartera", "carteras")} y ${plural(replacement.removedTransfers ?? 0, "traspaso", "traspasos")} de la nube que no estén en estos datos.`,
   ];
   backupDom.summary.replaceChildren(...lines.map(createLine));
 

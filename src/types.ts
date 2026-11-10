@@ -23,6 +23,9 @@ export interface Expense {
   category: CategoryKey;
   date: IsoDate;
   note: string;
+  walletId?: string;
+  recurringId?: string;
+  recurringMonth?: MonthKey;
   createdAt: number;
   updatedAt: number;
 }
@@ -35,11 +38,75 @@ export interface Income {
   byMonth: Record<MonthKey, number>;
 }
 
+export interface IncomeEntry {
+  id: string;
+  title: string;
+  amountCents: number;
+  date: IsoDate;
+  createdAt: number;
+  updatedAt: number;
+  /** Identifica una copia explícita del sueldo legado; el documento mensual se conserva. */
+  legacySourceMonth?: MonthKey;
+}
+
+export interface GoalContribution {
+  id: string;
+  amountCents: number;
+  date: IsoDate;
+  createdAt: number;
+}
+
+export interface SavingsGoal {
+  id: string;
+  name: string;
+  targetCents: number;
+  savedCents: number;
+  dueDate: IsoDate | null;
+  createdAt: number;
+  contributions?: GoalContribution[];
+}
+
+export interface RecurringExpense {
+  id: string;
+  name: string;
+  amountCents: number;
+  category: CategoryKey;
+  dayOfMonth: number;
+  active: boolean;
+  lastRunMonth: MonthKey | null;
+}
+
+export type WalletKind = "bank" | "cash" | "card" | "savings" | "investment";
+export interface Wallet {
+  id: string;
+  name: string;
+  kind: WalletKind;
+  openingCents: number;
+  createdAt: number;
+}
+export interface WalletTransfer {
+  id: string;
+  fromWalletId: string;
+  toWalletId: string;
+  amountCents: number;
+  date: IsoDate;
+  note: string;
+  createdAt: number;
+}
+
 /** Documento que se exporta a JSON y se importa. */
 export interface AppData {
   version: 1;
   expenses: Expense[];
   income: Income;
+  /** Límites de gasto por mes. */
+  budgets?: Record<MonthKey, number>;
+  goals?: SavingsGoal[];
+  recurring?: RecurringExpense[];
+  wallets?: Wallet[];
+  transfers?: WalletTransfer[];
+  incomeEntries?: IncomeEntry[];
+  migratedIncomeMonths?: MonthKey[];
 }
 
 /** Ajustes de pantalla: no se guardan ni se exportan. */

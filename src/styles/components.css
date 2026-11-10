@@ -599,7 +599,7 @@
   background: var(--surface-muted);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  color-scheme: dark;
+  color-scheme: inherit;
 }
 
 .field__input:hover {

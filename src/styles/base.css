@@ -1,22 +1,22 @@
 :root {
   color-scheme: dark;
-  --bg: #100e14;
-  --surface: #19161f;
-  --surface-muted: #211d29;
-  --surface-raised: #24202c;
-  --text: #f5f3f7;
-  --text-muted: #a6a0b2;
-  --text-subtle: #777180;
-  --border: #302a3a;
-  --primary: #a78bfa;
-  --primary-strong: #8b5cf6;
-  --primary-soft: #c4b5fd;
-  --on-primary: #100e14;
-  --danger: #fb7185;
-  --warning: #fbbf24;
-  --success: #5eead4;
-  --focus: #c4b5fd;
-  --shadow: 0 16px 36px rgb(0 0 0 / 0.16);
+  --bg: #111018;
+  --surface: #1a1822;
+  --surface-muted: #24212e;
+  --surface-raised: #302b3b;
+  --text: #f4f1f8;
+  --text-muted: #b7b0c2;
+  --text-subtle: #91899e;
+  --border: #35313f;
+  --primary: #b69af7;
+  --primary-strong: #c9b7ff;
+  --primary-soft: #d8caff;
+  --on-primary: #17111f;
+  --danger: #f08a9d;
+  --warning: #e9b95e;
+  --success: #62c6a8;
+  --focus: #d8caff;
+  --shadow: 0 12px 32px rgb(0 0 0 / 0.22);
 
   /* Espaciado */
   --space-1: 0.25rem;
@@ -27,9 +27,9 @@
   --space-6: 2rem;
 
   /* Forma y tipografía */
-  --radius: 0.5rem;
-  --radius-sm: 0.375rem;
-  --font: "DM Sans", "Avenir Next", "Segoe UI", sans-serif;
+  --radius: 0.75rem;
+  --radius-sm: 0.5rem;
+  --font: Inter, "Avenir Next", "Segoe UI", sans-serif;
   --fs-sm: 0.875rem;
   --fs-base: 1rem;
   --fs-lg: 1.25rem;
@@ -58,10 +58,11 @@ body {
   line-height: 1.5;
   color: var(--text);
   background-color: var(--bg);
-  background-image:
-    linear-gradient(rgb(255 255 255 / 0.012) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 0.012) 1px, transparent 1px);
-  background-size: 48px 48px;
+  background-image: radial-gradient(
+    ellipse at 68% -24%,
+    rgb(126 87 194 / 0.09),
+    transparent 48%
+  );
 }
 
 h1,

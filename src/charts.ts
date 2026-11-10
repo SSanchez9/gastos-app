@@ -1,7 +1,7 @@
 import { getChartData, getSavingsSummary, lastSixMonthsSavingsTotals } from "./calc";
 import type { ChartData, ChartSlice } from "./calc";
 import { CATEGORIES, SAVINGS_COLOR } from "./config";
-import { formatMoney, formatMonth, formatPercent } from "./format";
+import { formatCompactMoney, formatMoney, formatMonth, formatPercent } from "./format";
 import type { AppState } from "./types";
 import { getElement } from "./ui";
 
@@ -138,13 +138,6 @@ function createLegendItem(slice: ChartSlice): HTMLLIElement {
   return item;
 }
 
-const compactMoney = new Intl.NumberFormat("es-ES", {
-  style: "currency",
-  currency: "EUR",
-  notation: "compact",
-  maximumFractionDigits: 0,
-});
-
 function renderMonthlyChart(state: AppState): void {
   const months = lastSixMonthsSavingsTotals(state.data, state.ui.selectedMonth);
   const maximum = Math.max(...months.map((item) => Math.abs(item.savedCents ?? 0)), 0);
@@ -164,16 +157,16 @@ function renderMonthlyChart(state: AppState): void {
         ? "month-chart__item month-chart__item--current"
         : "month-chart__item";
       column.setAttribute("aria-expanded", "false");
+      column.setAttribute("aria-haspopup", "tooltip");
 
       const savedText =
         item.savedCents === null
-          ? "Sueldo sin registrar"
+          ? "Sin sueldo"
           : item.savedCents < 0
             ? `Déficit ${formatMoney(-item.savedCents)}`
             : `Ahorraste ${formatMoney(item.savedCents)}`;
       const tooltipText = `Gastaste ${formatMoney(item.spentCents)} · ${savedText}`;
       column.setAttribute("aria-label", `${formatMonth(item.month)}. ${tooltipText}`);
-      column.title = `${formatMonth(item.month)}: ${tooltipText}`;
 
       const tooltip = document.createElement("span");
       tooltip.className = "month-chart__tooltip";
@@ -186,7 +179,7 @@ function renderMonthlyChart(state: AppState): void {
       amount.className = "month-chart__amount";
       amount.setAttribute("aria-hidden", "true");
       amount.textContent =
-        item.savedCents === null ? "—" : compactMoney.format(item.savedCents / 100);
+        item.savedCents === null ? "—" : formatCompactMoney(item.savedCents);
 
       const track = document.createElement("span");
       track.className = "month-chart__track";
@@ -211,18 +204,44 @@ function renderMonthlyChart(state: AppState): void {
       label.textContent = monthLabel.format(month).replace(".", "");
 
       column.append(amount, track, label, tooltip);
-      column.addEventListener("click", () => {
+      column.addEventListener("pointerdown", (event) => {
+        if (event.pointerType !== "touch") return;
+        event.preventDefault();
         const shouldOpen = column.getAttribute("aria-expanded") !== "true";
-        for (const other of chartDom.monthly.querySelectorAll<HTMLButtonElement>(
-          ".month-chart__item",
-        )) {
-          other.setAttribute("aria-expanded", String(other === column && shouldOpen));
-        }
+        closeTooltips();
+        column.setAttribute("aria-expanded", String(shouldOpen));
+      });
+      column.addEventListener("click", (event) => {
+        if (event.detail !== 0) return;
+        const shouldOpen = column.getAttribute("aria-expanded") !== "true";
+        closeTooltips();
+        column.setAttribute("aria-expanded", String(shouldOpen));
       });
       return column;
     }),
   );
 }
+
+function closeTooltips(): void {
+  chartDom.monthly
+    .querySelectorAll<HTMLButtonElement>(".month-chart__item")
+    .forEach((item) => {
+      item.setAttribute("aria-expanded", "false");
+    });
+}
+
+document.addEventListener("pointerdown", (event) => {
+  if (
+    event.pointerType === "touch" &&
+    event.target instanceof Node &&
+    !chartDom.monthly.contains(event.target)
+  ) {
+    closeTooltips();
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeTooltips();
+});
 
 /** Dibuja el reparto de gastos y la evolución mensual con los datos cargados. */
 export function renderChart(state: AppState): void {
