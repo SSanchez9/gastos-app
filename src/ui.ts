@@ -34,7 +34,7 @@ export const dom = {
   spentCompare: getElement("summary-spent-compare", HTMLParagraphElement),
   saved: getElement("summary-saved", HTMLParagraphElement),
   savedNote: getElement("summary-saved-note", HTMLParagraphElement),
-  savingsPct: getElement("summary-savings-pct", HTMLParagraphElement),
+  savingsPct: getElement("summary-savings-pct", HTMLElement),
   categoryTotals: getElement("category-totals", HTMLUListElement),
   categoryEmpty: getElement("category-empty", HTMLParagraphElement),
   breakdownTotal: getElement("breakdown-total", HTMLElement),
@@ -625,6 +625,207 @@ function renderRecentActivity(state: AppState): void {
   dom.recentEmpty.hidden = recent.length > 0;
 }
 
+function renderHomeHighlights(state: AppState): void {
+  const month = state.ui.selectedMonth;
+  const spentCents = sumCents(expensesOfMonth(state.data.expenses, month));
+  const budget = state.data.budgets?.[month] ?? null;
+  const budgetValue = document.getElementById("home-budget-value");
+  const budgetNote = document.getElementById("home-budget-note");
+  const budgetMeter = document.getElementById("home-budget-meter");
+  const budgetFill = document.getElementById("home-budget-fill");
+  if (
+    budgetValue instanceof HTMLElement &&
+    budgetNote instanceof HTMLElement &&
+    budgetMeter instanceof HTMLElement &&
+    budgetFill instanceof HTMLElement
+  ) {
+    if (budget === null) {
+      budgetValue.textContent = "Sin límite definido";
+      budgetNote.textContent = "Aún no has fijado un presupuesto.";
+      budgetMeter.hidden = true;
+      budgetFill.style.width = "0%";
+      budgetMeter.removeAttribute("aria-valuenow");
+      budgetMeter.removeAttribute("aria-valuetext");
+    } else {
+      const usedPct =
+        budget > 0
+          ? Math.min(100, (spentCents / budget) * 100)
+          : spentCents > 0
+            ? 100
+            : 0;
+      budgetValue.textContent = `${formatPercent(usedPct)} utilizado`;
+      budgetNote.textContent = `${formatMoney(Math.max(0, budget - spentCents))} disponibles`;
+      budgetMeter.hidden = false;
+      budgetFill.style.width = `${usedPct}%`;
+      budgetMeter.setAttribute("aria-valuenow", String(Math.round(usedPct)));
+      budgetMeter.setAttribute(
+        "aria-valuetext",
+        `${formatPercent(usedPct)} del presupuesto utilizado`,
+      );
+      budgetMeter.classList.toggle(
+        "home-meter--warning",
+        spentCents >= budget * 0.75 && spentCents < budget,
+      );
+      budgetMeter.classList.toggle("home-meter--danger", spentCents >= budget);
+    }
+  }
+
+  const recurring = (state.data.recurring ?? []).filter((item) => item.active);
+  const today = getTodayIso();
+  const todayMonth = today.slice(0, 7);
+  const todayDay = Number(today.slice(8, 10));
+  const isRegisteredThisMonth = (template: (typeof recurring)[number]): boolean =>
+    template.lastRunMonth === month ||
+    state.data.expenses.some(
+      (expense) =>
+        expense.recurringId === template.id && expense.recurringMonth === month,
+    );
+  const unregistered = recurring.filter((template) => !isRegisteredThisMonth(template));
+  const upcoming = unregistered
+    .filter(
+      (template) =>
+        month > todayMonth || (month === todayMonth && template.dayOfMonth > todayDay),
+    )
+    .sort((a, b) => a.dayOfMonth - b.dayOfMonth)[0];
+  const pending =
+    month === todayMonth
+      ? unregistered
+          .filter((template) => template.dayOfMonth <= todayDay)
+          .sort((a, b) => a.dayOfMonth - b.dayOfMonth)[0]
+      : undefined;
+  const nextRecurring = upcoming ?? pending;
+  const recurringName = document.getElementById("home-recurring-name");
+  const recurringDate = document.getElementById("home-recurring-date");
+  const recurringAmount = document.getElementById("home-recurring-amount");
+  if (
+    recurringName instanceof HTMLElement &&
+    recurringDate instanceof HTMLElement &&
+    recurringAmount instanceof HTMLElement
+  ) {
+    if (nextRecurring) {
+      const monthParts = month.split("-");
+      const year = Number(monthParts[0]);
+      const monthNumber = Number(monthParts[1]);
+      const lastDay = new Date(year, monthNumber, 0).getDate();
+      const dueDate = `${month}-${String(Math.min(nextRecurring.dayOfMonth, lastDay)).padStart(2, "0")}`;
+      recurringName.textContent = nextRecurring.name;
+      recurringDate.textContent = upcoming
+        ? `Próximo · ${formatDate(dueDate)}`
+        : `Pendiente · ${formatDate(dueDate)}`;
+      recurringAmount.textContent = formatMoney(nextRecurring.amountCents);
+      recurringAmount.hidden = false;
+    } else {
+      recurringName.textContent =
+        recurring.length === 0 ? "Sin gastos fijos activos" : "Sin pagos pendientes";
+      recurringDate.textContent = "";
+      recurringAmount.textContent = "";
+      recurringAmount.hidden = true;
+    }
+  }
+
+  const goals = state.data.goals ?? [];
+  const goal = goals.find((item) => item.savedCents < item.targetCents) ?? goals[0];
+  const goalName = document.getElementById("home-goal-name");
+  const goalNote = document.getElementById("home-goal-note");
+  const goalMeter = document.getElementById("home-goal-meter");
+  const goalFill = document.getElementById("home-goal-fill");
+  if (
+    goalName instanceof HTMLElement &&
+    goalNote instanceof HTMLElement &&
+    goalMeter instanceof HTMLElement &&
+    goalFill instanceof HTMLElement
+  ) {
+    if (goal) {
+      const progress = Math.min(100, (goal.savedCents / goal.targetCents) * 100);
+      goalName.textContent = `${goal.name} · ${formatPercent(progress)}`;
+      goalNote.textContent = `${formatMoney(goal.savedCents)} de ${formatMoney(goal.targetCents)}`;
+      goalMeter.hidden = false;
+      goalMeter.setAttribute("aria-label", `Progreso de la meta ${goal.name}`);
+      goalFill.style.width = `${progress}%`;
+      goalMeter.setAttribute("aria-valuenow", String(Math.round(progress)));
+      goalMeter.setAttribute("aria-valuetext", `${formatPercent(progress)} completado`);
+    } else {
+      goalName.textContent = "Aún no tienes metas";
+      goalNote.textContent = "Crea una meta para seguir tu ahorro.";
+      goalMeter.hidden = true;
+      goalFill.style.width = "0%";
+      goalMeter.removeAttribute("aria-valuenow");
+      goalMeter.removeAttribute("aria-valuetext");
+    }
+  }
+
+  const savings = getSavingsSummary(state.data, month);
+  const distributionBar = document.getElementById("income-distribution-bar");
+  const distributionLegend = document.getElementById("income-distribution-legend");
+  const distributionNote = document.getElementById("income-distribution-note");
+  if (
+    distributionBar instanceof HTMLElement &&
+    distributionLegend instanceof HTMLUListElement &&
+    distributionNote instanceof HTMLElement
+  ) {
+    const shares = categoryIncomeShares(state.data.expenses, month, savings.incomeCents);
+    if (savings.incomeCents === null) {
+      distributionBar.hidden = true;
+      distributionLegend.replaceChildren();
+      distributionNote.textContent =
+        "Añade ingresos este mes para ver cómo se reparte el dinero.";
+    } else {
+      const spentPct = shares.reduce((total, item) => total + (item.incomePct ?? 0), 0);
+      const scale = spentPct > 100 ? 100 / spentPct : 1;
+      const segments = shares.map((item) => {
+        const segment = document.createElement("span");
+        segment.className = "income-distribution__segment";
+        segment.style.width = `${(item.incomePct ?? 0) * scale}%`;
+        segment.style.setProperty("--category-color", CATEGORIES[item.category].color);
+        segment.setAttribute("aria-hidden", "true");
+        return segment;
+      });
+      if (savings.savedCents !== null && savings.savedCents > 0) {
+        const saved = document.createElement("span");
+        saved.className =
+          "income-distribution__segment income-distribution__segment--savings";
+        saved.style.width = `${Math.max(0, savings.savingsPct ?? 0)}%`;
+        saved.setAttribute("aria-hidden", "true");
+        segments.push(saved);
+      }
+      distributionBar.replaceChildren(...segments);
+      distributionBar.hidden = false;
+      distributionBar.setAttribute(
+        "aria-label",
+        savings.isDeficit
+          ? "Distribución de gastos superior a los ingresos del mes"
+          : "Distribución de los ingresos entre gastos y ahorro",
+      );
+      distributionNote.textContent = savings.isDeficit
+        ? "Los gastos superan los ingresos de este mes."
+        : "";
+      const legendItems = shares.map((item) => {
+        const entry = document.createElement("li");
+        const swatch = document.createElement("span");
+        swatch.className = "income-distribution__swatch";
+        swatch.style.setProperty("--category-color", CATEGORIES[item.category].color);
+        swatch.setAttribute("aria-hidden", "true");
+        const label = document.createElement("span");
+        label.textContent = `${CATEGORIES[item.category].label} ${formatPercent(item.incomePct ?? 0)}`;
+        entry.append(swatch, label);
+        return entry;
+      });
+      if (savings.savedCents !== null && savings.savedCents > 0) {
+        const entry = document.createElement("li");
+        const swatch = document.createElement("span");
+        swatch.className =
+          "income-distribution__swatch income-distribution__swatch--savings";
+        swatch.setAttribute("aria-hidden", "true");
+        const label = document.createElement("span");
+        label.textContent = `Ahorro ${formatPercent(savings.savingsPct ?? 0)}`;
+        entry.append(swatch, label);
+        legendItems.push(entry);
+      }
+      distributionLegend.replaceChildren(...legendItems);
+    }
+  }
+}
+
 let plannerBudgetKey = "";
 function renderPlanner(state: AppState): void {
   const month = state.ui.selectedMonth;
@@ -1090,5 +1291,6 @@ export function renderApp(state: AppState): void {
   renderSummary(state);
   renderExpenseList(state);
   renderRecentActivity(state);
+  renderHomeHighlights(state);
   renderPlanner(state);
 }

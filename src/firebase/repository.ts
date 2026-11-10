@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteField,
   deleteDoc,
   doc,
   onSnapshot,
@@ -161,7 +162,7 @@ export function updateExpense(userId: string, expense: Expense): Promise<Result<
       category: expense.category,
       date: expense.date,
       note: expense.note,
-      walletId: expense.walletId ?? null,
+      walletId: expense.walletId ?? deleteField(),
       updatedAt: expense.updatedAt,
     }),
   );

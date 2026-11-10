@@ -1,6 +1,6 @@
 import { getChartData, getSavingsSummary, lastSixMonthsSavingsTotals } from "./calc";
 import type { ChartData, ChartSlice } from "./calc";
-import { CATEGORIES, SAVINGS_COLOR } from "./config";
+import { CATEGORIES } from "./config";
 import { formatCompactMoney, formatMoney, formatMonth, formatPercent } from "./format";
 import type { AppState } from "./types";
 import { getElement } from "./ui";
@@ -25,7 +25,7 @@ function sliceLabel(key: ChartSlice["key"]): string {
 }
 
 function sliceColor(key: ChartSlice["key"]): string {
-  return key === "ahorro" ? SAVINGS_COLOR : CATEGORIES[key].color;
+  return key === "ahorro" ? "var(--savings-color)" : CATEGORIES[key].color;
 }
 
 function svgEl<K extends keyof SVGElementTagNameMap>(
@@ -61,13 +61,16 @@ function buildCenterText(savingsPct: number | null): SVGTextElement[] {
  * Anillo hecho con círculos cuyo trazo se corta con stroke-dasharray.
  * Así un único 100 % se dibuja sin casos especiales.
  */
-function buildDonut(chart: ChartData, savingsPct: number | null): SVGSVGElement {
-  // El SVG es decorativo para lectores de pantalla: la leyenda ya contiene los datos.
+function buildDonut(
+  chart: ChartData,
+  savingsPct: number | null,
+): { svg: SVGSVGElement; tooltip: HTMLSpanElement } {
   const svg = svgEl("svg", {
     viewBox: `0 0 ${SIZE} ${SIZE}`,
     class: "chart__svg",
-    "aria-hidden": "true",
-    focusable: "false",
+    role: "group",
+    "aria-label":
+      "Gastos y ahorro por categoría. Enfoca o señala una sección para ver sus datos.",
   });
 
   svg.append(
@@ -86,6 +89,29 @@ function buildDonut(chart: ChartData, savingsPct: number | null): SVGSVGElement 
   const gap = chart.slices.length > 1 ? 1 : 0;
   let offset = 0;
 
+  const tooltip = document.createElement("span");
+  tooltip.className = "chart__tooltip";
+  tooltip.id = "chart-donut-tooltip";
+  tooltip.setAttribute("role", "tooltip");
+  tooltip.hidden = true;
+
+  const showTooltip = (slice: ChartSlice, x: number, y: number): void => {
+    tooltip.textContent = `${sliceLabel(slice.key)} · ${formatPercent(slice.pct)} · ${formatMoney(slice.cents)}`;
+    tooltip.hidden = false;
+    const padding = 8;
+    const halfWidth = tooltip.offsetWidth / 2;
+    const safeX = Math.min(
+      chartDom.container.clientWidth - halfWidth - padding,
+      Math.max(halfWidth + padding, x),
+    );
+    const safeY = Math.max(tooltip.offsetHeight + padding, y);
+    tooltip.style.left = `${safeX}px`;
+    tooltip.style.top = `${safeY}px`;
+  };
+  const hideTooltip = (): void => {
+    tooltip.hidden = true;
+  };
+
   for (const slice of chart.slices) {
     const length = (slice.pct / 100) * CIRCUMFERENCE;
     const visible = Math.max(0, length - gap);
@@ -100,18 +126,45 @@ function buildDonut(chart: ChartData, savingsPct: number | null): SVGSVGElement 
       "stroke-dasharray": `${visible} ${CIRCUMFERENCE - visible}`,
       "stroke-dashoffset": String(-offset),
       class: "chart__slice",
+      tabindex: "0",
+      role: "img",
+      "aria-label": `${sliceLabel(slice.key)}: ${formatMoney(slice.cents)}, ${formatPercent(slice.pct)}`,
+      "aria-describedby": tooltip.id,
     });
 
     const title = svgEl("title");
     title.textContent = `${sliceLabel(slice.key)}: ${formatMoney(slice.cents)} (${formatPercent(slice.pct)})`;
     circle.append(title);
+    circle.addEventListener("pointerenter", (event) => {
+      if (event.pointerType !== "mouse") return;
+      const rect = chartDom.container.getBoundingClientRect();
+      showTooltip(slice, event.clientX - rect.left, event.clientY - rect.top);
+    });
+    circle.addEventListener("pointermove", (event) => {
+      if (event.pointerType !== "mouse") return;
+      const rect = chartDom.container.getBoundingClientRect();
+      showTooltip(slice, event.clientX - rect.left, event.clientY - rect.top);
+    });
+    circle.addEventListener("pointerleave", (event) => {
+      if (event.pointerType === "mouse") hideTooltip();
+    });
+    circle.addEventListener("focus", () => {
+      const circleRect = circle.getBoundingClientRect();
+      const containerRect = chartDom.container.getBoundingClientRect();
+      showTooltip(
+        slice,
+        circleRect.left + circleRect.width / 2 - containerRect.left,
+        circleRect.top + circleRect.height / 2 - containerRect.top,
+      );
+    });
+    circle.addEventListener("blur", hideTooltip);
     group.append(circle);
 
     offset += length;
   }
 
   svg.append(group, ...buildCenterText(savingsPct));
-  return svg;
+  return { svg, tooltip };
 }
 
 function createLegendItem(slice: ChartSlice): HTMLLIElement {
@@ -262,7 +315,8 @@ export function renderChart(state: AppState): void {
     return;
   }
 
-  chartDom.container.replaceChildren(buildDonut(chart, savings.savingsPct));
+  const donut = buildDonut(chart, savings.savingsPct);
+  chartDom.container.replaceChildren(donut.svg, donut.tooltip);
   chartDom.legend.replaceChildren(...chart.slices.map(createLegendItem));
   chartDom.note.textContent =
     chart.kind === "income"
