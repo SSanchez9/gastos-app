@@ -3,7 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      (() => {
+        let savedTheme = null;
+        try {
+          savedTheme = localStorage.getItem("boti-theme");
+        } catch {
+          // Si el almacenamiento no está disponible, se usa el tema del sistema.
+        }
+        const theme =
+          savedTheme === "light" || savedTheme === "dark"
+            ? savedTheme
+            : window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
     <meta name="robots" content="noindex" />
     <meta name="description" content="Controla tus gastos mensuales y cuánto ahorras." />
     <title>Boti · Control de gastos</title>
@@ -91,6 +108,15 @@
             <span class="visually-hidden">Mes seleccionado</span>
             <input class="field__input" type="month" id="month-select" name="month" />
           </label>
+          <button
+            class="button button--secondary button--small theme-toggle"
+            type="button"
+            id="theme-toggle"
+            aria-label="Cambiar tema claro u oscuro"
+            aria-pressed="false"
+          >
+            Oscuro
+          </button>
         </div>
       </header>
 
@@ -231,7 +257,7 @@
           </div>
           <section class="panel panel--form" aria-labelledby="expense-form-title">
             <h2 class="panel__title" id="expense-form-title">Añadir movimiento</h2>
-            <div class="quick-entry">
+            <div class="quick-entry" id="quick-entry-panel">
               <label class="field__label" for="quick-entry-input"
                 >Apunta en un segundo</label
               >
@@ -252,8 +278,18 @@
                 Detectamos el importe, la fecha y una categoría aproximada. Revísalo antes
                 de guardar.
               </p>
+              <button
+                class="text-link quick-entry__complete"
+                type="button"
+                id="show-complete-expense"
+                aria-controls="expense-form"
+                aria-expanded="false"
+              >
+                Añadir gasto completo
+              </button>
+              <p class="form__error" id="expense-error" role="alert" hidden></p>
             </div>
-            <form class="form" id="expense-form">
+            <form class="form" id="expense-form" hidden>
               <div class="field field--amount">
                 <label class="field__label" for="expense-amount">Importe</label>
                 <div class="amount-input">
@@ -316,7 +352,6 @@
                   placeholder="Añade un detalle"
                 />
               </div>
-              <p class="form__error" id="expense-error" role="alert" hidden></p>
               <div class="button-group">
                 <button class="button" type="submit" id="expense-submit">Añadir</button>
                 <button
@@ -443,7 +478,7 @@
           </div>
           <div class="more-grid" aria-label="Más herramientas">
             <a class="more-card" href="#income" data-screen-target="income"
-              ><strong>Ingresos</strong><span>Sueldos e ingresos con título</span></a
+              ><strong>Ingresos</strong><span>Ingresos mensuales y con título</span></a
             >
             <a class="more-card" href="#recurring" data-screen-target="recurring"
               ><strong>Gastos fijos</strong><span>Pagos recurrentes</span></a
@@ -473,97 +508,58 @@
           <button class="back-link" type="button" data-screen-target="more">
             ← Volver a Más
           </button>
-          <section
-            class="panel panel--income"
-            aria-labelledby="income-title"
-            id="income-section"
-          >
-            <div class="panel__head">
+          <div class="income-heading">
+            <h1 id="income-title">Ingresos</h1>
+            <span class="income-month-label" id="income-month-label"></span>
+          </div>
+          <section class="income-screen" id="income-section">
+            <div class="income-summary" aria-label="Total de ingresos del mes">
               <div>
-                <h2 class="panel__title" id="income-title">Ingresos del mes</h2>
-                <p class="hint">Define el ingreso con el que calculamos tu ahorro.</p>
-                <p class="income-total">
-                  Total del mes
-                  <strong class="privacy-amount" id="summary-income">—</strong>
-                </p>
-                <p class="visually-hidden" id="legacy-income-value">
-                  <span id="balance-income">—</span>
-                </p>
+                <p>Total de <span id="income-total-month"></span></p>
+                <strong class="privacy-amount" id="summary-income">—</strong>
               </div>
+              <span class="income-count" id="income-entry-count">0 ingresos</span>
             </div>
-            <form class="form form--inline" id="income-form">
+            <p class="visually-hidden" id="legacy-income-value">
+              <span id="balance-income">—</span>
+            </p>
+
+            <form class="income-entry-form" id="income-entry-form">
               <div class="field">
-                <label class="field__label" for="income-amount">Importe (€)</label>
+                <label class="field__label" for="income-entry-title">Título</label>
                 <input
                   class="field__input"
-                  type="text"
-                  id="income-amount"
-                  name="income"
-                  inputmode="decimal"
-                  autocomplete="off"
-                  placeholder="0,00"
-                  aria-describedby="income-status income-error"
+                  id="income-entry-title"
+                  maxlength="80"
+                  placeholder="Nómina, devolución…"
                   required
                 />
               </div>
-              <button class="button" type="submit">Guardar</button>
-            </form>
-            <p class="form__error" id="income-error" role="alert" hidden></p>
-            <p class="hint" id="income-status"></p>
-            <button
-              class="button button--secondary button--small"
-              type="button"
-              id="income-copy"
-              hidden
-            ></button>
-            <button
-              class="button button--secondary button--small button--danger"
-              type="button"
-              id="income-clear"
-              hidden
-            >
-              Quitar sueldo
-            </button>
-            <div class="income-legacy-tools">
-              <button
-                class="button button--secondary button--small"
-                type="button"
-                id="income-migrate"
-              >
-                Conservar como ingreso titulado
-              </button>
-              <p class="hint">
-                La copia conserva el sueldo antiguo; la migración solo se hace al pulsar
-                este botón.
-              </p>
-            </div>
-            <h3 class="panel__title">Añadir ingreso con título</h3>
-            <form class="planner-form" id="income-entry-form">
-              <label class="field__label" for="income-entry-title">Título</label>
-              <input
-                class="field__input"
-                id="income-entry-title"
-                maxlength="80"
-                placeholder="Nómina, devolución…"
-                required
-              />
-              <label class="field__label" for="income-entry-amount">Importe (€)</label>
-              <input
-                class="field__input"
-                id="income-entry-amount"
-                inputmode="decimal"
-                placeholder="0,00"
-                required
-              />
-              <label class="field__label" for="income-entry-date">Fecha</label>
-              <input class="field__input" id="income-entry-date" type="date" required />
-              <button class="button" type="submit">Añadir ingreso</button>
+              <div class="field">
+                <label class="field__label" for="income-entry-amount">Importe (€)</label>
+                <input
+                  class="field__input"
+                  id="income-entry-amount"
+                  inputmode="decimal"
+                  placeholder="0,00"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label class="field__label" for="income-entry-date">Fecha</label>
+                <input class="field__input" id="income-entry-date" type="date" required />
+              </div>
+              <button class="button" type="submit">Añadir</button>
               <p class="form__error" id="income-entry-error" role="alert" hidden></p>
             </form>
-            <ul class="planner-list" id="income-entry-list"></ul>
-            <p class="empty" id="income-entry-empty" hidden>
-              No hay ingresos titulados en este mes.
-            </p>
+
+            <section class="income-list-card" aria-labelledby="income-list-title">
+              <h2 id="income-list-title">Este mes</h2>
+              <ul class="income-list" id="income-entry-list"></ul>
+              <p class="empty" id="income-entry-empty" hidden>
+                No hay ingresos con título registrados este mes.
+              </p>
+            </section>
           </section>
         </section>
         <section
@@ -659,40 +655,81 @@
           <button class="back-link" type="button" data-screen-target="more">
             ← Volver a Más
           </button>
-          <section class="planner-card" aria-labelledby="recurring-title">
-            <h3 id="recurring-title">Gastos fijos</h3>
-            <ul class="planner-list" id="recurring-list"></ul>
-            <p class="empty planner-empty" id="recurring-empty">
+          <section class="recurring-screen" aria-labelledby="recurring-title">
+            <div class="recurring-heading">
+              <h1 id="recurring-title">Gastos fijos</h1>
+              <span class="recurring-month-label" id="recurring-month-label"></span>
+            </div>
+            <div class="recurring-upcoming" aria-label="Resumen de gastos fijos del mes">
+              <div class="recurring-stat">
+                <p>Total del mes</p>
+                <strong id="recurring-total-month">—</strong>
+              </div>
+              <div class="recurring-stat">
+                <p>Ya registrado</p>
+                <strong id="recurring-registered-month">—</strong>
+              </div>
+              <div class="recurring-stat">
+                <p>Próximo cargo</p>
+                <strong id="recurring-next-charge">—</strong>
+              </div>
+            </div>
+            <ul class="recurring-grid" id="recurring-list"></ul>
+            <p class="empty recurring-empty" id="recurring-empty" hidden>
               Añade alquiler, suscripciones u otros pagos regulares.
             </p>
-            <form class="planner-form" id="recurring-form">
-              <label class="field__label" for="recurring-name">Nombre</label
-              ><input
-                class="field__input"
-                id="recurring-name"
-                maxlength="60"
-                placeholder="Alquiler, gimnasio…"
-                required
-              /><label class="field__label" for="recurring-amount">Importe (€)</label
-              ><input
-                class="field__input"
-                id="recurring-amount"
-                inputmode="decimal"
-                placeholder="45,00"
-                required
-              /><label class="field__label" for="recurring-category">Categoría</label
-              ><select class="field__input" id="recurring-category" required></select
-              ><label class="field__label" for="recurring-day">Día del mes</label
-              ><input
-                class="field__input"
-                id="recurring-day"
-                type="number"
-                min="1"
-                max="28"
-                value="1"
-                required
-              /><button class="button button--small" type="submit">
-                Añadir gasto fijo
+            <p class="recurring-note">
+              Se registran automáticamente el día que indiques. Si eliminas una regla, los
+              movimientos ya registrados se conservan.
+            </p>
+            <button
+              class="recurring-add-toggle"
+              id="recurring-add-toggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="recurring-form"
+            >
+              + Añadir gasto fijo
+            </button>
+            <form class="recurring-form" id="recurring-form" hidden>
+              <div class="field">
+                <label class="field__label" for="recurring-name">Nombre</label>
+                <input
+                  class="field__input"
+                  id="recurring-name"
+                  maxlength="60"
+                  placeholder="Alquiler, gimnasio…"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label class="field__label" for="recurring-amount">Importe (€)</label>
+                <input
+                  class="field__input"
+                  id="recurring-amount"
+                  inputmode="decimal"
+                  placeholder="45,00"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label class="field__label" for="recurring-category">Categoría</label>
+                <select class="field__input" id="recurring-category" required></select>
+              </div>
+              <div class="field">
+                <label class="field__label" for="recurring-day">Día del mes</label>
+                <input
+                  class="field__input"
+                  id="recurring-day"
+                  type="number"
+                  min="1"
+                  max="28"
+                  value="1"
+                  required
+                />
+              </div>
+              <button class="button button--small" type="submit">
+                Guardar gasto fijo
               </button>
               <p class="form__error" id="recurring-error" role="alert" hidden></p>
             </form>
