@@ -745,6 +745,7 @@
 }
 
 .chart {
+  position: relative;
   min-width: 0;
   min-height: auto;
 }
@@ -759,6 +760,35 @@
 
 .chart__slice {
   transition: opacity 0.15s;
+}
+
+.chart__slice:focus-visible {
+  stroke-width: 42px;
+  filter: drop-shadow(0 0 2px var(--focus));
+  outline: none;
+}
+
+.chart__tooltip {
+  position: absolute;
+  z-index: 2;
+  max-width: min(14rem, 85vw);
+  padding: 0.5rem 0.7rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.35;
+  text-align: center;
+  white-space: nowrap;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+}
+
+.chart__tooltip[hidden] {
+  display: none;
 }
 
 .chart__center-value {

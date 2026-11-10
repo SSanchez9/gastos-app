@@ -143,13 +143,6 @@
               <h1>Tu dinero, más claro</h1>
               <p>Esto es lo que está pasando este mes.</p>
             </div>
-            <a
-              class="button page-heading__action"
-              href="#add"
-              data-screen-target="add"
-              aria-label="Añadir movimiento"
-              >Añadir movimiento</a
-            >
           </div>
           <div class="home-grid">
             <div class="home-grid__main">
@@ -158,7 +151,9 @@
                 <div class="balance-card">
                   <div>
                     <div class="balance-card__top">
-                      <p class="balance-card__label">Ahorro del mes</p>
+                      <p class="balance-card__label">
+                        Ahorro del mes · <span id="summary-savings-pct">—</span>
+                      </p>
                       <button
                         class="amount-toggle"
                         type="button"
@@ -179,45 +174,126 @@
                   </div>
                   <div class="balance-card__details">
                     <p>
-                      Lo que queda
-                      <strong class="privacy-amount" id="summary-remaining">—</strong>
+                      Ingresos
+                      <strong class="privacy-amount" id="balance-income">—</strong>
                     </p>
                     <p>
-                      Lo gastado
+                      Gastado
                       <strong class="privacy-amount" id="balance-spent">—</strong>
                     </p>
                   </div>
                   <span class="balance-card__orb" aria-hidden="true"></span>
                 </div>
-                <ul class="cards">
-                  <li class="card card--highlight">
-                    <p class="card__label">Ahorro</p>
-                    <p class="card__value privacy-amount" id="summary-saved">—</p>
-                    <p class="card__note card__note--savings" id="summary-savings-pct">
-                      —
-                    </p>
-                  </li>
-                  <li class="card">
-                    <p class="card__label">Lo gastado</p>
-                    <p class="card__value privacy-amount" id="summary-spent">—</p>
-                    <p class="card__note" id="summary-spent-compare"></p>
-                  </li>
-                  <li class="card">
-                    <p class="card__label">Lo que queda</p>
-                    <p class="card__value privacy-amount" id="summary-remaining-card">
-                      —
-                    </p>
-                    <p class="card__note" id="summary-saved-note"></p>
-                  </li>
-                </ul>
+                <div hidden>
+                  <p id="summary-saved"></p>
+                  <p id="summary-spent"></p>
+                  <p id="summary-spent-compare"></p>
+                  <p id="summary-saved-note"></p>
+                  <p id="summary-remaining"></p>
+                  <p id="summary-remaining-card"></p>
+                </div>
+              </section>
+              <section class="home-highlights" aria-label="Planificación del mes">
+                <article class="home-highlight">
+                  <div class="home-highlight__heading">
+                    <h2 class="home-highlight__label">Presupuesto</h2>
+                    <a class="text-link" href="#budget" data-screen-target="budget">
+                      Ver
+                    </a>
+                  </div>
+                  <p class="home-highlight__value" id="home-budget-value">
+                    Sin límite definido
+                  </p>
+                  <div
+                    class="home-meter"
+                    id="home-budget-meter"
+                    role="progressbar"
+                    aria-label="Presupuesto utilizado"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    hidden
+                  >
+                    <span id="home-budget-fill"></span>
+                  </div>
+                  <p class="home-highlight__note" id="home-budget-note">
+                    Aún no has fijado un presupuesto.
+                  </p>
+                </article>
+                <article class="home-highlight">
+                  <div class="home-highlight__heading">
+                    <h2 class="home-highlight__label">Próximo gasto fijo</h2>
+                    <a class="text-link" href="#recurring" data-screen-target="recurring">
+                      Ver
+                    </a>
+                  </div>
+                  <p class="home-highlight__value" id="home-recurring-name">
+                    Sin gastos fijos activos
+                  </p>
+                  <p class="home-highlight__note" id="home-recurring-date"></p>
+                  <p
+                    class="home-highlight__amount privacy-amount"
+                    id="home-recurring-amount"
+                    hidden
+                  ></p>
+                </article>
+                <article class="home-highlight">
+                  <div class="home-highlight__heading">
+                    <h2 class="home-highlight__label">Meta de ahorro</h2>
+                    <a class="text-link" href="#goals" data-screen-target="goals">
+                      Ver
+                    </a>
+                  </div>
+                  <p class="home-highlight__value" id="home-goal-name">
+                    Aún no tienes metas
+                  </p>
+                  <div
+                    class="home-meter home-meter--goal"
+                    id="home-goal-meter"
+                    role="progressbar"
+                    aria-label="Progreso de la meta de ahorro"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    hidden
+                  >
+                    <span id="home-goal-fill"></span>
+                  </div>
+                  <p class="home-highlight__note" id="home-goal-note">
+                    Crea una meta para seguir tu ahorro.
+                  </p>
+                </article>
+              </section>
+              <section
+                class="panel panel--distribution"
+                aria-labelledby="income-distribution-title"
+              >
+                <div class="panel__head">
+                  <h2 class="panel__title" id="income-distribution-title">
+                    Tu ingreso, repartido
+                  </h2>
+                  <a class="text-link" href="#analysis" data-screen-target="analysis">
+                    Ver análisis
+                  </a>
+                </div>
+                <div
+                  class="income-distribution"
+                  id="income-distribution-bar"
+                  role="img"
+                  aria-label="Reparto de ingresos del mes"
+                  hidden
+                ></div>
+                <ul
+                  class="income-distribution__legend"
+                  id="income-distribution-legend"
+                  aria-label="Detalle del reparto de ingresos"
+                ></ul>
+                <p class="home-highlight__note" id="income-distribution-note">
+                  Añade ingresos este mes para ver cómo se reparte el dinero.
+                </p>
               </section>
             </div>
             <section class="panel panel--activity" aria-labelledby="activity-title">
               <div class="panel__head">
-                <div>
-                  <h2 class="panel__title" id="activity-title">Últimos movimientos</h2>
-                  <p class="hint">Los cinco más recientes</p>
-                </div>
+                <h2 class="panel__title" id="activity-title">Últimos movimientos</h2>
                 <a class="text-link" href="#movements" data-screen-target="movements"
                   >Ver todo →</a
                 >
@@ -257,6 +333,7 @@
           </div>
           <section class="panel panel--form" aria-labelledby="expense-form-title">
             <h2 class="panel__title" id="expense-form-title">Añadir movimiento</h2>
+            <p class="form__error" id="expense-error" role="alert" hidden></p>
             <div class="quick-entry" id="quick-entry-panel">
               <label class="field__label" for="quick-entry-input"
                 >Apunta en un segundo</label
@@ -287,7 +364,6 @@
               >
                 Añadir gasto completo
               </button>
-              <p class="form__error" id="expense-error" role="alert" hidden></p>
             </div>
             <form class="form" id="expense-form" hidden>
               <div class="field field--amount">
@@ -520,10 +596,6 @@
               </div>
               <span class="income-count" id="income-entry-count">0 ingresos</span>
             </div>
-            <p class="visually-hidden" id="legacy-income-value">
-              <span id="balance-income">—</span>
-            </p>
-
             <form class="income-entry-form" id="income-entry-form">
               <div class="field">
                 <label class="field__label" for="income-entry-title">Título</label>
