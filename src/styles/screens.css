@@ -1,0 +1,788 @@
+/* Estilos propios de cada pantalla: Inicio, Movimientos, Análisis, Más,
+   Gastos fijos, Presupuesto, Metas, Carteras y Copias de seguridad. */
+
+/* ---------- Inicio ---------- */
+
+.home,
+.home__main {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.hero {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4) var(--space-6);
+  overflow: hidden;
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 100% 0%, var(--hero-glow) 0 30%, transparent 30.5%),
+    var(--hero);
+  color: var(--on-hero);
+  box-shadow: var(--shadow-float);
+}
+.hero__main {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.hero__lead {
+  color: var(--on-hero-muted);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-regular);
+}
+.hero__inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+}
+.hero__amount {
+  color: var(--accent);
+  font-size: var(--fs-display);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+}
+.hero__decimals {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-medium);
+}
+.hero__sub {
+  color: var(--on-hero-muted);
+  font-size: var(--fs-sm);
+}
+.hero__status {
+  color: var(--on-hero);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+}
+.hero__status--negative::before {
+  content: "⚠ ";
+}
+.hero-chip {
+  margin-top: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--hero-chip);
+  color: var(--on-hero);
+  font-size: var(--fs-xs);
+}
+.hero-chip:empty {
+  display: none;
+}
+.hero-chip--down::before {
+  content: "↘ ";
+}
+.hero-chip--up::before {
+  content: "↗ ";
+}
+.hero__pair {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.stat {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--hero-chip);
+}
+.stat__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: var(--blob);
+  height: var(--blob);
+  border-radius: var(--radius-pill);
+}
+.stat__icon--in {
+  background: var(--mint);
+  color: var(--mint-ink);
+}
+.stat__icon--out {
+  background: var(--peach);
+  color: var(--peach-ink);
+}
+.stat__label {
+  display: block;
+  color: var(--on-hero-muted);
+  font-size: var(--fs-xs);
+}
+.stat__value {
+  display: block;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+
+/* Presupuesto, próximo gasto fijo y meta, seguidos */
+.trio {
+  display: grid;
+  gap: var(--space-3);
+}
+.mini {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-4);
+}
+.mini__visual {
+  display: grid;
+  place-items: center;
+}
+/* Si hay dato, se ve el gráfico pequeño; si no, el icono. */
+.mini__visual > :not([hidden]) ~ .blob {
+  display: none;
+}
+.mini__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.mini__head .text-link {
+  min-height: auto;
+}
+.mini__title {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+.mini__value {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-head);
+}
+.mini__amount::before {
+  content: ", ";
+}
+.mini__note {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+
+.ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--ring);
+  height: var(--ring);
+  --ring-color: var(--primary);
+}
+.ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-pill);
+  background: conic-gradient(var(--ring-color) calc(var(--v, 0) * 1%), var(--track) 0);
+  -webkit-mask: radial-gradient(
+    closest-side,
+    transparent calc(var(--ring-hole) - 1%),
+    #000 var(--ring-hole)
+  );
+  mask: radial-gradient(
+    closest-side,
+    transparent calc(var(--ring-hole) - 1%),
+    #000 var(--ring-hole)
+  );
+}
+.ring--warning {
+  --ring-color: var(--savings-color);
+}
+.ring--danger {
+  --ring-color: var(--danger);
+}
+.ring__value {
+  position: relative;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+}
+.ring__legacy {
+  display: none;
+}
+
+/* Hoja de calendario del tamaño de los iconos de las otras tarjetas. */
+.cal {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: var(--blob);
+  height: var(--blob);
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  line-height: 1;
+  text-align: center;
+}
+.cal__month {
+  padding: var(--border-strong) 0;
+  background: var(--sky-ink);
+  color: var(--surface);
+  font-size: var(--fs-3xs);
+  font-weight: var(--fw-semibold);
+}
+.cal__day {
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+}
+
+.jar {
+  position: relative;
+  width: var(--jar-w);
+  height: var(--jar-h);
+  overflow: hidden;
+  border-radius: var(--radius-sm) var(--radius-sm) var(--radius) var(--radius);
+  background: var(--mint);
+}
+.jar__fill {
+  position: absolute;
+  inset: auto 0 0;
+  height: var(--v, 0%);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: var(--mint-ink);
+  transform-origin: bottom;
+}
+.jar__pct {
+  position: absolute;
+  inset: auto 0 var(--space-1);
+  color: var(--mint);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  text-align: center;
+}
+
+/* ---------- Análisis ---------- */
+
+.chart-layout {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-5);
+}
+.chart {
+  position: relative;
+  width: min(100%, var(--chart-size));
+}
+.chart > .empty {
+  width: 100%;
+}
+.chart__svg {
+  width: 100%;
+  height: auto;
+}
+.chart__track {
+  stroke: var(--track);
+}
+.chart__slice {
+  cursor: pointer;
+}
+.chart__slice:focus-visible {
+  outline: none;
+  stroke-width: var(--slice-focus-stroke);
+}
+.chart__center-value {
+  fill: var(--text);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  text-anchor: middle;
+}
+.chart__center-label {
+  fill: var(--text-muted);
+  font-size: var(--fs-xs);
+  text-anchor: middle;
+}
+.chart__tooltip {
+  position: absolute;
+  z-index: 2;
+  width: max-content;
+  max-width: min(var(--tooltip-max), 85vw);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--hero);
+  color: var(--on-hero);
+  box-shadow: var(--shadow-float);
+  font-size: var(--fs-xs);
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - var(--space-2)));
+}
+.series {
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+}
+.series__item {
+  display: grid;
+  grid-template-columns: var(--dot) minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--fs-sm);
+}
+.series__dot {
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: var(--radius-pill);
+  background: var(--c);
+}
+.series__amount {
+  font-weight: var(--fw-semibold);
+  text-align: right;
+}
+.series__pct {
+  min-width: var(--pct-min);
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.month-chart {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-2);
+  height: var(--month-chart-h);
+}
+.month-chart__item {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  justify-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.month-chart__amount {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+.month-chart__track {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+}
+.month-chart__bar {
+  width: min(var(--col-w), 100%);
+  min-height: var(--border-strong);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: var(--primary);
+}
+.month-chart__item--current .month-chart__bar {
+  background: var(--savings-color);
+}
+.month-chart__bar--unknown {
+  height: var(--border-strong) !important;
+  background: var(--border);
+}
+.month-chart__bar--negative {
+  background: var(--danger);
+}
+.month-chart__label {
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+}
+.month-chart__item--current .month-chart__label {
+  color: var(--text);
+  font-weight: var(--fw-semibold);
+}
+.month-chart__tooltip {
+  position: absolute;
+  bottom: calc(100% + var(--space-1));
+  left: 50%;
+  z-index: 3;
+  width: max-content;
+  max-width: min(var(--tooltip-max-sm), 68vw);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--hero);
+  color: var(--on-hero);
+  box-shadow: var(--shadow-float);
+  font-size: var(--fs-xs);
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+.month-chart__item:hover .month-chart__tooltip,
+.month-chart__item:focus-visible .month-chart__tooltip,
+.month-chart__item[aria-expanded="true"] .month-chart__tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+.month-chart__item:nth-child(-n + 2) .month-chart__tooltip {
+  left: 0;
+  transform: none;
+}
+.month-chart__item:nth-last-child(-n + 2) .month-chart__tooltip {
+  right: 0;
+  left: auto;
+  transform: none;
+}
+
+.hbars {
+  display: grid;
+  gap: var(--space-3) var(--space-6);
+}
+.hbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-3);
+}
+.hbar__name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: var(--fs-sm);
+}
+.hbar__name .icon {
+  color: var(--text-muted);
+}
+.hbar__value {
+  display: flex;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+.hbar__amount {
+  font-weight: var(--fw-semibold);
+}
+.hbar__pct {
+  min-width: var(--pct-min);
+  color: var(--text-muted);
+  text-align: right;
+}
+.hbar__track {
+  grid-column: 1 / -1;
+  height: var(--meter-h);
+  border-radius: var(--radius-pill);
+  background: var(--track);
+}
+.hbar__fill {
+  display: block;
+  width: var(--v);
+  min-width: var(--meter-h);
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--c, var(--primary));
+}
+
+/* ---------- Más ---------- */
+
+.more {
+  display: grid;
+  gap: var(--space-5);
+}
+.menu-group {
+  display: grid;
+  gap: var(--space-2);
+}
+.menu-group__title {
+  padding-left: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+}
+.menu {
+  display: grid;
+  padding: var(--space-2);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+.menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: calc(var(--tap-lg) + var(--space-2));
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: inherit;
+  text-decoration: none;
+}
+.menu__item + .menu__item {
+  box-shadow: 0 calc(var(--border-width) * -1) 0 var(--border);
+}
+.menu__text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.menu__title {
+  font-weight: var(--fw-semibold);
+}
+.menu__meta {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.menu__state {
+  max-width: 45%;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  text-align: right;
+}
+.menu__chev {
+  color: var(--text-muted);
+}
+.account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.account__email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: var(--blob);
+  height: var(--blob);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* ---------- Gastos fijos: línea de tiempo ---------- */
+
+.timeline {
+  position: relative;
+  display: grid;
+  gap: var(--space-3);
+}
+.timeline:not(:empty)::before {
+  content: "";
+  position: absolute;
+  top: var(--space-4);
+  bottom: var(--space-4);
+  left: calc(var(--blob) / 2 - var(--border-width));
+  width: var(--border-strong);
+  background: var(--border);
+}
+.tl {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+.tl__day {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: var(--blob);
+  height: var(--blob);
+  margin-top: var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--hero);
+  color: var(--on-hero);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+}
+.tl__day--today {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.tl__day--next {
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+.tl--today .tl__day,
+.tl--next .tl__day {
+  margin-top: 0;
+}
+.tl__text {
+  flex: 1;
+  align-self: center;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.tl__text strong {
+  color: var(--text);
+}
+.tl__card {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+.recurring-card__view {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "icon text menu"
+    "icon status amount";
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+.recurring-card__view > .blob {
+  grid-area: icon;
+  align-self: start;
+}
+.recurring-card__view > .row__text {
+  grid-area: text;
+}
+.recurring-card__view > .status-pill {
+  grid-area: status;
+  justify-self: start;
+  min-width: 0;
+  white-space: normal;
+}
+.recurring-card__view > .row__amount {
+  grid-area: amount;
+  justify-self: end;
+}
+.recurring-card__view > .row-menu {
+  grid-area: menu;
+}
+.recurring-edit-form {
+  display: grid;
+  gap: var(--space-3);
+}
+.recurring-edit-form .form__error,
+.recurring-edit-form__actions {
+  grid-column: 1 / -1;
+}
+
+/* ---------- Presupuesto, metas, carteras y copias ---------- */
+
+.budget-card {
+  display: grid;
+  gap: var(--space-3);
+}
+.budget-card__progress {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+}
+.goal-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.goal-controls .field__input {
+  flex: 1 1 var(--basis-sm);
+  min-height: var(--tap);
+}
+.tile-grid:empty {
+  display: none;
+}
+.backup-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+.legacy {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}
+
+/* ---------- Escritorio ---------- */
+
+@media (min-width: 640px) {
+  /* La tarjeta del ahorro mantiene siempre la misma forma: cifra a la izquierda,
+     ingresos y gastado apilados a la derecha. */
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-height: var(--hero-min-h);
+  }
+  .hero__pair {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+  .trio {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .mini {
+    grid-template-columns: 1fr;
+    align-content: start;
+    justify-items: start;
+  }
+  .mini__body {
+    width: 100%;
+  }
+  .chart-layout {
+    grid-template-columns: var(--chart-size) minmax(0, 1fr);
+    align-items: center;
+  }
+  .hbars {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .recurring-edit-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .recurring-card__view {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .recurring-card__view > .blob {
+    align-self: center;
+  }
+  .recurring-card__view > .row__text {
+    flex: 1 1 var(--basis-md);
+  }
+}
+
+@media (min-width: 1024px) {
+  .home {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    align-items: stretch;
+    gap: var(--space-5);
+  }
+  .home__main {
+    align-content: start;
+    gap: var(--space-5);
+  }
+  .hero {
+    padding: var(--space-6);
+  }
+}
+
+@media (min-width: 1280px) {
+  .hero__pair {
+    flex-direction: row;
+  }
+}
+
+@media (hover: hover) {
+  .menu__item:hover {
+    background: var(--surface-2);
+  }
+  .month-chart__item:hover .month-chart__bar {
+    filter: brightness(1.08);
+  }
+}
+
+/* Momento único al cargar: el tarro de la meta se llena. */
+@media (prefers-reduced-motion: no-preference) {
+  .jar__fill {
+    animation: jar-fill var(--dur-slow) var(--ease-soft) var(--delay) both;
+  }
+}
+@keyframes jar-fill {
+  from {
+    transform: scaleY(0);
+  }
+}

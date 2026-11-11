@@ -16,8 +16,18 @@ import {
   formatMonth,
   formatPercent,
   getTodayIso,
+  shiftMonth,
 } from "./format";
-import type { AppState, CategoryKey, Expense, NewExpense, Result } from "./types";
+import type {
+  AppState,
+  CategoryKey,
+  Expense,
+  IsoDate,
+  NewExpense,
+  RecurringExpense,
+  Result,
+  WalletKind,
+} from "./types";
 
 export function getElement<T extends HTMLElement>(id: string, type: new () => T): T {
   const element = document.getElementById(id);
@@ -35,6 +45,7 @@ export const dom = {
   saved: getElement("summary-saved", HTMLParagraphElement),
   savedNote: getElement("summary-saved-note", HTMLParagraphElement),
   savingsPct: getElement("summary-savings-pct", HTMLElement),
+  summaryTitle: getElement("summary-title", HTMLHeadingElement),
   categoryTotals: getElement("category-totals", HTMLUListElement),
   categoryEmpty: getElement("category-empty", HTMLParagraphElement),
   breakdownTotal: getElement("breakdown-total", HTMLElement),
@@ -48,16 +59,19 @@ export const dom = {
   submit: getElement("expense-submit", HTMLButtonElement),
   cancel: getElement("expense-cancel", HTMLButtonElement),
   filterCategory: getElement("filter-category", HTMLSelectElement),
+  filterChips: getElement("filter-chips", HTMLDivElement),
   categoryPicker: getElement("expense-category-picker", HTMLDivElement),
   wallet: getElement("expense-wallet", HTMLSelectElement),
   currentDate: getElement("current-date", HTMLTimeElement),
-  balance: getElement("summary-balance", HTMLHeadingElement),
+  balance: getElement("summary-balance", HTMLParagraphElement),
   balanceNote: getElement("summary-balance-note", HTMLParagraphElement),
   balanceIncome: getElement("balance-income", HTMLElement),
   balanceSpent: getElement("balance-spent", HTMLElement),
   tableWrap: getElement("expense-table-wrap", HTMLDivElement),
-  rows: getElement("expense-rows", HTMLTableSectionElement),
+  rows: getElement("expense-rows", HTMLDivElement),
   listEmpty: getElement("list-empty", HTMLParagraphElement),
+  movementsTotal: getElement("movements-total", HTMLElement),
+  movementsTotalLabel: getElement("movements-total-label", HTMLElement),
   remaining: getElement("summary-remaining", HTMLElement),
   remainingCard: getElement("summary-remaining-card", HTMLElement),
   recentActivity: getElement("recent-activity", HTMLUListElement),
@@ -65,15 +79,171 @@ export const dom = {
   eyeToggle: getElement("hide-amounts", HTMLButtonElement),
   quickEntry: getElement("quick-entry-input", HTMLInputElement),
   quickEntryPanel: getElement("quick-entry-panel", HTMLDivElement),
+  quickEntryPreview: getElement("quick-entry-preview", HTMLUListElement),
   completeExpense: getElement("show-complete-expense", HTMLButtonElement),
+  toast: getElement("app-toast", HTMLParagraphElement),
 };
+
+// ---------- Piezas visuales comunes ----------
+
+type Tone = "peach" | "mint" | "lilac" | "sky" | "neutral";
+
+/** Icono y tono de cada categoría: la identidad nunca depende solo del color. */
+const CATEGORY_LOOK: Record<CategoryKey, { icon: string; tone: Tone }> = {
+  supermercado: { icon: "cart", tone: "peach" },
+  personal: { icon: "user", tone: "lilac" },
+  coche: { icon: "car", tone: "sky" },
+  gasolina: { icon: "fuel", tone: "lilac" },
+  alquiler: { icon: "key", tone: "peach" },
+  casa: { icon: "home", tone: "sky" },
+  otros: { icon: "tag", tone: "neutral" },
+  social: { icon: "social", tone: "mint" },
+};
+
+const WALLET_LOOK: Record<WalletKind, { icon: string; tone: Tone; label: string }> = {
+  bank: { icon: "wallet", tone: "sky", label: "Banco" },
+  cash: { icon: "wallet", tone: "mint", label: "Efectivo" },
+  card: { icon: "wallet", tone: "lilac", label: "Tarjeta" },
+  savings: { icon: "jar", tone: "mint", label: "Ahorro" },
+  investment: { icon: "chart", tone: "peach", label: "Inversión" },
+};
+
+function el<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  className?: string,
+  text?: string,
+): HTMLElementTagNameMap[K] {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  if (text !== undefined) element.textContent = text;
+  return element;
+}
+
+export function createIcon(name: string, className = "icon"): SVGSVGElement {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", className);
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+  const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+  use.setAttribute("href", `#i-${name}`);
+  svg.append(use);
+  return svg;
+}
+
+function createBlob(icon: string, tone: Tone): HTMLSpanElement {
+  const blob = el("span", `blob blob--${tone}`);
+  blob.setAttribute("aria-hidden", "true");
+  blob.append(createIcon(icon));
+  return blob;
+}
+
+function createCategoryBlob(category: CategoryKey): HTMLSpanElement {
+  const look = CATEGORY_LOOK[category];
+  return createBlob(look.icon, look.tone);
+}
+
+function createMoney(
+  cents: number,
+  className: string,
+  sign: "" | "+" | "−" = "",
+): HTMLElement {
+  return el("span", `${className} privacy-amount`, `${sign}${formatMoney(cents)}`);
+}
+
+function capitalize(text: string): string {
+  return text.charAt(0).toLocaleUpperCase("es") + text.slice(1);
+}
+
+/** "2026-11" → "Noviembre 2026" */
+function monthTitle(month: string): string {
+  return capitalize(formatMonth(month).replace(" de ", " "));
+}
+
+/** "2026-11" → "noviembre" */
+function monthName(month: string): string {
+  return formatMonth(month).split(" de ")[0] ?? formatMonth(month);
+}
+
+function isoOffsetFromToday(days: number): IsoDate {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+/** Hoy, Ayer o la fecha corta. */
+export function relativeDayLabel(date: IsoDate): string {
+  if (date === getTodayIso()) return "Hoy";
+  if (date === isoOffsetFromToday(-1)) return "Ayer";
+  return formatDate(date);
+}
+
+export interface ChartSeries {
+  label: string;
+  cents: number;
+  pct: number;
+  color: string;
+  savings: boolean;
+}
+
+/** Color fijo de una categoría en los gráficos (tokens --cat-* de base.css). */
+export function categoryColor(category: CategoryKey): string {
+  return `var(--cat-${category})`;
+}
+
+/**
+ * Series de los gráficos de reparto: todas las categorías de mayor a menor gasto,
+ * cada una con su color, y el ahorro al final.
+ */
+export function buildSeries(
+  expenses: readonly { category: CategoryKey; cents: number; pct: number }[],
+  savings: { cents: number; pct: number } | null,
+): ChartSeries[] {
+  const series: ChartSeries[] = [...expenses]
+    .sort((a, b) => b.cents - a.cents)
+    .map((item) => ({
+      label: CATEGORIES[item.category].label,
+      cents: item.cents,
+      pct: item.pct,
+      color: categoryColor(item.category),
+      savings: false,
+    }));
+  if (savings !== null && savings.cents > 0) {
+    series.push({
+      label: "Ahorro",
+      cents: savings.cents,
+      pct: savings.pct,
+      color: "var(--savings-color)",
+      savings: true,
+    });
+  }
+  return series;
+}
 
 export function setAmountsHidden(hidden: boolean): void {
   document.body.classList.toggle("amounts-hidden", hidden);
   dom.eyeToggle.setAttribute("aria-pressed", String(hidden));
-  dom.eyeToggle.setAttribute(
-    "aria-label",
-    hidden ? "Mostrar importes" : "Ocultar importes",
+}
+
+let toastTimer: number | undefined;
+/** Mensaje breve de confirmación, anunciado por lectores de pantalla. */
+export function showToast(message: string): void {
+  dom.toast.textContent = message;
+  dom.toast.hidden = false;
+  window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => {
+    dom.toast.hidden = true;
+  }, 3200);
+}
+
+export function showExpenseSavedToast(expense: Expense, edited: boolean): void {
+  showToast(
+    edited
+      ? "Cambios guardados."
+      : `Movimiento añadido: ${formatMoney(expense.amountCents)} en ${CATEGORIES[expense.category].label}.`,
   );
 }
 
@@ -84,23 +254,43 @@ function createOption(value: string, label: string): HTMLOptionElement {
   return option;
 }
 
-/** Rellena los desplegables de categoría a partir de config.ts. */
+/** Rellena los desplegables y selectores de categoría a partir de config.ts. */
 export function initCategorySelects(): void {
   dom.category.replaceChildren(
     ...CATEGORY_KEYS.map((key) => createOption(key, CATEGORIES[key].label)),
   );
   dom.filterCategory.replaceChildren(
-    createOption("all", "Todos"),
+    createOption("all", "Todas"),
     ...CATEGORY_KEYS.map((key) => createOption(key, CATEGORIES[key].label)),
+  );
+  // Las etiquetas de filtro actualizan el desplegable y avisan a main.ts con «change».
+  dom.filterChips.replaceChildren(
+    ...["all", ...CATEGORY_KEYS].map((value) => {
+      const button = el(
+        "button",
+        "filter",
+        value === "all" ? "Todas" : CATEGORIES[value as CategoryKey].label,
+      );
+      button.type = "button";
+      button.dataset["filter"] = value;
+      button.setAttribute("aria-pressed", "false");
+      button.addEventListener("click", () => {
+        dom.filterCategory.value = value;
+        dom.filterCategory.dispatchEvent(new Event("change"));
+      });
+      return button;
+    }),
   );
   dom.categoryPicker.replaceChildren(
     ...CATEGORY_KEYS.map((category) => {
-      const button = document.createElement("button");
+      const button = el("button", "category-chip");
       button.type = "button";
-      button.className = "category-chip";
-      button.textContent = CATEGORIES[category].label;
       button.dataset["category"] = category;
       button.setAttribute("aria-pressed", "false");
+      button.append(
+        createCategoryBlob(category),
+        el("span", "category-chip__label", CATEGORIES[category].label),
+      );
       button.addEventListener("click", () => {
         dom.category.value = category;
         syncCategoryPicker();
@@ -118,6 +308,17 @@ function syncCategoryPicker(): void {
     button.setAttribute(
       "aria-pressed",
       String(button.dataset["category"] === dom.category.value),
+    );
+  }
+}
+
+function syncFilterChips(): void {
+  for (const button of dom.filterChips.querySelectorAll<HTMLButtonElement>(
+    "[data-filter]",
+  )) {
+    button.setAttribute(
+      "aria-pressed",
+      String(button.dataset["filter"] === dom.filterCategory.value),
     );
   }
 }
@@ -200,34 +401,64 @@ export function resetForm(options: { keepContext: boolean }): void {
   dom.amount.focus();
 }
 
+export interface QuickEntryPreview {
+  amountCents: number;
+  category: CategoryKey;
+  date: IsoDate;
+}
+
+/** Muestra lo que la entrada rápida ha entendido antes de guardar. */
+export function renderQuickEntryPreview(preview: QuickEntryPreview | null): void {
+  if (preview === null) {
+    dom.quickEntryPreview.replaceChildren();
+    dom.quickEntryPreview.hidden = true;
+    return;
+  }
+  const chip = (icon: string, text: string): HTMLLIElement => {
+    const item = el("li", "pill pill--surface");
+    item.append(createIcon(icon, "icon icon--sm"), el("span", "", text));
+    return item;
+  };
+  dom.quickEntryPreview.replaceChildren(
+    chip("wallet", formatMoney(preview.amountCents)),
+    chip(CATEGORY_LOOK[preview.category].icon, CATEGORIES[preview.category].label),
+    chip("calendar", relativeDayLabel(preview.date)),
+  );
+  dom.quickEntryPreview.hidden = false;
+}
+
+// ---------- Inicio: resumen ----------
+
 function renderIncome(state: AppState): void {
   const month = state.ui.selectedMonth;
   const savings = getSavingsSummary(state.data, month);
-  const monthLabel = formatMonth(month).replace(" de ", " ");
   const incomeMonthLabel = document.getElementById("income-month-label");
   const incomeTotalMonth = document.getElementById("income-total-month");
-  const capitalizedMonthLabel =
-    monthLabel.charAt(0).toLocaleUpperCase("es") + monthLabel.slice(1);
-  if (incomeMonthLabel) incomeMonthLabel.textContent = capitalizedMonthLabel;
-  if (incomeTotalMonth) incomeTotalMonth.textContent = monthLabel;
+  if (incomeMonthLabel) incomeMonthLabel.textContent = monthTitle(month);
+  if (incomeTotalMonth)
+    incomeTotalMonth.textContent = formatMonth(month).replace(" de ", " ");
 
-  // Tarjetas del resumen
   dom.income.textContent =
     savings.incomeCents === null ? "—" : formatMoney(savings.incomeCents);
   dom.saved.textContent =
     savings.savedCents === null ? "—" : formatMoney(savings.savedCents);
+
+  // Cifra principal: los decimales van más pequeños.
   const balanceText = savings.savedCents === null ? "—" : formatMoney(savings.savedCents);
   dom.balance.replaceChildren();
   const decimalIndex = balanceText.lastIndexOf(",");
   if (decimalIndex < 0) dom.balance.textContent = balanceText;
   else {
-    const integer = document.createElement("span");
-    integer.textContent = balanceText.slice(0, decimalIndex);
-    const decimals = document.createElement("span");
-    decimals.className = "balance-card__decimals";
-    decimals.textContent = balanceText.slice(decimalIndex);
+    const integer = el("span", "", balanceText.slice(0, decimalIndex));
+    const decimals = el("span", "hero__decimals", balanceText.slice(decimalIndex));
     dom.balance.append(integer, decimals);
   }
+  dom.summaryTitle.textContent =
+    savings.savedCents === null
+      ? `Ahorro de ${monthName(month)}`
+      : savings.isDeficit
+        ? `En ${monthName(month)} has gastado de más`
+        : `En ${monthName(month)} has ahorrado`;
   dom.remaining.textContent =
     savings.savedCents === null ? "—" : formatMoney(savings.savedCents);
   dom.remainingCard.textContent =
@@ -241,10 +472,11 @@ function renderIncome(state: AppState): void {
       ? "Registra tus ingresos para ver tu balance."
       : savings.isDeficit
         ? "Este mes has gastado más de lo que ingresaste."
-        : "Tu balance está en positivo este mes.";
+        : "";
+  dom.balanceNote.hidden = dom.balanceNote.textContent === "";
   dom.balanceNote.className = savings.isDeficit
-    ? "balance-card__status balance-card__status--negative"
-    : "balance-card__status";
+    ? "hero__status hero__status--negative"
+    : "hero__status";
   dom.savingsPct.textContent =
     savings.savingsPct === null ? "—" : formatPercent(savings.savingsPct);
 
@@ -298,62 +530,40 @@ function renderIncomeEntries(state: AppState): void {
   if (list instanceof HTMLUListElement) {
     list.replaceChildren(
       ...entries.map((entry) => {
-        const item = document.createElement("li");
-        item.className = "income-item";
-        const icon = document.createElement("span");
-        icon.className = "income-item__icon";
-        icon.setAttribute("aria-hidden", "true");
-        const iconSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        iconSvg.setAttribute("viewBox", "0 0 24 24");
-        const iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        iconPath.setAttribute("d", "M7 17 17 7M8 7h9v9");
-        iconSvg.append(iconPath);
-        icon.append(iconSvg);
-        const detail = document.createElement("span");
-        detail.className = "income-item__detail";
-        const title = document.createElement("strong");
-        title.textContent = entry.title;
-        const date = document.createElement("small");
-        date.textContent = entry.dateLabel;
-        detail.append(title, date);
-        const amount = document.createElement("span");
-        amount.className = "income-item__amount";
-        amount.textContent = `+${formatMoney(entry.amountCents)}`;
-        const actions = document.createElement("div");
-        actions.className = "income-item__actions";
-        for (const [action, label] of [
-          ["income-edit", "Editar"],
-          ["income-delete", "Eliminar"],
+        const item = el("li", "row");
+        const detail = el("span", "row__text");
+        detail.append(
+          el("span", "row__title", entry.title),
+          el("span", "row__meta", entry.dateLabel),
+        );
+        const actions = el("span", "row__actions");
+        for (const [action, label, icon] of [
+          ["income-edit", "Editar", "edit"],
+          ["income-delete", "Eliminar", "trash"],
         ] as const) {
-          const button = document.createElement("button");
+          const button = el(
+            "button",
+            action === "income-delete" ? "icon-btn icon-btn--danger" : "icon-btn",
+          );
           button.type = "button";
-          button.className = `button button--secondary income-item__action income-item__action--${action}`;
           button.dataset["action"] = action;
           button.dataset["id"] = entry.id;
           button.setAttribute("aria-label", `${label} ${entry.title}`);
-          const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-          svg.setAttribute("viewBox", "0 0 24 24");
-          svg.setAttribute("aria-hidden", "true");
-          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-          path.setAttribute(
-            "d",
-            action === "income-edit"
-              ? "M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"
-              : "M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6",
-          );
-          svg.append(path);
-          button.append(svg);
+          button.append(createIcon(icon, "icon icon--sm"));
           actions.append(button);
         }
-        item.append(icon, detail, amount, actions);
+        item.append(
+          createBlob("arrow-in", "mint"),
+          detail,
+          createMoney(entry.amountCents, "row__amount row__amount--in", "+"),
+          actions,
+        );
         return item;
       }),
     );
   }
   if (empty instanceof HTMLParagraphElement) empty.hidden = count > 0;
 }
-
-// ---------- Resumen de gastos ----------
 
 type Trend = "up" | "down" | "flat" | "none";
 
@@ -368,60 +578,46 @@ function describeComparison(comparison: MonthComparison): { text: string; trend:
     return { text: `Sin gastos en ${previousName} para comparar.`, trend: "none" };
   }
   if (diffCents === 0) {
-    return { text: `Igual que en ${previousName}.`, trend: "flat" };
+    return { text: `Has gastado lo mismo que en ${previousName}.`, trend: "flat" };
   }
   if (diffCents > 0) {
     return {
-      text: `${formatMoney(diffCents)} más que en ${previousName} (+${formatPercent(diffPct)})`,
+      text: `${formatMoney(diffCents)} más gastado que en ${previousName} (+${formatPercent(diffPct)})`,
       trend: "up",
     };
   }
   return {
-    text: `${formatMoney(-diffCents)} menos que en ${previousName} (-${formatPercent(-diffPct)})`,
+    text: `${formatMoney(-diffCents)} menos gastado que en ${previousName} (-${formatPercent(-diffPct)})`,
     trend: "down",
   };
 }
+
+// ---------- Análisis: desglose ----------
 
 function createBreakdownItem(
   category: CategoryKey,
   cents: number,
   pct: number | null,
+  maxCents: number,
 ): HTMLLIElement {
-  const info = CATEGORIES[category];
-
-  const dot = document.createElement("span");
-  dot.className = "dot";
-  dot.style.backgroundColor = info.color;
-  dot.setAttribute("aria-hidden", "true");
-
-  const name = document.createElement("span");
-  name.className = "breakdown__name";
-  name.textContent = info.label;
-
-  const amount = document.createElement("span");
-  amount.className = "breakdown__amount";
-  amount.textContent = formatMoney(cents);
-
-  const percentage = document.createElement("span");
-  percentage.className = "breakdown__pct";
-  percentage.textContent = pct === null ? "—" : formatPercent(pct);
-
-  const head = document.createElement("div");
-  head.className = "breakdown__head";
-  head.append(dot, name, amount, percentage);
-
-  const fill = document.createElement("span");
-  fill.style.width = `${Math.min(pct ?? 0, 100)}%`;
-  fill.style.backgroundColor = info.color;
-
-  const bar = document.createElement("div");
-  bar.className = "breakdown__bar";
-  bar.setAttribute("aria-hidden", "true");
-  bar.append(fill);
-
-  const item = document.createElement("li");
-  item.className = "breakdown__item";
-  item.append(head, bar);
+  const name = el("span", "hbar__name");
+  name.append(
+    createIcon(CATEGORY_LOOK[category].icon, "icon icon--sm"),
+    el("span", "", CATEGORIES[category].label),
+  );
+  const value = el("span", "hbar__value");
+  value.append(
+    createMoney(cents, "hbar__amount"),
+    el("span", "hbar__pct", pct === null ? "—" : formatPercent(pct)),
+  );
+  const track = el("span", "hbar__track");
+  track.setAttribute("aria-hidden", "true");
+  const fill = el("span", "hbar__fill");
+  fill.style.setProperty("--v", `${maxCents > 0 ? (cents / maxCents) * 100 : 0}%`);
+  fill.style.setProperty("--c", categoryColor(category));
+  track.append(fill);
+  const item = el("li", "hbar");
+  item.append(name, value, track);
   return item;
 }
 
@@ -432,96 +628,92 @@ function renderSummary(state: AppState): void {
   const spentCents = sumCents(expensesOfMonth(expenses, month));
   dom.spent.textContent = formatMoney(spentCents);
   dom.breakdownTotal.textContent = formatMoney(spentCents);
+  dom.movementsTotal.textContent = formatMoney(spentCents);
+  dom.movementsTotalLabel.textContent = `Gastado en ${monthName(month)}`;
 
   const comparison = describeComparison(compareWithPreviousMonth(expenses, month));
   dom.spentCompare.textContent = comparison.text;
-  dom.spentCompare.className = `card__note card__note--${comparison.trend}`;
+  dom.spentCompare.className = `hero-chip hero-chip--${comparison.trend}`;
 
   const savings = getSavingsSummary(state.data, month);
   const totals = categoryIncomeShares(expenses, month, savings.incomeCents);
+  const maxCents = Math.max(0, ...totals.map((item) => item.cents));
   dom.categoryTotals.replaceChildren(
     ...totals.map((item) =>
-      createBreakdownItem(item.category, item.cents, item.incomePct),
+      createBreakdownItem(item.category, item.cents, item.incomePct, maxCents),
     ),
   );
   dom.categoryTotals.hidden = totals.length === 0;
   dom.categoryEmpty.hidden = totals.length > 0;
 }
 
-// ---------- Lista ----------
+// ---------- Movimientos y actividad: agrupados por día ----------
 
-function createCell(text: string, className?: string): HTMLTableCellElement {
-  const cell = document.createElement("td");
-  cell.textContent = text;
-  if (className !== undefined) cell.className = className;
-  return cell;
+interface DayItem {
+  id: string;
+  date: IsoDate;
+  createdAt: number;
+  title: string;
+  subtitle: string;
+  amountCents: number;
+  income: boolean;
+  category: CategoryKey | null;
 }
 
-function createActionButton(
-  action: "edit" | "delete",
-  expense: Expense,
-): HTMLButtonElement {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = `button button--secondary button--small expense-action expense-action--${action}`;
-  button.dataset["action"] = action;
-  button.dataset["id"] = expense.id;
-  const verb = action === "edit" ? "Editar" : "Eliminar";
-  button.setAttribute(
-    "aria-label",
-    `${verb} gasto de ${formatMoney(expense.amountCents)} del ${formatDate(expense.date)}`,
-  );
-  const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  icon.setAttribute("viewBox", "0 0 24 24");
-  icon.setAttribute("aria-hidden", "true");
-  icon.setAttribute("focusable", "false");
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.setAttribute(
-    "d",
-    action === "edit"
-      ? "M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"
-      : "M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6",
-  );
-  icon.append(path);
-  button.append(icon);
-  return button;
+/** Agrupa por fecha (más reciente primero) conservando el orden de entrada. */
+function groupByDay<T extends { date: IsoDate }>(items: readonly T[]): [IsoDate, T[]][] {
+  const groups = new Map<IsoDate, T[]>();
+  for (const item of items) {
+    const group = groups.get(item.date);
+    if (group) group.push(item);
+    else groups.set(item.date, [item]);
+  }
+  return [...groups.entries()];
 }
 
-function createRow(expense: Expense): HTMLTableRowElement {
-  const row = document.createElement("tr");
-  const details = createCell("", "expense-row__details");
-  details.colSpan = 3;
-  const heading = document.createElement("div");
-  heading.className = "expense-row__heading";
-  const dot = document.createElement("span");
-  dot.className = "dot";
-  dot.style.backgroundColor = CATEGORIES[expense.category].color;
-  dot.setAttribute("aria-hidden", "true");
-  const category = document.createElement("span");
-  category.className = "expense-row__category";
-  category.textContent = CATEGORIES[expense.category].label;
-  heading.append(dot, category);
+function createDayHeading(date: IsoDate, tag: "h2" | "h3"): HTMLElement {
+  return el(tag, "day__title", relativeDayLabel(date));
+}
 
-  const meta = document.createElement("span");
-  meta.className = "expense-row__meta";
-  meta.textContent =
-    expense.note === ""
-      ? formatDate(expense.date)
-      : `${formatDate(expense.date)} · ${expense.note}`;
-  details.append(heading, meta);
+/** Lápiz y papelera de un movimiento; main.ts los atiende por data-action. */
+function createExpenseActions(expense: Expense): HTMLSpanElement {
+  const actions = el("span", "row__actions");
+  for (const [action, verb, icon] of [
+    ["edit", "Editar", "edit"],
+    ["delete", "Eliminar", "trash"],
+  ] as const) {
+    const button = el(
+      "button",
+      action === "delete" ? "icon-btn icon-btn--danger" : "icon-btn",
+    );
+    button.type = "button";
+    button.dataset["action"] = action;
+    button.dataset["id"] = expense.id;
+    button.setAttribute(
+      "aria-label",
+      `${verb} gasto de ${formatMoney(expense.amountCents)} del ${formatDate(expense.date)}`,
+    );
+    button.append(createIcon(icon, "icon icon--sm"));
+    actions.append(button);
+  }
+  return actions;
+}
 
-  const amount = createCell(formatMoney(expense.amountCents), "expense-row__amount");
-  const actions = document.createElement("td");
-  actions.className = "expense-row__actions";
-  const actionsWrap = document.createElement("div");
-  actionsWrap.className = "actions";
-  actionsWrap.append(
-    createActionButton("edit", expense),
-    createActionButton("delete", expense),
+function createExpenseRow(expense: Expense): HTMLLIElement {
+  const label = CATEGORIES[expense.category].label;
+  const title = expense.note || label;
+  const text = el("span", "row__text");
+  text.append(
+    el("span", "row__title", title),
+    el("span", "row__meta", expense.note ? label : "Sin nota"),
   );
-  actions.append(actionsWrap);
-
-  row.append(details, amount, actions);
+  const row = el("li", "row");
+  row.append(
+    createCategoryBlob(expense.category),
+    text,
+    createMoney(expense.amountCents, "row__amount", "−"),
+    createExpenseActions(expense),
+  );
   return row;
 }
 
@@ -529,7 +721,15 @@ function renderExpenseList(state: AppState): void {
   const { selectedMonth, categoryFilter } = state.ui;
   const expenses = filterExpenses(state.data.expenses, selectedMonth, categoryFilter);
 
-  dom.rows.replaceChildren(...expenses.map(createRow));
+  dom.rows.replaceChildren(
+    ...groupByDay(expenses).map(([date, items]) => {
+      const day = el("section", "day");
+      const list = el("ul", "rows");
+      list.append(...items.map(createExpenseRow));
+      day.append(createDayHeading(date, "h2"), list);
+      return day;
+    }),
+  );
   dom.tableWrap.hidden = expenses.length === 0;
   dom.listEmpty.hidden = expenses.length > 0;
   dom.listEmpty.textContent =
@@ -539,25 +739,15 @@ function renderExpenseList(state: AppState): void {
 }
 
 function renderRecentActivity(state: AppState): void {
-  type RecentItem = {
-    id: string;
-    date: string;
-    createdAt: number;
-    title: string;
-    subtitle: string;
-    amountCents: number;
-    income: boolean;
-    category: CategoryKey | null;
-  };
   const month = state.ui.selectedMonth;
-  const items: RecentItem[] = state.data.expenses
+  const items: DayItem[] = state.data.expenses
     .filter((expense) => expense.date.slice(0, 7) === month)
     .map((expense) => ({
       id: expense.id,
       date: expense.date,
       createdAt: expense.createdAt,
       title: expense.note || CATEGORIES[expense.category].label,
-      subtitle: `${CATEGORIES[expense.category].label} · ${formatDate(expense.date)}`,
+      subtitle: expense.note ? CATEGORIES[expense.category].label : "Sin nota",
       amountCents: expense.amountCents,
       income: false,
       category: expense.category,
@@ -569,7 +759,7 @@ function renderRecentActivity(state: AppState): void {
       date: entry.date,
       createdAt: entry.createdAt,
       title: entry.title,
-      subtitle: `Ingreso · ${formatDate(entry.date)}`,
+      subtitle: "Ingreso",
       amountCents: entry.amountCents,
       income: true,
       category: null,
@@ -583,7 +773,7 @@ function renderRecentActivity(state: AppState): void {
       date: `${incomeMonth}-01`,
       createdAt: 0,
       title: "Ingreso mensual",
-      subtitle: `Ingreso · ${formatDate(`${incomeMonth}-01`)}`,
+      subtitle: "Ingreso",
       amountCents,
       income: true,
       category: null,
@@ -593,36 +783,59 @@ function renderRecentActivity(state: AppState): void {
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt)
     .slice(0, 5);
   dom.recentActivity.replaceChildren(
-    ...recent.map((entry) => {
-      const item = document.createElement("li");
-      item.className = entry.income
-        ? "activity-item activity-item--income"
-        : "activity-item";
-      const icon = document.createElement("span");
-      icon.className = "activity-item__icon";
-      icon.setAttribute("aria-hidden", "true");
-      if (entry.category !== null) {
-        icon.dataset["category"] = entry.category;
-        icon.style.setProperty("--category-color", CATEGORIES[entry.category].color);
-      }
-      icon.textContent = entry.income
-        ? "+"
-        : CATEGORIES[entry.category ?? "otros"].label.slice(0, 1);
-      const detail = document.createElement("span");
-      detail.className = "activity-item__detail";
-      const title = document.createElement("strong");
-      title.textContent = entry.title;
-      const subtitle = document.createElement("small");
-      subtitle.textContent = entry.subtitle;
-      detail.append(title, subtitle);
-      const amount = document.createElement("strong");
-      amount.className = "activity-item__amount";
-      amount.textContent = `${entry.income ? "+" : "−"}${formatMoney(entry.amountCents)}`;
-      item.append(icon, detail, amount);
-      return item;
+    ...groupByDay(recent).map(([date, dayItems]) => {
+      const day = el("li", "day");
+      const list = el("ul", "rows");
+      list.append(
+        ...dayItems.map((entry) => {
+          const row = el("li", "row");
+          const text = el("span", "row__text");
+          text.append(
+            el("span", "row__title", entry.title),
+            el("span", "row__meta", entry.subtitle),
+          );
+          row.append(
+            entry.category === null
+              ? createBlob("arrow-in", "mint")
+              : createCategoryBlob(entry.category),
+            text,
+            createMoney(
+              entry.amountCents,
+              entry.income ? "row__amount row__amount--in" : "row__amount",
+              entry.income ? "+" : "−",
+            ),
+          );
+          return row;
+        }),
+      );
+      day.append(createDayHeading(date, "h3"), list);
+      return day;
     }),
   );
   dom.recentEmpty.hidden = recent.length > 0;
+}
+
+// ---------- Inicio: presupuesto, gasto fijo, meta y reparto ----------
+
+function isRegisteredIn(
+  state: AppState,
+  template: RecurringExpense,
+  month: string,
+): boolean {
+  return (
+    template.lastRunMonth === month ||
+    state.data.expenses.some(
+      (expense) =>
+        expense.recurringId === template.id && expense.recurringMonth === month,
+    )
+  );
+}
+
+function dueDateOf(month: string, dayOfMonth: number): IsoDate {
+  const year = Number(month.slice(0, 4));
+  const monthNumber = Number(month.slice(5, 7));
+  const lastDay = new Date(year, monthNumber, 0).getDate();
+  return `${month}-${String(Math.min(dayOfMonth, lastDay)).padStart(2, "0")}`;
 }
 
 function renderHomeHighlights(state: AppState): void {
@@ -633,17 +846,21 @@ function renderHomeHighlights(state: AppState): void {
   const budgetNote = document.getElementById("home-budget-note");
   const budgetMeter = document.getElementById("home-budget-meter");
   const budgetFill = document.getElementById("home-budget-fill");
+  const budgetRingLabel = document.getElementById("home-budget-ring-label");
   if (
     budgetValue instanceof HTMLElement &&
     budgetNote instanceof HTMLElement &&
     budgetMeter instanceof HTMLElement &&
-    budgetFill instanceof HTMLElement
+    budgetFill instanceof HTMLElement &&
+    budgetRingLabel instanceof HTMLElement
   ) {
     if (budget === null) {
       budgetValue.textContent = "Sin límite definido";
       budgetNote.textContent = "Aún no has fijado un presupuesto.";
       budgetMeter.hidden = true;
       budgetFill.style.width = "0%";
+      budgetMeter.style.setProperty("--v", "0");
+      budgetRingLabel.textContent = "";
       budgetMeter.removeAttribute("aria-valuenow");
       budgetMeter.removeAttribute("aria-valuetext");
     } else {
@@ -653,20 +870,22 @@ function renderHomeHighlights(state: AppState): void {
           : spentCents > 0
             ? 100
             : 0;
-      budgetValue.textContent = `${formatPercent(usedPct)} utilizado`;
-      budgetNote.textContent = `${formatMoney(Math.max(0, budget - spentCents))} disponibles`;
+      budgetValue.textContent = `Quedan ${formatMoney(Math.max(0, budget - spentCents))}`;
+      budgetNote.textContent = `Has usado el ${formatPercent(usedPct)} de ${formatMoney(budget)}`;
       budgetMeter.hidden = false;
       budgetFill.style.width = `${usedPct}%`;
+      budgetMeter.style.setProperty("--v", String(usedPct));
+      budgetRingLabel.textContent = formatPercent(Math.round(usedPct));
       budgetMeter.setAttribute("aria-valuenow", String(Math.round(usedPct)));
       budgetMeter.setAttribute(
         "aria-valuetext",
         `${formatPercent(usedPct)} del presupuesto utilizado`,
       );
       budgetMeter.classList.toggle(
-        "home-meter--warning",
+        "ring--warning",
         spentCents >= budget * 0.75 && spentCents < budget,
       );
-      budgetMeter.classList.toggle("home-meter--danger", spentCents >= budget);
+      budgetMeter.classList.toggle("ring--danger", spentCents >= budget);
     }
   }
 
@@ -674,13 +893,9 @@ function renderHomeHighlights(state: AppState): void {
   const today = getTodayIso();
   const todayMonth = today.slice(0, 7);
   const todayDay = Number(today.slice(8, 10));
-  const isRegisteredThisMonth = (template: (typeof recurring)[number]): boolean =>
-    template.lastRunMonth === month ||
-    state.data.expenses.some(
-      (expense) =>
-        expense.recurringId === template.id && expense.recurringMonth === month,
-    );
-  const unregistered = recurring.filter((template) => !isRegisteredThisMonth(template));
+  const unregistered = recurring.filter(
+    (template) => !isRegisteredIn(state, template, month),
+  );
   const upcoming = unregistered
     .filter(
       (template) =>
@@ -693,33 +908,50 @@ function renderHomeHighlights(state: AppState): void {
           .filter((template) => template.dayOfMonth <= todayDay)
           .sort((a, b) => a.dayOfMonth - b.dayOfMonth)[0]
       : undefined;
-  const nextRecurring = upcoming ?? pending;
+  // Si este mes ya está todo registrado, se anuncia el primero del mes siguiente.
+  const nextMonth = shiftMonth(month, 1);
+  const nextMonthFirst =
+    upcoming === undefined && pending === undefined && month >= todayMonth
+      ? [...recurring].sort((a, b) => a.dayOfMonth - b.dayOfMonth)[0]
+      : undefined;
+  const nextRecurring = upcoming ?? pending ?? nextMonthFirst;
   const recurringName = document.getElementById("home-recurring-name");
   const recurringDate = document.getElementById("home-recurring-date");
   const recurringAmount = document.getElementById("home-recurring-amount");
+  const recurringCal = document.getElementById("home-recurring-cal");
+  const recurringCalMonth = document.getElementById("home-recurring-cal-month");
+  const recurringCalDay = document.getElementById("home-recurring-cal-day");
   if (
     recurringName instanceof HTMLElement &&
     recurringDate instanceof HTMLElement &&
-    recurringAmount instanceof HTMLElement
+    recurringAmount instanceof HTMLElement &&
+    recurringCal instanceof HTMLElement &&
+    recurringCalMonth instanceof HTMLElement &&
+    recurringCalDay instanceof HTMLElement
   ) {
     if (nextRecurring) {
-      const monthParts = month.split("-");
-      const year = Number(monthParts[0]);
-      const monthNumber = Number(monthParts[1]);
-      const lastDay = new Date(year, monthNumber, 0).getDate();
-      const dueDate = `${month}-${String(Math.min(nextRecurring.dayOfMonth, lastDay)).padStart(2, "0")}`;
+      const dueDate = dueDateOf(
+        nextRecurring === nextMonthFirst ? nextMonth : month,
+        nextRecurring.dayOfMonth,
+      );
+      const [day = "", shortMonth = ""] = formatDate(dueDate).split(" ");
       recurringName.textContent = nextRecurring.name;
-      recurringDate.textContent = upcoming
-        ? `Próximo · ${formatDate(dueDate)}`
-        : `Pendiente · ${formatDate(dueDate)}`;
+      recurringDate.textContent =
+        nextRecurring === pending
+          ? `Pendiente desde el ${formatDate(dueDate)}`
+          : `Se cargará el ${formatDate(dueDate)}`;
       recurringAmount.textContent = formatMoney(nextRecurring.amountCents);
       recurringAmount.hidden = false;
+      recurringCalMonth.textContent = shortMonth;
+      recurringCalDay.textContent = day;
+      recurringCal.hidden = false;
     } else {
       recurringName.textContent =
         recurring.length === 0 ? "Sin gastos fijos activos" : "Sin pagos pendientes";
       recurringDate.textContent = "";
       recurringAmount.textContent = "";
       recurringAmount.hidden = true;
+      recurringCal.hidden = true;
     }
   }
 
@@ -729,29 +961,34 @@ function renderHomeHighlights(state: AppState): void {
   const goalNote = document.getElementById("home-goal-note");
   const goalMeter = document.getElementById("home-goal-meter");
   const goalFill = document.getElementById("home-goal-fill");
+  const goalPct = document.getElementById("home-goal-pct");
   if (
     goalName instanceof HTMLElement &&
     goalNote instanceof HTMLElement &&
     goalMeter instanceof HTMLElement &&
-    goalFill instanceof HTMLElement
+    goalFill instanceof HTMLElement &&
+    goalPct instanceof HTMLElement
   ) {
     if (goal) {
       const progress = Math.min(100, (goal.savedCents / goal.targetCents) * 100);
-      goalName.textContent = `${goal.name} · ${formatPercent(progress)}`;
+      goalName.textContent = goal.name;
       goalNote.textContent = `${formatMoney(goal.savedCents)} de ${formatMoney(goal.targetCents)}`;
       goalMeter.hidden = false;
       goalMeter.setAttribute("aria-label", `Progreso de la meta ${goal.name}`);
-      goalFill.style.width = `${progress}%`;
+      goalMeter.style.setProperty("--v", `${progress}%`);
+      goalPct.textContent = formatPercent(Math.round(progress));
       goalMeter.setAttribute("aria-valuenow", String(Math.round(progress)));
       goalMeter.setAttribute("aria-valuetext", `${formatPercent(progress)} completado`);
     } else {
       goalName.textContent = "Aún no tienes metas";
       goalNote.textContent = "Crea una meta para seguir tu ahorro.";
       goalMeter.hidden = true;
-      goalFill.style.width = "0%";
+      goalMeter.style.setProperty("--v", "0%");
+      goalPct.textContent = "";
       goalMeter.removeAttribute("aria-valuenow");
       goalMeter.removeAttribute("aria-valuetext");
     }
+    goalFill.removeAttribute("style");
   }
 
   const savings = getSavingsSummary(state.data, month);
@@ -770,71 +1007,119 @@ function renderHomeHighlights(state: AppState): void {
       distributionNote.textContent =
         "Añade ingresos este mes para ver cómo se reparte el dinero.";
     } else {
-      const spentPct = shares.reduce((total, item) => total + (item.incomePct ?? 0), 0);
-      const scale = spentPct > 100 ? 100 / spentPct : 1;
-      const segments = shares.map((item) => {
-        const segment = document.createElement("span");
-        segment.className = "income-distribution__segment";
-        segment.style.width = `${(item.incomePct ?? 0) * scale}%`;
-        segment.style.setProperty("--category-color", CATEGORIES[item.category].color);
-        segment.setAttribute("aria-hidden", "true");
-        return segment;
-      });
-      if (savings.savedCents !== null && savings.savedCents > 0) {
-        const saved = document.createElement("span");
-        saved.className =
-          "income-distribution__segment income-distribution__segment--savings";
-        saved.style.width = `${Math.max(0, savings.savingsPct ?? 0)}%`;
-        saved.setAttribute("aria-hidden", "true");
-        segments.push(saved);
-      }
-      distributionBar.replaceChildren(...segments);
-      distributionBar.hidden = false;
+      const series = buildSeries(
+        shares.map((item) => ({
+          category: item.category,
+          cents: item.cents,
+          pct: item.incomePct ?? 0,
+        })),
+        savings.savedCents !== null && savings.savedCents > 0
+          ? { cents: savings.savedCents, pct: Math.max(0, savings.savingsPct ?? 0) }
+          : null,
+      );
+      const totalPct = series.reduce((total, item) => total + item.pct, 0);
+      const scale = totalPct > 100 ? 100 / totalPct : 1;
+      distributionBar.replaceChildren(
+        ...series.map((item) => {
+          const segment = el("span", "stackbar__segment");
+          segment.style.setProperty("--w", String(item.pct * scale));
+          segment.style.setProperty("--c", item.color);
+          return segment;
+        }),
+      );
+      distributionBar.hidden = series.length === 0;
       distributionBar.setAttribute(
         "aria-label",
-        savings.isDeficit
-          ? "Distribución de gastos superior a los ingresos del mes"
-          : "Distribución de los ingresos entre gastos y ahorro",
+        series.map((item) => `${item.label} ${formatPercent(item.pct)}`).join(", "),
       );
       distributionNote.textContent = savings.isDeficit
         ? "Los gastos superan los ingresos de este mes."
         : "";
-      const legendItems = shares.map((item) => {
-        const entry = document.createElement("li");
-        const swatch = document.createElement("span");
-        swatch.className = "income-distribution__swatch";
-        swatch.style.setProperty("--category-color", CATEGORIES[item.category].color);
-        swatch.setAttribute("aria-hidden", "true");
-        const label = document.createElement("span");
-        label.textContent = `${CATEGORIES[item.category].label} ${formatPercent(item.incomePct ?? 0)}`;
-        entry.append(swatch, label);
-        return entry;
-      });
-      if (savings.savedCents !== null && savings.savedCents > 0) {
-        const entry = document.createElement("li");
-        const swatch = document.createElement("span");
-        swatch.className =
-          "income-distribution__swatch income-distribution__swatch--savings";
-        swatch.setAttribute("aria-hidden", "true");
-        const label = document.createElement("span");
-        label.textContent = `Ahorro ${formatPercent(savings.savingsPct ?? 0)}`;
-        entry.append(swatch, label);
-        legendItems.push(entry);
-      }
-      distributionLegend.replaceChildren(...legendItems);
+      distributionLegend.replaceChildren(
+        ...series.map((item) => {
+          const entry = el(
+            "li",
+            item.savings ? "legend-chip legend-chip--savings" : "legend-chip",
+          );
+          const swatch = el("span", "legend-chip__dot");
+          swatch.style.setProperty("--c", item.color);
+          swatch.setAttribute("aria-hidden", "true");
+          entry.append(
+            swatch,
+            el("span", "", item.label),
+            el("strong", "", formatPercent(item.pct)),
+          );
+          return entry;
+        }),
+      );
     }
   }
+}
+
+// ---------- Más: estado de cada sección ----------
+
+function renderMoreStates(state: AppState): void {
+  const month = state.ui.selectedMonth;
+  const setText = (id: string, text: string): void => {
+    const target = document.getElementById(id);
+    if (target) target.textContent = text;
+  };
+  const savings = getSavingsSummary(state.data, month);
+  setText(
+    "more-income-state",
+    savings.incomeCents === null
+      ? `Sin ingresos en ${monthName(month)}`
+      : `${formatMoney(savings.incomeCents)} en ${monthName(month)}`,
+  );
+  const active = (state.data.recurring ?? []).filter((item) => item.active);
+  setText(
+    "more-recurring-state",
+    active.length === 0
+      ? "Ninguno activo"
+      : `${active.length} ${active.length === 1 ? "activo" : "activos"}, ${formatMoney(
+          active.reduce((total, item) => total + item.amountCents, 0),
+        )} al mes`,
+  );
+  const wallets = state.data.wallets ?? [];
+  setText(
+    "more-wallets-state",
+    wallets.length === 0
+      ? "Ninguna todavía"
+      : `${wallets.length} ${wallets.length === 1 ? "cartera" : "carteras"}`,
+  );
+  const goals = state.data.goals ?? [];
+  setText(
+    "more-goals-state",
+    goals.length === 0
+      ? "Aún no tienes metas"
+      : `${goals.length} ${goals.length === 1 ? "meta" : "metas"}`,
+  );
+  const budget = state.data.budgets?.[month] ?? null;
+  setText(
+    "more-budget-state",
+    budget === null
+      ? `Sin límite en ${monthName(month)}`
+      : `Límite de ${formatMoney(budget)}`,
+  );
+}
+
+// ---------- Presupuesto, metas, gastos fijos y carteras ----------
+
+function createStatusPill(
+  kind: "ok" | "paused" | "pending" | "soon",
+  text: string,
+): HTMLElement {
+  const pill = el("span", `status-pill status-pill--${kind}`);
+  if (kind === "ok") pill.append(createIcon("check", "icon icon--sm"));
+  pill.append(el("span", "", text));
+  return pill;
 }
 
 let plannerBudgetKey = "";
 function renderPlanner(state: AppState): void {
   const month = state.ui.selectedMonth;
   const recurringMonthLabel = document.getElementById("recurring-month-label");
-  if (recurringMonthLabel) {
-    const monthName = formatMonth(month).replace(" de ", " ");
-    recurringMonthLabel.textContent =
-      monthName.charAt(0).toLocaleUpperCase("es") + monthName.slice(1);
-  }
+  if (recurringMonthLabel) recurringMonthLabel.textContent = monthTitle(month);
   const budget = state.data.budgets?.[month] ?? null;
   const spent = sumCents(expensesOfMonth(state.data.expenses, month));
   const budgetKey = `${month}:${budget ?? ""}`;
@@ -850,7 +1135,7 @@ function renderPlanner(state: AppState): void {
     budgetProgress.textContent =
       budget === null
         ? "Aún no has fijado un límite para este mes."
-        : `${formatMoney(spent)} gastados de ${formatMoney(budget)} · ${formatMoney(Math.max(0, budget - spent))} disponibles`;
+        : `${formatMoney(spent)} gastados de ${formatMoney(budget)}. Te quedan ${formatMoney(Math.max(0, budget - spent))}.`;
   }
   if (budgetFill instanceof HTMLElement && budget !== null) {
     budgetFill.style.width = `${Math.min(100, (spent / budget) * 100)}%`;
@@ -874,336 +1159,75 @@ function renderPlanner(state: AppState): void {
   if (goalsList instanceof HTMLUListElement) {
     goalsList.replaceChildren(
       ...goals.map((goal) => {
-        const item = document.createElement("li");
-        item.className = "planner-item";
-        const top = document.createElement("div");
-        top.className = "planner-item__top";
-        const name = document.createElement("span");
-        name.className = "planner-item__name";
-        name.textContent = goal.name;
-        const amount = document.createElement("span");
-        amount.className = "planner-item__meta";
-        amount.textContent = `${formatMoney(goal.savedCents)} / ${formatMoney(goal.targetCents)}`;
-        top.append(name, amount);
-        const meter = document.createElement("div");
-        meter.className = "budget-meter";
-        const fill = document.createElement("span");
-        fill.style.width = `${Math.min(100, (goal.savedCents / goal.targetCents) * 100)}%`;
+        const progress = Math.min(100, (goal.savedCents / goal.targetCents) * 100);
+        const item = el("li", "tile");
+        const top = el("div", "tile__top");
+        top.append(createBlob("jar", "mint"));
+        if (goal.savedCents >= goal.targetCents)
+          top.append(createStatusPill("ok", "Meta cumplida"));
+        else
+          top.append(el("span", "pill pill--soft", formatPercent(Math.round(progress))));
+        const meter = el("div", "meter");
+        meter.setAttribute("role", "progressbar");
+        meter.setAttribute("aria-label", `Progreso de ${goal.name}`);
+        meter.setAttribute("aria-valuemin", "0");
+        meter.setAttribute("aria-valuemax", "100");
+        meter.setAttribute("aria-valuenow", String(Math.round(progress)));
+        const fill = el("span");
+        fill.style.width = `${progress}%`;
         meter.append(fill);
-        const history = document.createElement("p");
-        history.className = "planner-item__meta";
+        const amounts = el("p", "tile__value");
+        amounts.append(
+          createMoney(goal.savedCents, ""),
+          el("span", "tile__of", " de "),
+          createMoney(goal.targetCents, "tile__of"),
+        );
         const contributions = goal.contributions ?? [];
-        history.textContent =
+        const history = el(
+          "p",
+          "tile__text",
           contributions.length === 0
             ? "Sin aportaciones registradas"
-            : `${contributions.length} aportaciones · última ${formatDate(contributions[contributions.length - 1]!.date)}`;
-        const controls = document.createElement("div");
-        controls.className = "planner-item__actions";
-        const contribution = document.createElement("input");
-        contribution.className = "field__input";
+            : `${contributions.length} ${contributions.length === 1 ? "aportación" : "aportaciones"}, la última el ${formatDate(contributions[contributions.length - 1]!.date)}`,
+        );
+        const controls = el("div", "goal-controls");
+        const contribution = el("input", "field__input");
         contribution.inputMode = "decimal";
         contribution.placeholder = "Aportar €";
+        contribution.autocomplete = "off";
         contribution.setAttribute("aria-label", `Aportación a ${goal.name}`);
         contribution.dataset["goalContribution"] = goal.id;
-        const add = document.createElement("button");
+        const add = el("button", "button button--small", "Añadir ahorro");
         add.type = "button";
-        add.className = "button button--small";
-        add.textContent = "Añadir ahorro";
         add.dataset["action"] = "goal-add";
         add.dataset["id"] = goal.id;
-        const remove = document.createElement("button");
+        const remove = el("button", "icon-btn icon-btn--danger");
         remove.type = "button";
-        remove.className = "button button--secondary button--small button--danger";
-        remove.textContent = "Eliminar";
+        remove.setAttribute("aria-label", `Eliminar la meta ${goal.name}`);
+        remove.append(createIcon("trash", "icon icon--sm"));
         remove.dataset["action"] = "goal-delete";
         remove.dataset["id"] = goal.id;
         controls.append(contribution, add, remove);
-        item.append(top, meter, history);
-        if (goal.savedCents >= goal.targetCents) {
-          const completed = document.createElement("p");
-          completed.className = "planner-item__meta goal-complete";
-          completed.textContent = "Meta cumplida";
-          item.append(completed);
-        }
+        item.append(top, el("h2", "tile__title", goal.name), amounts, meter, history);
+        if (goal.dueDate)
+          item.append(
+            el("p", "tile__text", `Fecha objetivo: ${formatDate(goal.dueDate)}`),
+          );
         item.append(controls);
-        if (goal.dueDate) {
-          const due = document.createElement("p");
-          due.className = "planner-item__meta";
-          due.textContent = `Fecha objetivo: ${formatDate(goal.dueDate)}`;
-          item.append(due);
-        }
         return item;
       }),
     );
   }
   if (goalsEmpty) goalsEmpty.hidden = goals.length > 0;
 
-  const recurringList = document.getElementById("recurring-list");
-  const recurringEmpty = document.getElementById("recurring-empty");
-  const recurring = state.data.recurring ?? [];
-  const today = getTodayIso();
-  const todayMonth = today.slice(0, 7);
-  const todayDay = Number(today.slice(8, 10));
-  const isRegisteredThisMonth = (template: (typeof recurring)[number]): boolean =>
-    template.lastRunMonth === month ||
-    state.data.expenses.some(
-      (expense) =>
-        expense.recurringId === template.id && expense.recurringMonth === month,
-    );
-  const unregisteredActive = recurring.filter(
-    (template) => template.active && !isRegisteredThisMonth(template),
-  );
-  const pendingCharge =
-    month === todayMonth
-      ? unregisteredActive
-          .filter((template) => template.dayOfMonth <= todayDay)
-          .sort((a, b) => a.dayOfMonth - b.dayOfMonth)[0]
-      : undefined;
-  const upcomingCharge = unregisteredActive
-    .filter(
-      (template) =>
-        month > todayMonth || (month === todayMonth && template.dayOfMonth > todayDay),
-    )
-    .sort((a, b) => a.dayOfMonth - b.dayOfMonth)[0];
-  const recurringTotal = recurring
-    .filter((template) => template.active)
-    .reduce((total, template) => total + template.amountCents, 0);
-  const registeredExpenses = state.data.expenses.filter(
-    (expense) =>
-      expense.recurringMonth === month ||
-      (expense.date.slice(0, 7) === month && expense.note.startsWith("Pago fijo: ")),
-  );
-  const recurringTotalLabel = document.getElementById("recurring-total-month");
-  const recurringRegisteredLabel = document.getElementById("recurring-registered-month");
-  const recurringNextLabel = document.getElementById("recurring-next-charge");
-  if (recurringTotalLabel) recurringTotalLabel.textContent = formatMoney(recurringTotal);
-  if (recurringRegisteredLabel)
-    recurringRegisteredLabel.textContent = formatMoney(sumCents(registeredExpenses));
-  if (recurringNextLabel) {
-    recurringNextLabel.textContent = upcomingCharge
-      ? formatDate(`${month}-${String(upcomingCharge.dayOfMonth).padStart(2, "0")}`)
-      : pendingCharge
-        ? `Pendiente · ${formatDate(`${month}-${String(pendingCharge.dayOfMonth).padStart(2, "0")}`)}`
-        : "—";
-    recurringNextLabel.title = recurringNextLabel.textContent;
-  }
-  if (recurringList instanceof HTMLUListElement) {
-    const orderedRecurring = [...recurring].sort(
-      (a, b) => a.dayOfMonth - b.dayOfMonth || a.name.localeCompare(b.name, "es"),
-    );
-    const rows: HTMLLIElement[] = [];
-    let todayDividerAdded = false;
-    const appendTodayDivider = (): void => {
-      const divider = document.createElement("li");
-      divider.className = "recurring-today-divider";
-      const badge = document.createElement("span");
-      badge.className = "recurring-day-badge recurring-day-badge--today";
-      badge.textContent = `Hoy · ${todayDay}`;
-      const line = document.createElement("span");
-      line.className = "recurring-today-divider__line";
-      divider.append(badge, line);
-      rows.push(divider);
-      todayDividerAdded = true;
-    };
-    for (const template of orderedRecurring) {
-      if (month === todayMonth && !todayDividerAdded && template.dayOfMonth >= todayDay) {
-        appendTodayDivider();
-      }
-      const row = document.createElement("li");
-      row.className = "recurring-row";
-      const dayBadge = document.createElement("span");
-      dayBadge.className = "recurring-day-badge";
-      dayBadge.textContent = `Día ${template.dayOfMonth}`;
-      const item = document.createElement("article");
-      item.className = "recurring-card";
-      const status = document.createElement("span");
-      status.className = "recurring-status";
-      const recordedExpense = state.data.expenses.find(
-        (expense) =>
-          expense.recurringId === template.id && expense.recurringMonth === month,
-      );
-      const registered = isRegisteredThisMonth(template) || recordedExpense !== undefined;
-      status.classList.toggle("recurring-status--registered", registered);
-      status.classList.toggle("recurring-status--paused", !template.active);
-      status.textContent = !template.active
-        ? "Pausado"
-        : registered
-          ? `✓ Registrado${recordedExpense ? ` ${formatDate(recordedExpense.date)}` : " este mes"}`
-          : month === todayMonth && template.dayOfMonth <= todayDay
-            ? `Pendiente: ${formatDate(`${month}-${String(template.dayOfMonth).padStart(2, "0")}`)}`
-            : `Próximo: ${formatDate(`${month}-${String(template.dayOfMonth).padStart(2, "0")}`)}`;
-      const name = document.createElement("h2");
-      name.className = "recurring-card__name";
-      name.textContent = template.name;
-      const amount = document.createElement("span");
-      amount.className = "recurring-card__amount";
-      amount.textContent = formatMoney(template.amountCents);
-      const meta = document.createElement("p");
-      meta.className = "recurring-card__meta";
-      meta.textContent = CATEGORIES[template.category].label;
-      const run = document.createElement("button");
-      run.type = "button";
-      run.className = "recurring-menu__item";
-      run.textContent = "Registrar este mes";
-      run.setAttribute("aria-label", `Registrar ${template.name} este mes`);
-      run.dataset["action"] = "recurring-run";
-      run.dataset["id"] = template.id;
-      run.disabled = !template.active || registered;
-      const edit = document.createElement("button");
-      edit.type = "button";
-      edit.className = "recurring-menu__item";
-      edit.textContent = "Editar";
-      edit.setAttribute("aria-label", `Editar ${template.name}`);
-      edit.dataset["action"] = "recurring-edit";
-      edit.dataset["id"] = template.id;
-      const toggle = document.createElement("button");
-      toggle.type = "button";
-      toggle.className = "recurring-menu__item";
-      toggle.textContent = template.active ? "Pausar" : "Activar";
-      toggle.setAttribute(
-        "aria-label",
-        `${template.active ? "Pausar" : "Activar"} ${template.name}`,
-      );
-      toggle.dataset["action"] = "recurring-toggle";
-      toggle.dataset["id"] = template.id;
-      toggle.dataset["active"] = String(!template.active);
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.className = "recurring-menu__item recurring-menu__item--danger";
-      remove.textContent = "Eliminar";
-      remove.setAttribute("aria-label", `Eliminar ${template.name}`);
-      remove.dataset["action"] = "recurring-delete";
-      remove.dataset["id"] = template.id;
-      const menu = document.createElement("details");
-      menu.className = "recurring-menu";
-      const menuToggle = document.createElement("summary");
-      menuToggle.className = "recurring-menu__toggle";
-      menuToggle.textContent = "•••";
-      menuToggle.setAttribute("aria-label", `Opciones de ${template.name}`);
-      const menuItems = document.createElement("div");
-      menuItems.className = "recurring-menu__items";
-      menuItems.append(run, edit, toggle, remove);
-      menu.append(menuToggle, menuItems);
-      const titleAndCategory = document.createElement("div");
-      titleAndCategory.className = "recurring-card__details";
-      titleAndCategory.append(name, meta);
-      const summary = document.createElement("div");
-      summary.className = "recurring-card__summary";
-      summary.append(status, amount, menu);
-      const view = document.createElement("div");
-      view.className = "recurring-card__view";
-      view.append(titleAndCategory, summary);
-
-      const editForm = document.createElement("div");
-      editForm.className = "recurring-edit-form";
-      editForm.hidden = true;
-      editForm.setAttribute("role", "group");
-      editForm.setAttribute("aria-label", `Editar gasto fijo ${template.name}`);
-      const createEditField = (
-        field: "name" | "amount" | "day",
-        labelText: string,
-        value: string,
-        type: string,
-      ): HTMLInputElement => {
-        const fieldWrap = document.createElement("div");
-        fieldWrap.className = "field";
-        const input = document.createElement("input");
-        input.className = "field__input";
-        input.type = type;
-        input.value = value;
-        input.required = true;
-        input.dataset["recurringField"] = field;
-        input.id = `recurring-${field}-${template.id}`;
-        if (field === "name") input.maxLength = 60;
-        if (field === "amount") input.inputMode = "decimal";
-        if (field === "day") {
-          input.min = "1";
-          input.max = "28";
-        }
-        const label = document.createElement("label");
-        label.className = "field__label";
-        label.htmlFor = input.id;
-        label.textContent = labelText;
-        fieldWrap.append(label, input);
-        editForm.append(fieldWrap);
-        return input;
-      };
-      createEditField("name", "Título", template.name, "text");
-      createEditField(
-        "amount",
-        "Importe (€)",
-        centsToInputString(template.amountCents),
-        "text",
-      );
-      const editCategoryWrap = document.createElement("div");
-      editCategoryWrap.className = "field";
-      const editCategory = document.createElement("select");
-      editCategory.className = "field__input";
-      editCategory.dataset["recurringField"] = "category";
-      editCategory.id = `recurring-category-${template.id}`;
-      editCategory.replaceChildren(
-        ...CATEGORY_KEYS.map((categoryKey) => {
-          const option = document.createElement("option");
-          option.value = categoryKey;
-          option.textContent = CATEGORIES[categoryKey].label;
-          option.selected = categoryKey === template.category;
-          return option;
-        }),
-      );
-      const editCategoryLabel = document.createElement("label");
-      editCategoryLabel.className = "field__label";
-      editCategoryLabel.htmlFor = editCategory.id;
-      editCategoryLabel.textContent = "Categoría";
-      editCategoryWrap.append(editCategoryLabel, editCategory);
-      editForm.append(editCategoryWrap);
-      createEditField("day", "Día del mes", String(template.dayOfMonth), "number");
-      const editError = document.createElement("p");
-      editError.className = "form__error recurring-edit-form__error";
-      editError.setAttribute("role", "alert");
-      editError.dataset["recurringError"] = "true";
-      editError.hidden = true;
-      editForm.append(editError);
-      const editActions = document.createElement("div");
-      editActions.className = "recurring-edit-form__actions";
-      const save = document.createElement("button");
-      save.type = "button";
-      save.className = "button button--small";
-      save.textContent = "Guardar cambios";
-      save.dataset["action"] = "recurring-save";
-      save.dataset["id"] = template.id;
-      const cancel = document.createElement("button");
-      cancel.type = "button";
-      cancel.className = "button button--secondary button--small";
-      cancel.textContent = "Cancelar";
-      cancel.dataset["action"] = "recurring-cancel";
-      cancel.dataset["id"] = template.id;
-      editActions.append(save, cancel);
-      editForm.append(editActions);
-      item.append(view, editForm);
-      row.append(dayBadge, item);
-      rows.push(row);
-    }
-    if (month === todayMonth && orderedRecurring.length > 0 && !todayDividerAdded) {
-      appendTodayDivider();
-    }
-    recurringList.replaceChildren(...rows);
-  }
-  if (recurringEmpty) recurringEmpty.hidden = recurring.length > 0;
+  renderRecurringTimeline(state);
 
   const wallets = state.data.wallets ?? [];
   const populateWalletSelect = (select: HTMLSelectElement, emptyLabel: string): void => {
     const previous = select.value;
-    const empty = document.createElement("option");
-    empty.value = "";
-    empty.textContent = emptyLabel;
     select.replaceChildren(
-      empty,
-      ...wallets.map((wallet) => {
-        const option = document.createElement("option");
-        option.value = wallet.id;
-        option.textContent = wallet.name;
-        return option;
-      }),
+      createOption("", emptyLabel),
+      ...wallets.map((wallet) => createOption(wallet.id, wallet.name)),
     );
     if (wallets.some((wallet) => wallet.id === previous)) select.value = previous;
     else if (emptyLabel === "Selecciona una cartera" && wallets[0])
@@ -1227,16 +1251,8 @@ function renderPlanner(state: AppState): void {
   if (walletsList instanceof HTMLUListElement) {
     walletsList.replaceChildren(
       ...wallets.map((wallet) => {
-        const item = document.createElement("li");
-        item.className = "planner-item";
-        const top = document.createElement("div");
-        top.className = "planner-item__top";
-        const name = document.createElement("span");
-        name.className = "planner-item__name";
-        name.textContent = wallet.name;
-        const balance = document.createElement("strong");
-        balance.className = "planner-item__meta";
-        const spent = state.data.expenses
+        const look = WALLET_LOOK[wallet.kind];
+        const spentFromWallet = state.data.expenses
           .filter((expense) => expense.walletId === wallet.id)
           .reduce((total, expense) => total + expense.amountCents, 0);
         const outgoing = (state.data.transfers ?? [])
@@ -1245,23 +1261,28 @@ function renderPlanner(state: AppState): void {
         const incoming = (state.data.transfers ?? [])
           .filter((transfer) => transfer.toWalletId === wallet.id)
           .reduce((total, transfer) => total + transfer.amountCents, 0);
-        balance.textContent = formatMoney(
-          wallet.openingCents - spent - outgoing + incoming,
-        );
-        top.append(name, balance);
-        const type = document.createElement("p");
-        type.className = "planner-item__meta";
-        type.textContent = `${wallet.kind === "cash" ? "Efectivo" : wallet.kind === "bank" ? "Banco" : wallet.kind === "card" ? "Tarjeta" : wallet.kind === "savings" ? "Ahorro" : "Inversión"} · saldo inicial ${formatMoney(wallet.openingCents)}`;
-        const remove = document.createElement("button");
+        const item = el("li", "tile");
+        const top = el("div", "tile__top");
+        const remove = el("button", "icon-btn icon-btn--danger");
         remove.type = "button";
-        remove.className = "button button--secondary button--small button--danger";
-        remove.textContent = "Eliminar cartera";
+        remove.setAttribute("aria-label", `Eliminar la cartera ${wallet.name}`);
+        remove.append(createIcon("trash", "icon icon--sm"));
         remove.dataset["action"] = "wallet-delete";
         remove.dataset["id"] = wallet.id;
-        const controls = document.createElement("div");
-        controls.className = "planner-item__actions";
-        controls.append(remove);
-        item.append(top, type, controls);
+        top.append(createBlob(look.icon, look.tone), remove);
+        item.append(
+          top,
+          el("h2", "tile__title", wallet.name),
+          createMoney(
+            wallet.openingCents - spentFromWallet - outgoing + incoming,
+            "tile__value",
+          ),
+          el(
+            "p",
+            "tile__text",
+            `${look.label}. Saldo inicial ${formatMoney(wallet.openingCents)}`,
+          ),
+        );
         return item;
       }),
     );
@@ -1269,28 +1290,284 @@ function renderPlanner(state: AppState): void {
   if (walletsEmpty) walletsEmpty.hidden = wallets.length > 0;
 }
 
+function renderRecurringTimeline(state: AppState): void {
+  const month = state.ui.selectedMonth;
+  const recurringList = document.getElementById("recurring-list");
+  const recurringEmpty = document.getElementById("recurring-empty");
+  const recurring = state.data.recurring ?? [];
+  const today = getTodayIso();
+  const todayMonth = today.slice(0, 7);
+  const todayDay = Number(today.slice(8, 10));
+  const unregisteredActive = recurring.filter(
+    (template) => template.active && !isRegisteredIn(state, template, month),
+  );
+  const pendingCharge =
+    month === todayMonth
+      ? unregisteredActive
+          .filter((template) => template.dayOfMonth <= todayDay)
+          .sort((a, b) => a.dayOfMonth - b.dayOfMonth)[0]
+      : undefined;
+  const upcomingCharge = unregisteredActive
+    .filter(
+      (template) =>
+        month > todayMonth || (month === todayMonth && template.dayOfMonth > todayDay),
+    )
+    .sort((a, b) => a.dayOfMonth - b.dayOfMonth)[0];
+  const activeRecurring = recurring.filter((template) => template.active);
+  const recurringTotal = activeRecurring.reduce(
+    (total, template) => total + template.amountCents,
+    0,
+  );
+  const registeredExpenses = state.data.expenses.filter(
+    (expense) =>
+      expense.recurringMonth === month ||
+      (expense.date.slice(0, 7) === month && expense.note.startsWith("Pago fijo: ")),
+  );
+  const recurringTotalLabel = document.getElementById("recurring-total-month");
+  const recurringRegisteredLabel = document.getElementById("recurring-registered-month");
+  const recurringNextLabel = document.getElementById("recurring-next-charge");
+  if (recurringTotalLabel) recurringTotalLabel.textContent = formatMoney(recurringTotal);
+  if (recurringRegisteredLabel)
+    recurringRegisteredLabel.textContent = formatMoney(sumCents(registeredExpenses));
+  if (recurringNextLabel) {
+    recurringNextLabel.textContent = upcomingCharge
+      ? formatDate(dueDateOf(month, upcomingCharge.dayOfMonth))
+      : pendingCharge
+        ? `Pendiente: ${formatDate(dueDateOf(month, pendingCharge.dayOfMonth))}`
+        : "Nada pendiente";
+    recurringNextLabel.title = recurringNextLabel.textContent;
+  }
+  if (!(recurringList instanceof HTMLOListElement)) return;
+
+  const ordered = [...recurring].sort(
+    (a, b) => a.dayOfMonth - b.dayOfMonth || a.name.localeCompare(b.name, "es"),
+  );
+  const rows: HTMLLIElement[] = [];
+  let todayAdded = false;
+  const appendToday = (): void => {
+    const remaining = unregisteredActive.filter(
+      (item) => item.dayOfMonth > todayDay,
+    ).length;
+    const row = el("li", "tl tl--today");
+    const badge = el("span", "tl__day tl__day--today", String(todayDay));
+    badge.setAttribute("aria-hidden", "true");
+    const text = el("p", "tl__text");
+    text.append(
+      el("strong", "", "Hoy. "),
+      remaining === 0
+        ? "No quedan cargos este mes."
+        : `${remaining === 1 ? "Queda 1 cargo" : `Quedan ${remaining} cargos`} este mes.`,
+    );
+    row.append(badge, text);
+    rows.push(row);
+    todayAdded = true;
+  };
+  for (const template of ordered) {
+    if (month === todayMonth && !todayAdded && template.dayOfMonth > todayDay)
+      appendToday();
+    rows.push(createRecurringRow(state, template, month, todayMonth, todayDay));
+  }
+  if (month === todayMonth && ordered.length > 0 && !todayAdded) appendToday();
+
+  // Anticipa lo que se registrará el mes siguiente.
+  if (month >= todayMonth && activeRecurring.length > 0) {
+    const nextMonth = shiftMonth(month, 1);
+    const firstDay = Math.min(...activeRecurring.map((item) => item.dayOfMonth));
+    const row = el("li", "tl tl--next");
+    const badge = el("span", "tl__day tl__day--next", String(firstDay));
+    badge.setAttribute("aria-hidden", "true");
+    const text = el("p", "tl__text");
+    text.append(
+      `En ${formatMonth(nextMonth)} se registrarán ${activeRecurring.length} ${activeRecurring.length === 1 ? "gasto fijo" : "gastos fijos"}, `,
+      createMoney(recurringTotal, ""),
+      ".",
+    );
+    row.append(badge, text);
+    rows.push(row);
+  }
+  recurringList.replaceChildren(...rows);
+  if (recurringEmpty) recurringEmpty.hidden = recurring.length > 0;
+}
+
+function createRecurringRow(
+  state: AppState,
+  template: RecurringExpense,
+  month: string,
+  todayMonth: string,
+  todayDay: number,
+): HTMLLIElement {
+  const row = el("li", "tl");
+  const dayBadge = el("span", "tl__day", String(template.dayOfMonth));
+  dayBadge.setAttribute("aria-hidden", "true");
+  const card = el("article", "tl__card recurring-card");
+  const recordedExpense = state.data.expenses.find(
+    (expense) => expense.recurringId === template.id && expense.recurringMonth === month,
+  );
+  const registered =
+    isRegisteredIn(state, template, month) || recordedExpense !== undefined;
+  const dueLabel = formatDate(dueDateOf(month, template.dayOfMonth));
+  const status = !template.active
+    ? createStatusPill("paused", "Pausado")
+    : registered
+      ? createStatusPill(
+          "ok",
+          recordedExpense
+            ? `Registrado el ${formatDate(recordedExpense.date)}`
+            : "Registrado este mes",
+        )
+      : month === todayMonth && template.dayOfMonth <= todayDay
+        ? createStatusPill("pending", `Pendiente: ${dueLabel}`)
+        : createStatusPill("soon", `Próximo: ${dueLabel}`);
+
+  const menuButton = (
+    action: string,
+    label: string,
+    ariaLabel: string,
+    danger = false,
+  ): HTMLButtonElement => {
+    const button = el(
+      "button",
+      danger ? "row-menu__item row-menu__item--danger" : "row-menu__item",
+      label,
+    );
+    button.type = "button";
+    button.setAttribute("aria-label", ariaLabel);
+    button.dataset["action"] = action;
+    button.dataset["id"] = template.id;
+    return button;
+  };
+  const run = menuButton(
+    "recurring-run",
+    "Registrar este mes",
+    `Registrar ${template.name} este mes`,
+  );
+  run.disabled = !template.active || registered;
+  const edit = menuButton("recurring-edit", "Editar", `Editar ${template.name}`);
+  const toggle = menuButton(
+    "recurring-toggle",
+    template.active ? "Pausar" : "Activar",
+    `${template.active ? "Pausar" : "Activar"} ${template.name}`,
+  );
+  toggle.dataset["active"] = String(!template.active);
+  const remove = menuButton(
+    "recurring-delete",
+    "Eliminar",
+    `Eliminar ${template.name}`,
+    true,
+  );
+  const menu = el("details", "recurring-menu row-menu");
+  const menuToggle = el("summary", "icon-btn row-menu__toggle");
+  menuToggle.setAttribute("aria-label", `Opciones de ${template.name}`);
+  menuToggle.append(createIcon("more"));
+  const menuItems = el("div", "row-menu__items");
+  menuItems.append(run, edit, toggle, remove);
+  menu.append(menuToggle, menuItems);
+
+  const text = el("div", "row__text");
+  text.append(
+    el("h3", "row__title", template.name),
+    el(
+      "p",
+      "row__meta",
+      `${CATEGORIES[template.category].label}, día ${template.dayOfMonth}`,
+    ),
+  );
+  const view = el("div", "recurring-card__view");
+  view.append(
+    createCategoryBlob(template.category),
+    text,
+    status,
+    createMoney(template.amountCents, "row__amount"),
+    menu,
+  );
+
+  const editForm = el("div", "recurring-edit-form");
+  editForm.hidden = true;
+  editForm.setAttribute("role", "group");
+  editForm.setAttribute("aria-label", `Editar gasto fijo ${template.name}`);
+  const createEditField = (
+    field: "name" | "amount" | "day",
+    labelText: string,
+    value: string,
+    type: string,
+  ): HTMLInputElement => {
+    const fieldWrap = el("div", "field");
+    const input = el("input", "field__input");
+    input.type = type;
+    input.value = value;
+    input.required = true;
+    input.dataset["recurringField"] = field;
+    input.id = `recurring-${field}-${template.id}`;
+    if (field === "name") input.maxLength = 60;
+    if (field === "amount") input.inputMode = "decimal";
+    if (field === "day") {
+      input.min = "1";
+      input.max = "28";
+    }
+    const label = el("label", "field__label", labelText);
+    label.htmlFor = input.id;
+    fieldWrap.append(label, input);
+    editForm.append(fieldWrap);
+    return input;
+  };
+  createEditField("name", "Título", template.name, "text");
+  createEditField(
+    "amount",
+    "Importe (€)",
+    centsToInputString(template.amountCents),
+    "text",
+  );
+  const editCategoryWrap = el("div", "field");
+  const editCategory = el("select", "field__input");
+  editCategory.dataset["recurringField"] = "category";
+  editCategory.id = `recurring-category-${template.id}`;
+  editCategory.replaceChildren(
+    ...CATEGORY_KEYS.map((categoryKey) => {
+      const option = createOption(categoryKey, CATEGORIES[categoryKey].label);
+      option.selected = categoryKey === template.category;
+      return option;
+    }),
+  );
+  const editCategoryLabel = el("label", "field__label", "Categoría");
+  editCategoryLabel.htmlFor = editCategory.id;
+  editCategoryWrap.append(editCategoryLabel, editCategory);
+  editForm.append(editCategoryWrap);
+  createEditField("day", "Día del mes", String(template.dayOfMonth), "number");
+  const editError = el("p", "form__error recurring-edit-form__error");
+  editError.setAttribute("role", "alert");
+  editError.dataset["recurringError"] = "true";
+  editError.hidden = true;
+  editForm.append(editError);
+  const editActions = el("div", "button-group recurring-edit-form__actions");
+  const save = el("button", "button button--small", "Guardar cambios");
+  save.type = "button";
+  save.dataset["action"] = "recurring-save";
+  save.dataset["id"] = template.id;
+  const cancel = el("button", "button button--ghost button--small", "Cancelar");
+  cancel.type = "button";
+  cancel.dataset["action"] = "recurring-cancel";
+  cancel.dataset["id"] = template.id;
+  editActions.append(save, cancel);
+  editForm.append(editActions);
+  card.append(view, editForm);
+  row.append(dayBadge, card);
+  return row;
+}
+
 /** Sincroniza toda la pantalla con el estado. */
 export function renderApp(state: AppState): void {
-  const today = new Date();
-  const localDate = [
-    today.getFullYear(),
-    String(today.getMonth() + 1).padStart(2, "0"),
-    String(today.getDate()).padStart(2, "0"),
-  ].join("-");
-  dom.currentDate.dateTime = localDate;
-  dom.currentDate.textContent = new Intl.DateTimeFormat("es-ES", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(today);
+  const today = getTodayIso();
+  dom.currentDate.dateTime = today;
+  dom.currentDate.textContent = `Hoy es ${formatDate(today)}`;
   dom.monthSelect.value = state.ui.selectedMonth;
   dom.filterCategory.value = state.ui.categoryFilter;
+  syncFilterChips();
   renderIncome(state);
   renderIncomeEntries(state);
   renderSummary(state);
   renderExpenseList(state);
   renderRecentActivity(state);
   renderHomeHighlights(state);
+  renderMoreStates(state);
   renderPlanner(state);
 }

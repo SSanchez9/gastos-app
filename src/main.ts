@@ -1,24 +1,26 @@
 import "./styles/base.css";
 import "./styles/layout.css";
 import "./styles/components.css";
-import "./styles/fintech.css";
+import "./styles/screens.css";
 import { initAuthUi } from "./auth-ui";
 import { initBackup } from "./backup";
 import { renderChart } from "./charts";
 import { CATEGORIES, CATEGORY_KEYS, isCategoryFilter } from "./config";
-import { eurosToCents, getMonthKey, getTodayIso } from "./format";
+import { eurosToCents, getMonthKey, getTodayIso, shiftMonth } from "./format";
 import { subscribeSession } from "./session";
 import * as state from "./state";
 import { initSyncUi } from "./sync-ui";
-import type { AppState, WalletKind } from "./types";
+import type { AppState, CategoryKey, WalletKind } from "./types";
 import {
   dom,
   fillForm,
   initCategorySelects,
   readExpenseForm,
   renderApp,
+  renderQuickEntryPreview,
   resetForm,
   setEditMode,
+  showExpenseSavedToast,
   showFormError,
   setAmountsHidden,
   showCompleteExpenseForm,
@@ -113,6 +115,7 @@ document.addEventListener("click", (event) => {
       editingId = null;
       setEditMode(false);
       dom.quickEntry.value = "";
+      renderQuickEntryPreview(null);
       dialog.showModal();
     }
     return;
@@ -181,6 +184,7 @@ async function handleExpenseSubmit(): Promise<void> {
     state.setCategoryFilter("all");
   }
 
+  showExpenseSavedToast(result.value, idBeingEdited !== null);
   if (idBeingEdited !== null) {
     cancelEditing();
   } else {
@@ -204,17 +208,13 @@ if (
   quickEntryInput instanceof HTMLInputElement &&
   quickEntrySubmit instanceof HTMLButtonElement
 ) {
-  const addQuickEntry = (): void => {
-    const raw = quickEntryInput.value.trim();
+  /** Interpreta textos como «12 café» o «45 supermercado ayer». */
+  const parseQuickEntry = (
+    raw: string,
+  ): { amount: string; words: string; category: CategoryKey; date: string } | null => {
     const amountMatch = raw.match(/(?:^|\s)(\d+(?:[.,]\d{1,2})?)(?:\s|€|$)/);
-    if (amountMatch === null) {
-      quickEntryInput.setCustomValidity("Escribe un importe, por ejemplo: 12 café");
-      quickEntryInput.reportValidity();
-      return;
-    }
-    quickEntryInput.setCustomValidity("");
-    const amount = amountMatch[1];
-    if (amount === undefined) return;
+    const amount = amountMatch?.[1];
+    if (!amountMatch || amount === undefined) return null;
     const words = raw
       .replace(amountMatch[0], " ")
       .replace(/\b(?:hoy|ayer)\b/gi, " ")
@@ -242,15 +242,31 @@ if (
                   : "otros";
     const date = new Date();
     if (/\bayer\b/i.test(raw)) date.setDate(date.getDate() - 1);
+    return {
+      amount: amount.replace(".", ","),
+      words,
+      category,
+      date: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`,
+    };
+  };
+  const addQuickEntry = (): void => {
+    const parsed = parseQuickEntry(quickEntryInput.value.trim());
+    if (parsed === null) {
+      quickEntryInput.setCustomValidity("Escribe un importe, por ejemplo: 12 café");
+      quickEntryInput.reportValidity();
+      return;
+    }
+    quickEntryInput.setCustomValidity("");
     cancelEditing(false);
-    dom.amount.value = amount.replace(".", ",");
-    dom.note.value = words;
+    dom.amount.value = parsed.amount;
+    dom.note.value = parsed.words;
     dom.categoryPicker
-      .querySelector<HTMLButtonElement>(`[data-category="${category}"]`)
+      .querySelector<HTMLButtonElement>(`[data-category="${parsed.category}"]`)
       ?.click();
-    dom.date.value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    dom.date.value = parsed.date;
     dom.form.requestSubmit();
     quickEntryInput.value = "";
+    renderQuickEntryPreview(null);
   };
   quickEntrySubmit.addEventListener("click", addQuickEntry);
   quickEntryInput.addEventListener("keydown", (event) => {
@@ -259,7 +275,16 @@ if (
       addQuickEntry();
     }
   });
-  quickEntryInput.addEventListener("input", () => quickEntryInput.setCustomValidity(""));
+  quickEntryInput.addEventListener("input", () => {
+    quickEntryInput.setCustomValidity("");
+    const parsed = parseQuickEntry(quickEntryInput.value.trim());
+    const amountCents = parsed === null ? null : eurosToCents(parsed.amount);
+    renderQuickEntryPreview(
+      parsed === null || amountCents === null
+        ? null
+        : { amountCents, category: parsed.category, date: parsed.date },
+    );
+  });
 }
 
 // ---------- Acciones de la lista (editar y eliminar) ----------
@@ -283,6 +308,7 @@ dom.rows.addEventListener("click", (event) => {
   const expense = state.getState().data.expenses.find((item) => item.id === id);
   if (expense === undefined) return;
 
+  button.closest("details")?.removeAttribute("open");
   if (button.dataset["action"] === "edit") {
     editingId = id;
     setEditMode(true);
@@ -709,6 +735,44 @@ document.getElementById("wallets-list")?.addEventListener("click", (event) => {
 
 dom.monthSelect.addEventListener("change", () => {
   if (!state.setSelectedMonth(dom.monthSelect.value)) render(state.getState());
+});
+
+for (const [id, delta] of [
+  ["month-prev", -1],
+  ["month-next", 1],
+] as const) {
+  document.getElementById(id)?.addEventListener("click", () => {
+    const next = shiftMonth(state.getState().ui.selectedMonth, delta);
+    if (!state.setSelectedMonth(next)) render(state.getState());
+  });
+}
+
+// Menús «⋯» de las filas: solo uno abierto; se cierran al pulsar fuera o con Escape.
+document.addEventListener(
+  "toggle",
+  (event) => {
+    const menu = event.target;
+    if (!(menu instanceof HTMLDetailsElement) || !menu.open || !menu.matches(".row-menu"))
+      return;
+    document.querySelectorAll<HTMLDetailsElement>(".row-menu[open]").forEach((other) => {
+      if (other !== menu) other.open = false;
+    });
+  },
+  true,
+);
+document.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof Node)) return;
+  document.querySelectorAll<HTMLDetailsElement>(".row-menu[open]").forEach((menu) => {
+    if (!menu.contains(target)) menu.open = false;
+  });
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  const open = document.querySelector<HTMLDetailsElement>(".row-menu[open]");
+  if (!open) return;
+  open.open = false;
+  open.querySelector("summary")?.focus();
 });
 
 dom.filterCategory.addEventListener("change", () => {

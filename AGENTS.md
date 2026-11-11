@@ -101,6 +101,12 @@ La interfaz principal se define en `index.html`; `ui.ts` renderiza los datos y `
 - Usa `aria-pressed` en botones de alternancia (por ejemplo, ocultar importes) y `aria-live` para mensajes de estado o error.
 - Los iconos son SVG inline o sprite propio, con `aria-hidden` si son decorativos.
 
+## Skills de interfaz
+- Para decisiones visuales, usa frontend-design, respetando los tokens y el estilo definidos en
+  design/ y en esta guía. Nunca inventes una estética distinta.
+- Antes de entregar cambios de interfaz, pasa web-design-guidelines sobre los archivos modificados
+  y corrige lo que señale.
+
 ## Dirección de diseño
 
 Referencia visual en `design/reference/` (imagen móvil "Style 2 · Dark Card" y captura actual de escritorio):
