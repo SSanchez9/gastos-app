@@ -1,9 +1,9 @@
 import { getChartData, getSavingsSummary, lastSixMonthsSavingsTotals } from "./calc";
-import type { ChartData, ChartSlice } from "./calc";
-import { CATEGORIES } from "./config";
+import type { ChartData } from "./calc";
 import { formatCompactMoney, formatMoney, formatMonth, formatPercent } from "./format";
-import type { AppState } from "./types";
-import { getElement } from "./ui";
+import type { AppState, CategoryKey } from "./types";
+import { buildSeries, getElement } from "./ui";
+import type { ChartSeries } from "./ui";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const SIZE = 200;
@@ -20,12 +20,15 @@ const chartDom = {
   monthly: getElement("monthly-chart", HTMLDivElement),
 };
 
-function sliceLabel(key: ChartSlice["key"]): string {
-  return key === "ahorro" ? "Ahorro" : CATEGORIES[key].label;
-}
-
-function sliceColor(key: ChartSlice["key"]): string {
-  return key === "ahorro" ? "var(--savings-color)" : CATEGORIES[key].color;
+/** Pasa las porciones del mes a series con el color de cada categoría. */
+function toSeries(chart: ChartData): ChartSeries[] {
+  const expenses: { category: CategoryKey; cents: number; pct: number }[] = [];
+  let savings: { cents: number; pct: number } | null = null;
+  for (const slice of chart.slices) {
+    if (slice.key === "ahorro") savings = { cents: slice.cents, pct: slice.pct };
+    else expenses.push({ category: slice.key, cents: slice.cents, pct: slice.pct });
+  }
+  return buildSeries(expenses, savings);
 }
 
 function svgEl<K extends keyof SVGElementTagNameMap>(
@@ -62,7 +65,7 @@ function buildCenterText(savingsPct: number | null): SVGTextElement[] {
  * Así un único 100 % se dibuja sin casos especiales.
  */
 function buildDonut(
-  chart: ChartData,
+  series: ChartSeries[],
   savingsPct: number | null,
 ): { svg: SVGSVGElement; tooltip: HTMLSpanElement } {
   const svg = svgEl("svg", {
@@ -86,7 +89,7 @@ function buildDonut(
 
   // Gira -90º para que la primera porción empiece arriba.
   const group = svgEl("g", { transform: `rotate(-90 ${CENTER} ${CENTER})` });
-  const gap = chart.slices.length > 1 ? 1 : 0;
+  const gap = series.length > 1 ? 2 : 0;
   let offset = 0;
 
   const tooltip = document.createElement("span");
@@ -95,8 +98,8 @@ function buildDonut(
   tooltip.setAttribute("role", "tooltip");
   tooltip.hidden = true;
 
-  const showTooltip = (slice: ChartSlice, x: number, y: number): void => {
-    tooltip.textContent = `${sliceLabel(slice.key)} · ${formatPercent(slice.pct)} · ${formatMoney(slice.cents)}`;
+  const showTooltip = (slice: ChartSeries, x: number, y: number): void => {
+    tooltip.textContent = `${slice.label}: ${formatMoney(slice.cents)}, ${formatPercent(slice.pct)}`;
     tooltip.hidden = false;
     const padding = 8;
     const halfWidth = tooltip.offsetWidth / 2;
@@ -112,7 +115,7 @@ function buildDonut(
     tooltip.hidden = true;
   };
 
-  for (const slice of chart.slices) {
+  for (const slice of series) {
     const length = (slice.pct / 100) * CIRCUMFERENCE;
     const visible = Math.max(0, length - gap);
 
@@ -121,19 +124,19 @@ function buildDonut(
       cy: String(CENTER),
       r: String(RADIUS),
       fill: "none",
-      stroke: sliceColor(slice.key),
+      stroke: slice.color,
       "stroke-width": String(STROKE),
       "stroke-dasharray": `${visible} ${CIRCUMFERENCE - visible}`,
       "stroke-dashoffset": String(-offset),
       class: "chart__slice",
       tabindex: "0",
       role: "img",
-      "aria-label": `${sliceLabel(slice.key)}: ${formatMoney(slice.cents)}, ${formatPercent(slice.pct)}`,
+      "aria-label": `${slice.label}: ${formatMoney(slice.cents)}, ${formatPercent(slice.pct)}`,
       "aria-describedby": tooltip.id,
     });
 
     const title = svgEl("title");
-    title.textContent = `${sliceLabel(slice.key)}: ${formatMoney(slice.cents)} (${formatPercent(slice.pct)})`;
+    title.textContent = `${slice.label}: ${formatMoney(slice.cents)} (${formatPercent(slice.pct)})`;
     circle.append(title);
     circle.addEventListener("pointerenter", (event) => {
       if (event.pointerType !== "mouse") return;
@@ -167,26 +170,26 @@ function buildDonut(
   return { svg, tooltip };
 }
 
-function createLegendItem(slice: ChartSlice): HTMLLIElement {
+function createLegendItem(slice: ChartSeries): HTMLLIElement {
   const dot = document.createElement("span");
-  dot.className = "dot";
-  dot.style.backgroundColor = sliceColor(slice.key);
+  dot.className = "series__dot";
+  dot.style.setProperty("--c", slice.color);
   dot.setAttribute("aria-hidden", "true");
 
   const name = document.createElement("span");
-  name.className = "breakdown__name";
-  name.textContent = sliceLabel(slice.key);
+  name.className = "series__name";
+  name.textContent = slice.label;
 
-  const amount = document.createElement("span");
-  amount.className = "breakdown__amount";
+  const amount = document.createElement("strong");
+  amount.className = "series__amount privacy-amount";
   amount.textContent = formatMoney(slice.cents);
 
   const percentage = document.createElement("span");
-  percentage.className = "breakdown__pct";
+  percentage.className = "series__pct";
   percentage.textContent = formatPercent(slice.pct);
 
   const item = document.createElement("li");
-  item.className = "legend__item";
+  item.className = "series__item";
   item.append(dot, name, amount, percentage);
   return item;
 }
@@ -315,9 +318,10 @@ export function renderChart(state: AppState): void {
     return;
   }
 
-  const donut = buildDonut(chart, savings.savingsPct);
+  const series = toSeries(chart);
+  const donut = buildDonut(series, savings.savingsPct);
   chartDom.container.replaceChildren(donut.svg, donut.tooltip);
-  chartDom.legend.replaceChildren(...chart.slices.map(createLegendItem));
+  chartDom.legend.replaceChildren(...series.map(createLegendItem));
   chartDom.note.textContent =
     chart.kind === "income"
       ? `Reparto del sueldo de ${formatMonth(month)}.`
