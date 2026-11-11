@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Estilo B · Añadir movimiento 2 · Importe y categorías</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400..700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="screens.css" />
+  </head>
+  <body data-nav="inicio">
+    <div class="app">
+      <aside class="side" data-shell-side></aside>
+      <main class="main">
+        <header data-shell-top data-title="Inicio" data-hide-title data-month></header>
+      </main>
+    </div>
+
+    <div class="scrim" data-dialog>
+      <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="add2-title">
+        <span class="dialog__handle" aria-hidden="true"></span>
+        <header class="dialog__head">
+          <h2 class="dialog__title" id="add2-title">Añadir movimiento</h2>
+          <a class="icon-btn" href="inicio.html" data-close aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-close" /></svg></a>
+        </header>
+
+        <nav class="seg seg--block" aria-label="Forma de añadir">
+          <a class="seg__btn" href="anadir-1.html">Rápido</a>
+          <span class="seg__btn" aria-current="true">Completo</span>
+        </nav>
+
+        <form class="form" action="#">
+          <div class="field">
+            <label class="sr-only" for="a2-amount">Importe</label>
+            <div class="amount amount--center">
+              <input class="input" id="a2-amount" inputmode="decimal" value="12,38" />
+              <span class="amount__unit" aria-hidden="true">€</span>
+            </div>
+          </div>
+
+          <fieldset class="field">
+            <legend class="field__label">Categoría</legend>
+            <div class="cats cats--grid">
+              <label class="cat"><input type="radio" name="a2-cat" checked /><span class="cat__face"><span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-cart" /></svg></span>Supermercado</span></label>
+              <label class="cat"><input type="radio" name="a2-cat" /><span class="cat__face"><span class="blob blob--lilac"><svg class="icon" aria-hidden="true"><use href="#i-user" /></svg></span>Personal</span></label>
+              <label class="cat"><input type="radio" name="a2-cat" /><span class="cat__face"><span class="blob blob--sky"><svg class="icon" aria-hidden="true"><use href="#i-car" /></svg></span>Coche</span></label>
+              <label class="cat"><input type="radio" name="a2-cat" /><span class="cat__face"><span class="blob blob--lilac"><svg class="icon" aria-hidden="true"><use href="#i-fuel" /></svg></span>Gasolina</span></label>
+              <label class="cat"><input type="radio" name="a2-cat" /><span class="cat__face"><span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-key" /></svg></span>Alquiler</span></label>
+              <label class="cat"><input type="radio" name="a2-cat" /><span class="cat__face"><span class="blob blob--sky"><svg class="icon" aria-hidden="true"><use href="#i-home" /></svg></span>Casa</span></label>
+              <label class="cat"><input type="radio" name="a2-cat" /><span class="cat__face"><span class="blob blob--neutral"><svg class="icon" aria-hidden="true"><use href="#i-tag" /></svg></span>Otros</span></label>
+              <label class="cat"><input type="radio" name="a2-cat" /><span class="cat__face"><span class="blob blob--mint"><svg class="icon" aria-hidden="true"><use href="#i-social" /></svg></span>Social</span></label>
+            </div>
+          </fieldset>
+
+          <div class="form-row form-row--2">
+            <div class="field">
+              <label class="field__label" for="a2-date">Fecha</label>
+              <input class="input" id="a2-date" type="date" value="2026-11-11" />
+            </div>
+            <div class="field">
+              <label class="field__label" for="a2-wallet">Cartera</label>
+              <select class="input" id="a2-wallet"><option>Sin asignar</option></select>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="a2-note">Nota (opcional)</label>
+            <input class="input" id="a2-note" placeholder="Añade un detalle" autocomplete="off" />
+          </div>
+          <button class="btn btn--primary btn--block" type="submit">Añadir</button>
+        </form>
+      </section>
+    </div>
+    <script src="shell.js"></script>
+  </body>
+</html>

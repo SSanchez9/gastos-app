@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Estilo B · Inicio v2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400..700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="screens.css" />
+  </head>
+  <body data-nav="inicio">
+    <div class="app">
+      <aside class="side" data-shell-side></aside>
+      <main class="main">
+        <header data-shell-top data-title="Inicio" data-hide-title data-month data-mask></header>
+
+        <div class="home">
+          <div class="home__main">
+            <section class="hero hero--compact" aria-labelledby="hero-title">
+              <div>
+                <h2 class="hero__lead" id="hero-title">En noviembre has ahorrado</h2>
+                <div class="hero__inline">
+                  <p class="hero__amount">
+                    <span class="money"><span class="hero__int">1.257</span><span class="hero__dec">,20 €</span></span>
+                  </p>
+                  <p class="hero__sub">el 43,3 % de lo que ha entrado</p>
+                </div>
+                <p class="chip">
+                  <svg class="icon icon--sm" aria-hidden="true"><use href="#i-down" /></svg>
+                  <span><span class="money">475,95 €</span> menos gastado que en octubre</span>
+                </p>
+              </div>
+              <ul class="hero__pair">
+                <li class="stat">
+                  <span class="stat__icon stat__icon--in"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-arrow-in" /></svg></span>
+                  <span>
+                    <span class="stat__label">Ingresos</span>
+                    <span class="stat__value"><span class="money">2.900,69 €</span></span>
+                  </span>
+                </li>
+                <li class="stat">
+                  <span class="stat__icon stat__icon--out"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-arrow-out" /></svg></span>
+                  <span>
+                    <span class="stat__label">Gastado</span>
+                    <span class="stat__value"><span class="money">1.643,49 €</span></span>
+                  </span>
+                </li>
+              </ul>
+            </section>
+
+            <section class="trio" aria-label="Presupuesto, próximo gasto fijo y meta de ahorro">
+              <article class="card mini">
+                <div class="ring" style="--v: 82" role="img" aria-label="82 % del presupuesto usado">
+                  <span class="ring__value" aria-hidden="true">82 %</span>
+                </div>
+                <div>
+                  <header class="mini__head">
+                    <h2 class="mini__title">Presupuesto</h2>
+                    <span class="tag">Ejemplo</span>
+                  </header>
+                  <p class="mini__value">Quedan <span class="money">356,51 €</span></p>
+                  <p class="card__text">unos <span class="money">17,83 €</span> al día</p>
+                </div>
+              </article>
+              <article class="card mini">
+                <p class="cal" aria-hidden="true"><span class="cal__month">dic</span><span class="cal__day">1</span></p>
+                <div>
+                  <header class="mini__head"><h2 class="mini__title">Próximo gasto fijo</h2></header>
+                  <p class="mini__value">Alquiler, <span class="money">900,00 €</span></p>
+                  <p class="card__text">1 de diciembre, dentro de 20 días</p>
+                </div>
+              </article>
+              <article class="card mini">
+                <div class="jar" role="img" aria-label="62 % de la meta conseguido">
+                  <span class="jar__fill" style="--v: 62%"></span>
+                  <span class="jar__pct" aria-hidden="true">62 %</span>
+                </div>
+                <div>
+                  <header class="mini__head">
+                    <h2 class="mini__title">Meta de ahorro</h2>
+                    <span class="tag">Ejemplo</span>
+                  </header>
+                  <p class="mini__value">Viaje</p>
+                  <p class="card__text"><span class="money">620,00 €</span> de <span class="money">1.000,00 €</span></p>
+                </div>
+              </article>
+            </section>
+
+            <section class="card" aria-labelledby="split-title">
+              <header class="section-head">
+                <h2 class="section-title" id="split-title">Tu ingreso, repartido</h2>
+                <a class="link" href="analisis-1.html">Ver análisis</a>
+              </header>
+              <div class="stackbar" role="img" aria-label="Alquiler 31,0 %, Coche 8,8 %, Social 4,4 %, Resto de gastos 12,5 %, Ahorro 43,3 %">
+                <span class="c1" style="--w: 31"></span>
+                <span class="c2" style="--w: 8.8"></span>
+                <span class="c3" style="--w: 4.4"></span>
+                <span class="c4" style="--w: 12.5"></span>
+                <span class="c5" style="--w: 43.3"></span>
+              </div>
+              <ul class="chips">
+                <li class="chips__item"><span class="series__dot c1"></span>Alquiler <strong>31,0 %</strong></li>
+                <li class="chips__item"><span class="series__dot c2"></span>Coche <strong>8,8 %</strong></li>
+                <li class="chips__item"><span class="series__dot c3"></span>Social <strong>4,4 %</strong></li>
+                <li class="chips__item"><span class="series__dot c4"></span>Resto de gastos <strong>12,5 %</strong></li>
+                <li class="chips__item chips__item--save"><span class="series__dot c5"></span>Ahorro <strong>43,3 %</strong></li>
+              </ul>
+            </section>
+          </div>
+
+          <section class="card" aria-labelledby="recent-title">
+            <header class="section-head">
+              <h2 class="section-title" id="recent-title">Últimos movimientos</h2>
+              <a class="link" href="movimientos-1.html">Ver todo</a>
+            </header>
+            <div class="day">
+              <h3 class="day__title">Ayer, 10 de noviembre <span class="day__total money">−40,00 €</span></h3>
+              <ul class="tx-list">
+                <li class="tx">
+                  <span class="blob blob--neutral"><svg class="icon" aria-hidden="true"><use href="#i-tag" /></svg></span>
+                  <span class="tx__text"><span class="tx__name">regalo mamá cami</span><span class="tx__cat">Otros</span></span>
+                  <span class="tx__amount money">−40,00 €</span>
+                </li>
+              </ul>
+            </div>
+            <div class="day">
+              <h3 class="day__title">Lunes, 9 de noviembre <span class="day__total money">−5,00 €</span></h3>
+              <ul class="tx-list">
+                <li class="tx">
+                  <span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-cart" /></svg></span>
+                  <span class="tx__text"><span class="tx__name">kebab2</span><span class="tx__cat">Supermercado</span></span>
+                  <span class="tx__amount money">−5,00 €</span>
+                </li>
+              </ul>
+            </div>
+            <div class="day">
+              <h3 class="day__title">Domingo, 8 de noviembre <span class="day__total money">−25,00 €</span></h3>
+              <ul class="tx-list">
+                <li class="tx">
+                  <span class="blob blob--lilac"><svg class="icon" aria-hidden="true"><use href="#i-fuel" /></svg></span>
+                  <span class="tx__text"><span class="tx__name">Gasolina</span><span class="tx__cat">Sin nota</span></span>
+                  <span class="tx__amount money">−25,00 €</span>
+                </li>
+              </ul>
+            </div>
+            <div class="day">
+              <h3 class="day__title">Sábado, 7 de noviembre <span class="day__total money">−22,38 €</span></h3>
+              <ul class="tx-list">
+                <li class="tx">
+                  <span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-cart" /></svg></span>
+                  <span class="tx__text"><span class="tx__name">dia</span><span class="tx__cat">Supermercado</span></span>
+                  <span class="tx__amount money">−12,38 €</span>
+                </li>
+                <li class="tx">
+                  <span class="blob blob--mint"><svg class="icon" aria-hidden="true"><use href="#i-social" /></svg></span>
+                  <span class="tx__text"><span class="tx__name">granadella</span><span class="tx__cat">Social</span></span>
+                  <span class="tx__amount money">−10,00 €</span>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+    <script src="shell.js"></script>
+    <script src="../shared/mask.js"></script>
+  </body>
+</html>

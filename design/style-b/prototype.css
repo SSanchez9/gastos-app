@@ -1,0 +1,70 @@
+/* Controles propios del prototipo (no forman parte del diseño de la app). */
+:root {
+  --proto-bar-w: 23rem;
+}
+.view[hidden],
+.overlay[hidden],
+.proto-toast[hidden],
+[data-proto-variants][hidden] {
+  display: none;
+}
+.proto-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2) var(--sp-3);
+  margin: calc(var(--sp-3) + env(safe-area-inset-top)) var(--gutter) 0;
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-4);
+  border: var(--bw-strong) dashed var(--c-primary);
+  border-radius: var(--r-md);
+  background: var(--c-lilac);
+  color: var(--c-lilac-ink);
+  order: -1;
+}
+.proto-bar__label {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+}
+.proto-bar .seg {
+  background: var(--c-surface);
+}
+.proto-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--nav-h) + var(--sp-5) + env(safe-area-inset-bottom));
+  z-index: 40;
+  padding: var(--sp-3) var(--sp-5);
+  border-radius: var(--r-pill);
+  background: var(--c-hero);
+  color: var(--c-on-hero);
+  font-size: var(--fs-sm);
+  transform: translateX(-50%);
+  box-shadow: var(--shadow-float);
+}
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+  body {
+    display: block;
+  }
+  .proto-bar {
+    position: fixed;
+    right: var(--sp-5);
+    bottom: var(--sp-5);
+    z-index: 50;
+    width: var(--proto-bar-w);
+    margin: 0;
+    box-shadow: var(--shadow-float);
+  }
+  .proto-toast {
+    bottom: var(--sp-6);
+  }
+}
+.row[hidden],
+.day[hidden] {
+  display: none;
+}

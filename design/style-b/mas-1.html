@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Estilo B · Más 1 · Lista agrupada</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400..700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="screens.css" />
+  </head>
+  <body data-nav="mas">
+    <div class="app">
+      <aside class="side" data-shell-side></aside>
+      <main class="main">
+        <header data-shell-top data-title="Más" data-subtitle="Gestiona ingresos y planificación financiera."></header>
+
+        <div class="screen narrow">
+          <section class="menu-group" aria-labelledby="g1">
+            <h2 class="menu-group__title" id="g1">Tu dinero</h2>
+            <nav class="menu" aria-labelledby="g1">
+              <a class="menu__item" href="ingresos-1.html">
+                <span class="blob blob--mint"><svg class="icon" aria-hidden="true"><use href="#i-arrow-in" /></svg></span>
+                <span class="row__text"><span class="row__title">Ingresos</span><span class="row__meta">Ingresos mensuales y con título</span></span>
+                <span class="menu__state"><span class="money">2.900,69 €</span><br />en noviembre</span>
+                <svg class="icon row__chev" aria-hidden="true"><use href="#i-right" /></svg>
+              </a>
+              <a class="menu__item" href="gastos-fijos-1.html">
+                <span class="blob blob--sky"><svg class="icon" aria-hidden="true"><use href="#i-repeat" /></svg></span>
+                <span class="row__text"><span class="row__title">Gastos fijos</span><span class="row__meta">Pagos recurrentes</span></span>
+                <span class="menu__state">2 activos<br /><span class="money">915,00 €</span> al mes</span>
+                <svg class="icon row__chev" aria-hidden="true"><use href="#i-right" /></svg>
+              </a>
+              <a class="menu__item" href="#">
+                <span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-wallet" /></svg></span>
+                <span class="row__text"><span class="row__title">Carteras</span><span class="row__meta">Saldos y traspasos</span></span>
+                <svg class="icon row__chev" aria-hidden="true"><use href="#i-right" /></svg>
+              </a>
+            </nav>
+          </section>
+
+          <section class="menu-group" aria-labelledby="g2">
+            <h2 class="menu-group__title" id="g2">Planifica</h2>
+            <nav class="menu" aria-labelledby="g2">
+              <a class="menu__item" href="#">
+                <span class="blob blob--mint"><svg class="icon" aria-hidden="true"><use href="#i-jar" /></svg></span>
+                <span class="row__text"><span class="row__title">Metas de ahorro</span><span class="row__meta">Objetivos y aportaciones</span></span>
+                <span class="menu__state">Aún no tienes metas</span>
+                <svg class="icon row__chev" aria-hidden="true"><use href="#i-right" /></svg>
+              </a>
+              <a class="menu__item" href="#">
+                <span class="blob blob--lilac"><svg class="icon" aria-hidden="true"><use href="#i-gauge" /></svg></span>
+                <span class="row__text"><span class="row__title">Presupuestos</span><span class="row__meta">Límites mensuales</span></span>
+                <span class="menu__state">Sin límite en noviembre</span>
+                <svg class="icon row__chev" aria-hidden="true"><use href="#i-right" /></svg>
+              </a>
+            </nav>
+          </section>
+
+          <section class="menu-group" aria-labelledby="g3">
+            <h2 class="menu-group__title" id="g3">Tus datos</h2>
+            <nav class="menu" aria-labelledby="g3">
+              <a class="menu__item" href="#">
+                <span class="blob blob--neutral"><svg class="icon" aria-hidden="true"><use href="#i-download" /></svg></span>
+                <span class="row__text"><span class="row__title">Copias de seguridad</span><span class="row__meta">Exportar e importar JSON y CSV</span></span>
+                <svg class="icon row__chev" aria-hidden="true"><use href="#i-right" /></svg>
+              </a>
+            </nav>
+          </section>
+
+          <section class="card account" aria-label="Sesión">
+            <span class="avatar" aria-hidden="true">S</span>
+            <span class="row__text"><span class="row__title">sofiasf199…</span><span class="row__meta">Sesión iniciada con Google</span></span>
+            <button class="btn btn--ghost btn--sm" type="button"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-logout" /></svg>Cerrar sesión</button>
+          </section>
+        </div>
+      </main>
+    </div>
+    <script src="shell.js"></script>
+  </body>
+</html>

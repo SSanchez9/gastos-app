@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Estilo B · Ingresos 3 · Recibo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400..700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="screens.css" />
+  </head>
+  <body data-nav="mas">
+    <div class="app">
+      <aside class="side" data-shell-side></aside>
+      <main class="main">
+        <header data-shell-top data-title="Ingresos" data-back="mas-3.html" data-back-label="Volver a Más" data-month data-mask></header>
+
+        <div class="screen narrow">
+          <section class="receipt" aria-labelledby="receipt-title">
+            <div class="receipt__head">
+              <h2 class="receipt__label" id="receipt-title">Has ingresado en noviembre</h2>
+              <p class="receipt__total"><span class="money">2.900,69 €</span></p>
+            </div>
+            <ul class="rows receipt__body">
+              <li class="row">
+                <span class="blob blob--mint"><svg class="icon" aria-hidden="true"><use href="#i-arrow-in" /></svg></span>
+                <span class="row__text"><span class="row__title">Ingreso mensual</span><span class="row__meta">noviembre de 2026</span></span>
+                <span class="row__amount row__amount--in money">+2.900,69 €</span>
+                <span class="row__actions">
+                  <button class="icon-btn" type="button" aria-label="Editar Ingreso mensual"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-edit" /></svg></button>
+                  <button class="icon-btn icon-btn--danger" type="button" aria-label="Eliminar Ingreso mensual"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-trash" /></svg></button>
+                </span>
+              </li>
+            </ul>
+
+            <details class="receipt__add" open>
+              <summary class="receipt__sum">
+                <span class="blob blob--lilac"><svg class="icon" aria-hidden="true"><use href="#i-plus" /></svg></span>
+                <span class="row__title">Añadir otro ingreso</span>
+                <svg class="icon acc__chev" aria-hidden="true"><use href="#i-right" /></svg>
+              </summary>
+              <form class="form" action="#">
+                <div class="field">
+                  <label class="field__label" for="inc3-amount">Importe</label>
+                  <div class="amount amount--center">
+                    <input class="input" id="inc3-amount" inputmode="decimal" placeholder="0,00" />
+                    <span class="amount__unit" aria-hidden="true">€</span>
+                  </div>
+                </div>
+                <div class="form-row form-row--2">
+                  <div class="field">
+                    <label class="field__label" for="inc3-title">Título</label>
+                    <input class="input" id="inc3-title" placeholder="Nómina, devolución…" autocomplete="off" />
+                  </div>
+                  <div class="field">
+                    <label class="field__label" for="inc3-date">Fecha</label>
+                    <input class="input" id="inc3-date" type="date" value="2026-11-11" />
+                  </div>
+                </div>
+                <button class="btn btn--primary btn--block" type="submit">Añadir</button>
+              </form>
+            </details>
+          </section>
+          <p class="note">El sueldo cambia cada mes. Si un mes no tiene sueldo, su ahorro aparece como «—».</p>
+        </div>
+      </main>
+    </div>
+    <script src="shell.js"></script>
+    <script src="../shared/mask.js"></script>
+  </body>
+</html>

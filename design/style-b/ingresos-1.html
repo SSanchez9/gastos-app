@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Estilo B · Ingresos 1 · Formulario en línea</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400..700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="screens.css" />
+  </head>
+  <body data-nav="mas">
+    <div class="app">
+      <aside class="side" data-shell-side></aside>
+      <main class="main">
+        <header data-shell-top data-title="Ingresos" data-back="mas-1.html" data-back-label="Volver a Más" data-month data-mask></header>
+
+        <div class="screen">
+          <section class="band" aria-label="Ingresos de noviembre">
+            <div class="band__item"><span class="band__label">Total de noviembre 2026</span><span class="band__value band__value--main"><span class="money">2.900,69 €</span></span></div>
+            <span class="pill pill--saffron band__end">1 ingreso</span>
+          </section>
+
+          <section class="card" aria-labelledby="add-income">
+            <h2 class="sr-only" id="add-income">Añadir ingreso</h2>
+            <form class="form-row form-row--inline" action="#">
+              <div class="field">
+                <label class="field__label" for="inc-title">Título</label>
+                <input class="input" id="inc-title" placeholder="Nómina, devolución…" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label class="field__label" for="inc-amount">Importe (€)</label>
+                <input class="input" id="inc-amount" inputmode="decimal" placeholder="0,00" />
+              </div>
+              <div class="field">
+                <label class="field__label" for="inc-date">Fecha</label>
+                <input class="input" id="inc-date" type="date" value="2026-11-11" />
+              </div>
+              <button class="btn btn--primary" type="submit">Añadir</button>
+            </form>
+            <p class="note">El sueldo cambia cada mes: regístralo en el mes que corresponda para calcular tu ahorro.</p>
+          </section>
+
+          <section class="card" aria-labelledby="month-inc">
+            <h2 class="section-title" id="month-inc">Este mes</h2>
+            <ul class="rows">
+              <li class="row">
+                <span class="blob blob--mint"><svg class="icon" aria-hidden="true"><use href="#i-arrow-in" /></svg></span>
+                <span class="row__text"><span class="row__title">Ingreso mensual</span><span class="row__meta">noviembre de 2026</span></span>
+                <span class="row__amount row__amount--in money">+2.900,69 €</span>
+                <span class="row__actions">
+                  <button class="icon-btn" type="button" aria-label="Editar Ingreso mensual"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-edit" /></svg></button>
+                  <button class="icon-btn icon-btn--danger" type="button" aria-label="Eliminar Ingreso mensual"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-trash" /></svg></button>
+                </span>
+              </li>
+            </ul>
+          </section>
+        </div>
+      </main>
+    </div>
+    <script src="shell.js"></script>
+    <script src="../shared/mask.js"></script>
+  </body>
+</html>

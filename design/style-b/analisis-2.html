@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Estilo B · Análisis 2 · El mes contado</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400..700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="screens.css" />
+  </head>
+  <body data-nav="analisis">
+    <div class="app">
+      <aside class="side" data-shell-side></aside>
+      <main class="main">
+        <header data-shell-top data-title="Análisis" data-subtitle="Tu mes contado en tres preguntas." data-month data-mask></header>
+
+        <div class="screen">
+          <section class="card story" aria-labelledby="q1">
+            <h2 class="story__q" id="q1"><span class="story__n" aria-hidden="true">1</span>¿Adónde fue tu sueldo?</h2>
+            <p class="story__lead">
+              En noviembre entraron <strong class="money">2.900,69 €</strong>. Gastaste <strong class="money">1.643,49 €</strong> y te quedaron
+              <strong class="money">1.257,20 €</strong>, el 43,3 %.
+            </p>
+            <div
+              class="stackbar stackbar--tall"
+              role="img"
+              aria-label="Alquiler 31,0 %, Coche 8,8 %, Social 4,4 %, Resto de gastos 12,5 %, Ahorro 43,3 %"
+            >
+              <span class="c1" style="--w: 31"></span>
+              <span class="c2" style="--w: 8.8"></span>
+              <span class="c3" style="--w: 4.4"></span>
+              <span class="c4" style="--w: 12.5"></span>
+              <span class="c5" style="--w: 43.3"></span>
+            </div>
+            <ul class="chips">
+              <li class="chips__item"><span class="series__dot c1"></span>Alquiler <strong>31,0 %</strong></li>
+              <li class="chips__item"><span class="series__dot c2"></span>Coche <strong>8,8 %</strong></li>
+              <li class="chips__item"><span class="series__dot c3"></span>Social <strong>4,4 %</strong></li>
+              <li class="chips__item"><span class="series__dot c4"></span>Resto de gastos <strong>12,5 %</strong></li>
+              <li class="chips__item chips__item--save"><span class="series__dot c5"></span>Ahorro <strong>43,3 %</strong></li>
+            </ul>
+          </section>
+
+          <div class="half-layout">
+            <section class="card story" aria-labelledby="q2">
+              <h2 class="story__q" id="q2"><span class="story__n" aria-hidden="true">2</span>¿En qué gastaste más?</h2>
+              <ol class="rank">
+                <li class="rank__item">
+                  <span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-key" /></svg></span>
+                  <span class="hbar">
+                    <span class="hbar__name">Alquiler</span><span class="hbar__val"><span class="money">900,00 €</span><span>31,0 %</span></span>
+                    <span class="hbar__track"><span class="hbar__fill" style="--v: 100%"></span></span>
+                  </span>
+                </li>
+                <li class="rank__item">
+                  <span class="blob blob--sky"><svg class="icon" aria-hidden="true"><use href="#i-car" /></svg></span>
+                  <span class="hbar">
+                    <span class="hbar__name">Coche</span><span class="hbar__val"><span class="money">255,00 €</span><span>8,8 %</span></span>
+                    <span class="hbar__track"><span class="hbar__fill" style="--v: 28.3%"></span></span>
+                  </span>
+                </li>
+                <li class="rank__item">
+                  <span class="blob blob--mint"><svg class="icon" aria-hidden="true"><use href="#i-social" /></svg></span>
+                  <span class="hbar">
+                    <span class="hbar__name">Social</span><span class="hbar__val"><span class="money">128,17 €</span><span>4,4 %</span></span>
+                    <span class="hbar__track"><span class="hbar__fill" style="--v: 14.2%"></span></span>
+                  </span>
+                </li>
+                <li class="rank__item">
+                  <span class="blob blob--lilac"><svg class="icon" aria-hidden="true"><use href="#i-user" /></svg></span>
+                  <span class="hbar">
+                    <span class="hbar__name">Personal</span><span class="hbar__val"><span class="money">106,59 €</span><span>3,7 %</span></span>
+                    <span class="hbar__track"><span class="hbar__fill" style="--v: 11.8%"></span></span>
+                  </span>
+                </li>
+                <li class="rank__item">
+                  <span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-cart" /></svg></span>
+                  <span class="hbar">
+                    <span class="hbar__name">Supermercado</span><span class="hbar__val"><span class="money">104,47 €</span><span>3,6 %</span></span>
+                    <span class="hbar__track"><span class="hbar__fill" style="--v: 11.6%"></span></span>
+                  </span>
+                </li>
+                <li class="rank__item">
+                  <span class="blob blob--sky"><svg class="icon" aria-hidden="true"><use href="#i-home" /></svg></span>
+                  <span class="hbar">
+                    <span class="hbar__name">Casa</span><span class="hbar__val"><span class="money">84,26 €</span><span>2,9 %</span></span>
+                    <span class="hbar__track"><span class="hbar__fill" style="--v: 9.4%"></span></span>
+                  </span>
+                </li>
+                <li class="rank__item">
+                  <span class="blob blob--neutral"><svg class="icon" aria-hidden="true"><use href="#i-tag" /></svg></span>
+                  <span class="hbar">
+                    <span class="hbar__name">Otros</span><span class="hbar__val"><span class="money">40,00 €</span><span>1,4 %</span></span>
+                    <span class="hbar__track"><span class="hbar__fill" style="--v: 4.4%"></span></span>
+                  </span>
+                </li>
+                <li class="rank__item">
+                  <span class="blob blob--lilac"><svg class="icon" aria-hidden="true"><use href="#i-fuel" /></svg></span>
+                  <span class="hbar">
+                    <span class="hbar__name">Gasolina</span><span class="hbar__val"><span class="money">25,00 €</span><span>0,9 %</span></span>
+                    <span class="hbar__track"><span class="hbar__fill" style="--v: 2.8%"></span></span>
+                  </span>
+                </li>
+              </ol>
+            </section>
+
+            <section class="card story" aria-labelledby="q3">
+              <h2 class="story__q" id="q3"><span class="story__n" aria-hidden="true">3</span>¿Cómo va tu ahorro?</h2>
+              <p class="story__lead">Este mes has ahorrado unos <strong class="money">311 €</strong> más que en octubre.</p>
+              <ul class="months">
+                <li class="month-row"><span>noviembre</span><span class="month-row__track"><span class="month-row__fill" style="--v: 100%"></span></span><strong class="money">1.257,20 €</strong></li>
+                <li class="month-row"><span>octubre</span><span class="month-row__track"><span class="month-row__fill" style="--v: 75%"></span></span><strong class="money">946 €</strong></li>
+                <li class="month-row month-row--empty"><span>septiembre</span><span class="month-row__none">Sin sueldo registrado</span><strong>—</strong></li>
+                <li class="month-row month-row--empty"><span>agosto</span><span class="month-row__none">Sin sueldo registrado</span><strong>—</strong></li>
+                <li class="month-row month-row--empty"><span>julio</span><span class="month-row__none">Sin sueldo registrado</span><strong>—</strong></li>
+                <li class="month-row month-row--empty"><span>junio</span><span class="month-row__none">Sin sueldo registrado</span><strong>—</strong></li>
+              </ul>
+              <p class="note">Añade el sueldo de un mes en Más › Ingresos para ver su ahorro.</p>
+            </section>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script src="shell.js"></script>
+    <script src="../shared/mask.js"></script>
+  </body>
+</html>

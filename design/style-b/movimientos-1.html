@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Estilo B · Movimientos 1 · Por días</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400..700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="screens.css" />
+  </head>
+  <body data-nav="movimientos">
+    <div class="app">
+      <aside class="side" data-shell-side></aside>
+      <main class="main">
+        <header data-shell-top data-title="Movimientos" data-subtitle="Lo que has gastado en noviembre, día a día." data-month data-mask></header>
+
+        <div class="screen">
+          <div class="filters" role="group" aria-label="Filtrar por categoría">
+            <button class="filter" type="button" aria-pressed="true">Todas</button>
+            <button class="filter" type="button" aria-pressed="false">Supermercado</button>
+            <button class="filter" type="button" aria-pressed="false">Social</button>
+            <button class="filter" type="button" aria-pressed="false">Casa</button>
+            <button class="filter" type="button" aria-pressed="false">Coche</button>
+            <button class="filter" type="button" aria-pressed="false">Gasolina</button>
+            <button class="filter" type="button" aria-pressed="false">Personal</button>
+            <button class="filter" type="button" aria-pressed="false">Alquiler</button>
+            <button class="filter" type="button" aria-pressed="false">Otros</button>
+          </div>
+
+          <div class="aside-layout">
+            <section class="card" aria-labelledby="list-title">
+              <h2 class="sr-only" id="list-title">Movimientos de noviembre por día</h2>
+
+              <div class="day">
+                <h3 class="day__title">Ayer, 10 de noviembre <span class="day__total money">−40,00 €</span></h3>
+                <ul class="rows">
+                  <li class="row">
+                    <span class="blob blob--neutral"><svg class="icon" aria-hidden="true"><use href="#i-tag" /></svg></span>
+                    <span class="row__text"><span class="row__title">regalo mamá cami</span><span class="row__meta">Otros</span></span>
+                    <span class="row__amount money">−40,00 €</span>
+                    <span class="more">
+                      <button class="icon-btn" type="button" aria-label="Opciones de regalo mamá cami" aria-expanded="true" aria-controls="pop-1">
+                        <svg class="icon" aria-hidden="true"><use href="#i-more" /></svg>
+                      </button>
+                      <span class="pop" id="pop-1" role="menu">
+                        <button class="pop__item" type="button" role="menuitem"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-edit" /></svg>Editar</button>
+                        <button class="pop__item pop__item--danger" type="button" role="menuitem"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-trash" /></svg>Eliminar</button>
+                      </span>
+                    </span>
+                  </li>
+                </ul>
+              </div>
+              <div class="day">
+                <h3 class="day__title">Lunes, 9 de noviembre <span class="day__total money">−5,00 €</span></h3>
+                <ul class="rows">
+                  <li class="row">
+                    <span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-cart" /></svg></span>
+                    <span class="row__text"><span class="row__title">kebab2</span><span class="row__meta">Supermercado</span></span>
+                    <span class="row__amount money">−5,00 €</span>
+                    <button class="icon-btn" type="button" aria-label="Opciones de kebab2" aria-expanded="false"><svg class="icon" aria-hidden="true"><use href="#i-more" /></svg></button>
+                  </li>
+                </ul>
+              </div>
+              <div class="day">
+                <h3 class="day__title">Domingo, 8 de noviembre <span class="day__total money">−25,00 €</span></h3>
+                <ul class="rows">
+                  <li class="row">
+                    <span class="blob blob--lilac"><svg class="icon" aria-hidden="true"><use href="#i-fuel" /></svg></span>
+                    <span class="row__text"><span class="row__title">Gasolina</span><span class="row__meta">Sin nota</span></span>
+                    <span class="row__amount money">−25,00 €</span>
+                    <button class="icon-btn" type="button" aria-label="Opciones de Gasolina" aria-expanded="false"><svg class="icon" aria-hidden="true"><use href="#i-more" /></svg></button>
+                  </li>
+                </ul>
+              </div>
+              <div class="day">
+                <h3 class="day__title">Sábado, 7 de noviembre <span class="day__total money">−22,38 €</span></h3>
+                <ul class="rows">
+                  <li class="row">
+                    <span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-cart" /></svg></span>
+                    <span class="row__text"><span class="row__title">dia</span><span class="row__meta">Supermercado</span></span>
+                    <span class="row__amount money">−12,38 €</span>
+                    <button class="icon-btn" type="button" aria-label="Opciones de dia" aria-expanded="false"><svg class="icon" aria-hidden="true"><use href="#i-more" /></svg></button>
+                  </li>
+                  <li class="row">
+                    <span class="blob blob--mint"><svg class="icon" aria-hidden="true"><use href="#i-social" /></svg></span>
+                    <span class="row__text"><span class="row__title">granadella</span><span class="row__meta">Social</span></span>
+                    <span class="row__amount money">−10,00 €</span>
+                    <button class="icon-btn" type="button" aria-label="Opciones de granadella" aria-expanded="false"><svg class="icon" aria-hidden="true"><use href="#i-more" /></svg></button>
+                  </li>
+                </ul>
+              </div>
+              <div class="day">
+                <h3 class="day__title">Viernes, 6 de noviembre <span class="day__total money">−93,09 €</span></h3>
+                <ul class="rows">
+                  <li class="row">
+                    <span class="blob blob--sky"><svg class="icon" aria-hidden="true"><use href="#i-home" /></svg></span>
+                    <span class="row__text"><span class="row__title">agua</span><span class="row__meta">Casa</span></span>
+                    <span class="row__amount money">−23,84 €</span>
+                    <button class="icon-btn" type="button" aria-label="Opciones de agua" aria-expanded="false"><svg class="icon" aria-hidden="true"><use href="#i-more" /></svg></button>
+                  </li>
+                  <li class="row">
+                    <span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-cart" /></svg></span>
+                    <span class="row__text"><span class="row__title">dia</span><span class="row__meta">Supermercado</span></span>
+                    <span class="row__amount money">−14,81 €</span>
+                    <button class="icon-btn" type="button" aria-label="Opciones de dia, 14,81 €" aria-expanded="false"><svg class="icon" aria-hidden="true"><use href="#i-more" /></svg></button>
+                  </li>
+                  <li class="row">
+                    <span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-cart" /></svg></span>
+                    <span class="row__text"><span class="row__title">dia</span><span class="row__meta">Supermercado</span></span>
+                    <span class="row__amount money">−4,44 €</span>
+                    <button class="icon-btn" type="button" aria-label="Opciones de dia, 4,44 €" aria-expanded="false"><svg class="icon" aria-hidden="true"><use href="#i-more" /></svg></button>
+                  </li>
+                  <li class="row">
+                    <span class="blob blob--mint"><svg class="icon" aria-hidden="true"><use href="#i-social" /></svg></span>
+                    <span class="row__text"><span class="row__title">social cena en vips</span><span class="row__meta">Social</span></span>
+                    <span class="row__amount money">−50,00 €</span>
+                    <button class="icon-btn" type="button" aria-label="Opciones de social cena en vips" aria-expanded="false"><svg class="icon" aria-hidden="true"><use href="#i-more" /></svg></button>
+                  </li>
+                </ul>
+              </div>
+              <div class="day">
+                <h3 class="day__title">Jueves, 5 de noviembre <span class="day__total money">−255,00 €</span></h3>
+                <ul class="rows">
+                  <li class="row">
+                    <span class="blob blob--sky"><svg class="icon" aria-hidden="true"><use href="#i-car" /></svg></span>
+                    <span class="row__text"><span class="row__title">letra</span><span class="row__meta">Coche</span></span>
+                    <span class="row__amount money">−255,00 €</span>
+                    <button class="icon-btn" type="button" aria-label="Opciones de letra" aria-expanded="false"><svg class="icon" aria-hidden="true"><use href="#i-more" /></svg></button>
+                  </li>
+                </ul>
+              </div>
+            </section>
+
+            <div class="stack sticky">
+              <section class="band" aria-label="Total del mes">
+                <div class="band__item">
+                  <span class="band__label">Gastado en noviembre</span>
+                  <span class="band__value band__value--main"><span class="money">1.643,49 €</span></span>
+                </div>
+              </section>
+              <section class="card" aria-labelledby="quick-title">
+                <h2 class="section-title" id="quick-title">Apunta en un segundo</h2>
+                <form class="quick" action="#">
+                  <label class="sr-only" for="quick-input">Movimiento rápido</label>
+                  <div class="quick__row">
+                    <input class="input" id="quick-input" placeholder="12 café, 45 supermercado ayer" autocomplete="off" />
+                    <button class="btn btn--primary" type="submit">Añadir</button>
+                  </div>
+                  <p class="hint">Detectamos el importe, la fecha y una categoría aproximada. Revísalo antes de guardar.</p>
+                </form>
+                <a class="text-btn" href="anadir-2.html">Añadir gasto completo</a>
+              </section>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script src="shell.js"></script>
+    <script src="../shared/mask.js"></script>
+  </body>
+</html>

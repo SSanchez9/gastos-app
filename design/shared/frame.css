@@ -1,0 +1,52 @@
+/* Marco de vista previa móvil (solo para revisar las maquetas). */
+:root {
+  color-scheme: light dark;
+  --frame-bg: #e4e8e6;
+  --frame-ink: #1f2523;
+  --frame-device: #1f2523;
+  --frame-link: #1d4f9c;
+  --frame-w: 390px;
+  --frame-h: 844px;
+  --frame-bezel: 10px;
+  --frame-radius: 48px;
+  --frame-gap: 16px;
+  --frame-font: system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --frame-bg: #151918;
+    --frame-ink: #e4e8e6;
+    --frame-device: #000000;
+    --frame-link: #9cc0ff;
+  }
+}
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--frame-bg);
+  color: var(--frame-ink);
+  font-family: var(--frame-font);
+}
+.frame-page {
+  display: grid;
+  justify-items: center;
+  gap: var(--frame-gap);
+  padding: var(--frame-gap);
+}
+.frame-note {
+  margin: 0;
+  max-width: var(--frame-w);
+  text-align: center;
+}
+.frame-note a {
+  color: var(--frame-link);
+}
+.phone {
+  width: var(--frame-w);
+  max-width: 100%;
+  height: var(--frame-h);
+  border: var(--frame-bezel) solid var(--frame-device);
+  border-radius: var(--frame-radius);
+  box-sizing: content-box;
+  background: var(--frame-device);
+}

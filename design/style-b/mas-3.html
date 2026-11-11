@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Estilo B · Más 3 · Ajustes y accesos directos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400..700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="screens.css" />
+  </head>
+  <body data-nav="mas">
+    <div class="app">
+      <aside class="side" data-shell-side></aside>
+      <main class="main">
+        <header data-shell-top data-title="Más" data-subtitle="Planificación, tus datos y tu cuenta."></header>
+
+        <div class="aside-layout">
+          <div class="stack">
+            <nav class="menu menu--big" aria-label="Secciones de Más">
+              <a class="menu__item" href="ingresos-3.html">
+                <span class="blob blob--mint"><svg class="icon" aria-hidden="true"><use href="#i-arrow-in" /></svg></span>
+                <span class="row__text"><span class="row__title">Ingresos</span><span class="row__meta">Ingresos mensuales y con título</span></span>
+                <svg class="icon row__chev" aria-hidden="true"><use href="#i-right" /></svg>
+              </a>
+              <a class="menu__item" href="gastos-fijos-3.html">
+                <span class="blob blob--sky"><svg class="icon" aria-hidden="true"><use href="#i-repeat" /></svg></span>
+                <span class="row__text"><span class="row__title">Gastos fijos</span><span class="row__meta">Pagos recurrentes</span></span>
+                <svg class="icon row__chev" aria-hidden="true"><use href="#i-right" /></svg>
+              </a>
+              <a class="menu__item" href="#">
+                <span class="blob blob--mint"><svg class="icon" aria-hidden="true"><use href="#i-jar" /></svg></span>
+                <span class="row__text"><span class="row__title">Metas de ahorro</span><span class="row__meta">Objetivos y aportaciones</span></span>
+                <svg class="icon row__chev" aria-hidden="true"><use href="#i-right" /></svg>
+              </a>
+              <a class="menu__item" href="#">
+                <span class="blob blob--lilac"><svg class="icon" aria-hidden="true"><use href="#i-gauge" /></svg></span>
+                <span class="row__text"><span class="row__title">Presupuestos</span><span class="row__meta">Límites mensuales</span></span>
+                <svg class="icon row__chev" aria-hidden="true"><use href="#i-right" /></svg>
+              </a>
+              <a class="menu__item" href="#">
+                <span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-wallet" /></svg></span>
+                <span class="row__text"><span class="row__title">Carteras</span><span class="row__meta">Saldos y traspasos</span></span>
+                <svg class="icon row__chev" aria-hidden="true"><use href="#i-right" /></svg>
+              </a>
+            </nav>
+
+            <section class="card" aria-labelledby="backup-title">
+              <header class="card__head">
+                <span class="blob blob--neutral"><svg class="icon" aria-hidden="true"><use href="#i-download" /></svg></span>
+                <h2 class="card__title" id="backup-title">Copias de seguridad</h2>
+              </header>
+              <p class="card__text">Guarda tus datos en un archivo o recupera una copia anterior.</p>
+              <div class="actions actions--top">
+                <button class="btn btn--ghost btn--sm" type="button">Exportar JSON</button>
+                <button class="btn btn--ghost btn--sm" type="button">Exportar CSV</button>
+                <button class="btn btn--dark btn--sm" type="button">Importar copia</button>
+              </div>
+            </section>
+          </div>
+
+          <div class="stack">
+            <section class="card" aria-labelledby="account-title">
+              <h2 class="section-title" id="account-title">Tu cuenta</h2>
+              <div class="account account--top">
+                <span class="avatar" aria-hidden="true">S</span>
+                <span class="row__text"><span class="row__title">sofiasf199…</span><span class="row__meta">Sesión iniciada con Google</span></span>
+              </div>
+              <button class="btn btn--ghost btn--block actions--top" type="button"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-logout" /></svg>Cerrar sesión</button>
+            </section>
+
+            <section class="card" aria-labelledby="look-title">
+              <h2 class="section-title" id="look-title">Apariencia</h2>
+              <div class="seg seg--block actions--top" role="group" aria-label="Modo de color">
+                <button class="seg__btn" type="button" aria-pressed="true"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-sun" /></svg> Claro</button>
+                <button class="seg__btn" type="button" aria-pressed="false">Oscuro</button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script src="shell.js"></script>
+  </body>
+</html>

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Estilo B · Movimientos 2 · Lista y detalle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400..700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="screens.css" />
+  </head>
+  <body data-nav="movimientos">
+    <div class="app">
+      <aside class="side" data-shell-side></aside>
+      <main class="main">
+        <header data-shell-top data-title="Movimientos" data-subtitle="Toca un movimiento para ver su detalle, editarlo o eliminarlo." data-month data-mask></header>
+
+        <div class="aside-layout aside-layout--wide">
+          <section class="card" aria-labelledby="list-title">
+            <header class="section-head">
+              <h2 class="section-title" id="list-title">Gastos de noviembre</h2>
+              <label class="sr-only" for="cat-filter">Categoría</label>
+              <select class="select" id="cat-filter">
+                <option>Todas las categorías</option>
+                <option>Supermercado</option>
+                <option>Social</option>
+                <option>Casa</option>
+                <option>Coche</option>
+                <option>Gasolina</option>
+                <option>Personal</option>
+                <option>Alquiler</option>
+                <option>Otros</option>
+              </select>
+            </header>
+
+            <ul class="rows">
+              <li class="row row--selected">
+                <span class="blob blob--neutral"><svg class="icon" aria-hidden="true"><use href="#i-tag" /></svg></span>
+                <a class="row__text row--link" href="#detalle" aria-current="true"><span class="row__title">regalo mamá cami</span><span class="row__meta">Otros, 10 nov</span></a>
+                <span class="row__amount money">−40,00 €</span>
+              </li>
+              <li class="row hide-desktop">
+                <div class="detail detail--inline">
+                  <dl class="facts">
+                    <div><dt>Fecha</dt><dd>10 nov 2026</dd></div>
+                    <div><dt>Cartera</dt><dd>Sin asignar</dd></div>
+                  </dl>
+                  <div class="actions">
+                    <button class="btn btn--dark btn--sm" type="button"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-edit" /></svg>Editar</button>
+                    <button class="btn btn--danger btn--sm" type="button"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-trash" /></svg>Eliminar</button>
+                  </div>
+                </div>
+              </li>
+              <li class="row">
+                <span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-cart" /></svg></span>
+                <a class="row__text row--link" href="#detalle"><span class="row__title">kebab2</span><span class="row__meta">Supermercado, 9 nov</span></a>
+                <span class="row__amount money">−5,00 €</span>
+              </li>
+              <li class="row">
+                <span class="blob blob--lilac"><svg class="icon" aria-hidden="true"><use href="#i-fuel" /></svg></span>
+                <a class="row__text row--link" href="#detalle"><span class="row__title">Gasolina</span><span class="row__meta">Gasolina, 8 nov</span></a>
+                <span class="row__amount money">−25,00 €</span>
+              </li>
+              <li class="row">
+                <span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-cart" /></svg></span>
+                <a class="row__text row--link" href="#detalle"><span class="row__title">dia</span><span class="row__meta">Supermercado, 7 nov</span></a>
+                <span class="row__amount money">−12,38 €</span>
+              </li>
+              <li class="row">
+                <span class="blob blob--mint"><svg class="icon" aria-hidden="true"><use href="#i-social" /></svg></span>
+                <a class="row__text row--link" href="#detalle"><span class="row__title">granadella</span><span class="row__meta">Social, 7 nov</span></a>
+                <span class="row__amount money">−10,00 €</span>
+              </li>
+              <li class="row">
+                <span class="blob blob--sky"><svg class="icon" aria-hidden="true"><use href="#i-home" /></svg></span>
+                <a class="row__text row--link" href="#detalle"><span class="row__title">agua</span><span class="row__meta">Casa, 6 nov</span></a>
+                <span class="row__amount money">−23,84 €</span>
+              </li>
+              <li class="row">
+                <span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-cart" /></svg></span>
+                <a class="row__text row--link" href="#detalle"><span class="row__title">dia</span><span class="row__meta">Supermercado, 6 nov</span></a>
+                <span class="row__amount money">−14,81 €</span>
+              </li>
+              <li class="row">
+                <span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-cart" /></svg></span>
+                <a class="row__text row--link" href="#detalle"><span class="row__title">dia</span><span class="row__meta">Supermercado, 6 nov</span></a>
+                <span class="row__amount money">−4,44 €</span>
+              </li>
+              <li class="row">
+                <span class="blob blob--mint"><svg class="icon" aria-hidden="true"><use href="#i-social" /></svg></span>
+                <a class="row__text row--link" href="#detalle"><span class="row__title">social cena en vips</span><span class="row__meta">Social, 6 nov</span></a>
+                <span class="row__amount money">−50,00 €</span>
+              </li>
+              <li class="row">
+                <span class="blob blob--sky"><svg class="icon" aria-hidden="true"><use href="#i-car" /></svg></span>
+                <a class="row__text row--link" href="#detalle"><span class="row__title">letra</span><span class="row__meta">Coche, 5 nov</span></a>
+                <span class="row__amount money">−255,00 €</span>
+              </li>
+            </ul>
+          </section>
+
+          <section class="card detail sticky hide-mobile" id="detalle" aria-labelledby="detail-title">
+            <header class="card__head">
+              <span class="blob blob--neutral"><svg class="icon" aria-hidden="true"><use href="#i-tag" /></svg></span>
+              <h2 class="card__title" id="detail-title">regalo mamá cami</h2>
+            </header>
+            <p class="detail__amount"><span class="money">−40,00 €</span></p>
+            <dl class="facts">
+              <div><dt>Categoría</dt><dd>Otros</dd></div>
+              <div><dt>Fecha</dt><dd>martes, 10 nov 2026</dd></div>
+              <div><dt>Cartera</dt><dd>Sin asignar</dd></div>
+              <div><dt>Nota</dt><dd>regalo mamá cami</dd></div>
+            </dl>
+            <div class="actions">
+              <button class="btn btn--dark" type="button"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-edit" /></svg>Editar</button>
+              <button class="btn btn--danger" type="button"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-trash" /></svg>Eliminar</button>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+    <script src="shell.js"></script>
+    <script src="../shared/mask.js"></script>
+  </body>
+</html>

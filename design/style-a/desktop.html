@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Estilo A · Libro mayor · Inicio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..700&family=Public+Sans:wght@400..700&display=swap"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <svg class="sprite" aria-hidden="true" focusable="false">
+      <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z" /></symbol>
+      <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" /></symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24"><path d="M20.5 13A8.5 8.5 0 1 1 11 3.5V13z" /><path d="M14.5 3.7a8.5 8.5 0 0 1 5.8 5.8h-5.8z" /></symbol>
+      <symbol id="i-more" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01" /></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" /></symbol>
+      <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.6A9 9 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a16 16 0 0 1-3 3.8M6.6 6.6A16 16 0 0 0 2.5 12S6 18.5 12 18.5a9 9 0 0 0 5-1.5M9.9 9.9a3 3 0 0 0 4.2 4.2" /></symbol>
+      <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" /></symbol>
+      <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="M7 7l10 10M17 9v8H9" /></symbol>
+    </svg>
+
+    <div class="app">
+      <aside class="side">
+        <p class="brand">boti</p>
+        <nav class="nav" aria-label="Principal" data-bottom-nav>
+          <ul class="nav__list">
+            <li class="nav__item nav__item--1">
+              <a class="nav__link" href="#" aria-current="page"
+                ><svg class="icon" aria-hidden="true"><use href="#i-home" /></svg
+                ><span>Inicio</span></a
+              >
+            </li>
+            <li class="nav__item nav__item--2">
+              <a class="nav__link" href="#"
+                ><svg class="icon" aria-hidden="true"><use href="#i-list" /></svg
+                ><span>Movimientos</span></a
+              >
+            </li>
+            <li class="nav__item nav__item--3">
+              <a class="nav__link" href="#"
+                ><svg class="icon" aria-hidden="true"><use href="#i-chart" /></svg
+                ><span>Análisis</span></a
+              >
+            </li>
+            <li class="nav__item nav__item--4">
+              <a class="nav__link" href="#"
+                ><svg class="icon" aria-hidden="true"><use href="#i-more" /></svg
+                ><span>Más</span></a
+              >
+            </li>
+            <li class="nav__item nav__item--add">
+              <a class="nav__add" href="#"
+                ><svg class="icon" aria-hidden="true"><use href="#i-plus" /></svg
+                ><span class="nav__add-text">Añadir movimiento</span></a
+              >
+            </li>
+          </ul>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <header class="top">
+          <p class="brand brand--mobile">boti</p>
+          <h1 class="sr-only">Inicio</h1>
+          <div class="month" role="group" aria-label="Mes seleccionado">
+            <button class="icon-btn" type="button" aria-label="Mes anterior">
+              <svg class="icon" aria-hidden="true"><use href="#i-left" /></svg>
+            </button>
+            <p class="month__label">Noviembre de 2026</p>
+            <button class="icon-btn" type="button" aria-label="Mes siguiente">
+              <svg class="icon" aria-hidden="true"><use href="#i-right" /></svg>
+            </button>
+          </div>
+          <button class="mask-btn" type="button" aria-pressed="false" data-mask-toggle>
+            <svg class="icon icon--eye" aria-hidden="true"><use href="#i-eye" /></svg>
+            <svg class="icon icon--eye-off" aria-hidden="true"><use href="#i-eye-off" /></svg>
+            <span class="mask-btn__text">Ocultar importes</span>
+          </button>
+        </header>
+
+        <div class="grid">
+          <section class="panel sum" aria-labelledby="sum-title">
+            <h2 class="sum__title" id="sum-title">Cuentas de noviembre</h2>
+            <dl class="sum__lines">
+              <div class="sum__line">
+                <dt>Ingresos</dt>
+                <dd><span class="money">2.900,69 €</span></dd>
+              </div>
+              <div class="sum__line">
+                <dt>Gastado</dt>
+                <dd><span class="money">−1.603,49 €</span></dd>
+              </div>
+              <div class="sum__line sum__line--total">
+                <dt>Ahorro del mes</dt>
+                <dd class="sum__total">
+                  <span class="money"><span class="sum__int">1.297</span><span class="sum__dec">,20 €</span></span>
+                </dd>
+              </div>
+            </dl>
+            <ul class="sum__notes">
+              <li class="sum__note"><strong class="sum__pct">44,7 %</strong> de tus ingresos</li>
+              <li class="sum__note">
+                <svg class="icon icon--sm" aria-hidden="true"><use href="#i-down" /></svg>
+                <span><span class="money">515,95 €</span> menos gastado que en octubre</span>
+              </li>
+              <li class="sum__note sum__note--extra">
+                <span>Octubre: <span class="money">2.119,44 €</span> gastados</span>
+                <span class="tag tag--proposal">Propuesta</span>
+              </li>
+            </ul>
+          </section>
+
+          <section class="panel cards" aria-label="Presupuesto, próximo gasto fijo y meta de ahorro">
+            <article class="card">
+              <header class="card__head">
+                <h2 class="card__title">Presupuesto</h2>
+                <span class="tag tag--example">Ejemplo</span>
+              </header>
+              <p class="card__value">80 % usado</p>
+              <div class="meter" role="img" aria-label="80 % del presupuesto usado">
+                <span class="meter__fill" style="--v: 80%"></span>
+              </div>
+              <p class="card__detail">
+                Quedan <span class="money">396,51 €</span>, unos <span class="money">18,88 €</span> al día
+              </p>
+            </article>
+            <article class="card">
+              <header class="card__head">
+                <h2 class="card__title">Próximo gasto fijo</h2>
+                <span class="tag tag--example">Ejemplo</span>
+              </header>
+              <p class="card__value"><span class="money">900,00 €</span></p>
+              <p class="card__detail"><strong>Alquiler</strong>, 1 de diciembre<br />Faltan 21 días</p>
+            </article>
+            <article class="card">
+              <header class="card__head">
+                <h2 class="card__title">Meta de ahorro</h2>
+                <span class="tag tag--example">Ejemplo</span>
+              </header>
+              <p class="card__value">Viaje, 62 %</p>
+              <div class="meter" role="img" aria-label="62 % de la meta conseguido">
+                <span class="meter__fill meter__fill--goal" style="--v: 62%"></span>
+              </div>
+              <p class="card__detail"><span class="money">620,00 €</span> de <span class="money">1.000,00 €</span></p>
+            </article>
+          </section>
+
+          <section class="panel split" aria-labelledby="split-title">
+            <header class="panel__head">
+              <h2 class="panel__title" id="split-title">Tu ingreso, repartido</h2>
+              <a class="link" href="#">Ver análisis</a>
+            </header>
+            <div
+              class="bar"
+              role="img"
+              aria-label="Alquiler 31,0 %, Supermercado 10,8 %, Resto de gastos 13,5 %, Ahorro 44,7 %"
+            >
+              <span class="bar__seg bar__seg--1" style="--w: 31%"></span>
+              <span class="bar__seg bar__seg--2" style="--w: 10.8%"></span>
+              <span class="bar__seg bar__seg--3" style="--w: 13.5%"></span>
+              <span class="bar__seg bar__seg--4" style="--w: 44.7%"></span>
+            </div>
+            <ul class="legend">
+              <li class="legend__item"><span class="swatch swatch--1"></span><span class="legend__pct">31,0 %</span><span class="legend__label">Alquiler</span></li>
+              <li class="legend__item"><span class="swatch swatch--2"></span><span class="legend__pct">10,8 %</span><span class="legend__label">Supermercado</span></li>
+              <li class="legend__item"><span class="swatch swatch--3"></span><span class="legend__pct">13,5 %</span><span class="legend__label">Resto de gastos</span></li>
+              <li class="legend__item"><span class="swatch swatch--4"></span><span class="legend__pct">44,7 %</span><span class="legend__label">Ahorro</span></li>
+            </ul>
+            <p class="split__note"><span class="tag tag--example">Ejemplo</span> Las categorías del reparto son de ejemplo; el ahorro es real.</p>
+          </section>
+
+          <section class="panel recent" aria-labelledby="recent-title">
+            <header class="panel__head">
+              <h2 class="panel__title" id="recent-title">Últimos movimientos</h2>
+              <a class="link" href="#">Ver todo</a>
+            </header>
+            <table class="ledger">
+              <caption class="sr-only">Cinco últimos movimientos de noviembre</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Fecha</th>
+                  <th scope="col">Concepto</th>
+                  <th scope="col" class="ledger__num">Importe</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="ledger__date">9 nov</td>
+                  <td><span class="ledger__concept">kebab</span><span class="ledger__cat">Supermercado</span></td>
+                  <td class="ledger__num"><span class="money">−5,00 €</span></td>
+                </tr>
+                <tr>
+                  <td class="ledger__date">8 nov</td>
+                  <td><span class="ledger__concept">Gasolina</span><span class="ledger__cat">Gasolina</span></td>
+                  <td class="ledger__num"><span class="money">−25,00 €</span></td>
+                </tr>
+                <tr>
+                  <td class="ledger__date">7 nov</td>
+                  <td><span class="ledger__concept">dia</span><span class="ledger__cat">Supermercado</span></td>
+                  <td class="ledger__num"><span class="money">−12,38 €</span></td>
+                </tr>
+                <tr>
+                  <td class="ledger__date">7 nov</td>
+                  <td><span class="ledger__concept">granadella</span><span class="ledger__cat">Social</span></td>
+                  <td class="ledger__num"><span class="money">−10,00 €</span></td>
+                </tr>
+                <tr>
+                  <td class="ledger__date">6 nov</td>
+                  <td><span class="ledger__concept">agua</span><span class="ledger__cat">Casa</span></td>
+                  <td class="ledger__num"><span class="money">−23,84 €</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+        </div>
+      </main>
+    </div>
+    <script src="../shared/mask.js"></script>
+  </body>
+</html>

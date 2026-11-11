@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Estilo B · Sobremesa · Móvil</title>
+    <link rel="stylesheet" href="../shared/frame.css" />
+  </head>
+  <body>
+    <main class="frame-page">
+      <p class="frame-note">
+        Vista previa a 390 px. La maqueta es responsive y comparte código con la de escritorio:
+        <a id="full" href="desktop.html">abrir a pantalla completa</a> · <a href="index.html">todas las propuestas</a>.
+      </p>
+      <iframe class="phone" id="phone" src="desktop.html" title="Estilo B en móvil"></iframe>
+    </main>
+    <script>
+      // ?p=movimientos-1.html muestra esa pantalla dentro del marco.
+      const page = new URLSearchParams(location.search).get("p");
+      if (page && /^[\w-]+\.html$/.test(page)) {
+        document.getElementById("phone").src = page;
+        document.getElementById("full").href = page;
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Estilo B · Ingresos 2 · Lista y panel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400..700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="screens.css" />
+  </head>
+  <body data-nav="mas">
+    <div class="app">
+      <aside class="side" data-shell-side></aside>
+      <main class="main">
+        <header data-shell-top data-title="Ingresos" data-back="mas-2.html" data-back-label="Volver a Más" data-month data-mask></header>
+
+        <div class="aside-layout">
+          <div class="stack">
+            <section class="card" aria-labelledby="balance-title">
+              <h2 class="section-title" id="balance-title">Noviembre en cifras</h2>
+              <dl class="facts facts--top">
+                <div><dt>Ingresos</dt><dd class="row__amount--in"><span class="money">+2.900,69 €</span></dd></div>
+                <div><dt>Gastado</dt><dd><span class="money">−1.643,49 €</span></dd></div>
+                <div class="facts__total"><dt>Te queda</dt><dd><span class="money">1.257,20 €</span></dd></div>
+              </dl>
+            </section>
+
+            <section class="card" aria-labelledby="list-title">
+              <header class="section-head">
+                <h2 class="section-title" id="list-title">Ingresos de noviembre</h2>
+                <span class="pill pill--soft">1 ingreso</span>
+              </header>
+              <ul class="rows">
+                <li class="row">
+                  <span class="blob blob--mint"><svg class="icon" aria-hidden="true"><use href="#i-arrow-in" /></svg></span>
+                  <span class="row__text"><span class="row__title">Ingreso mensual</span><span class="row__meta">Sueldo de noviembre de 2026</span></span>
+                  <span class="row__amount row__amount--in money">+2.900,69 €</span>
+                  <span class="more">
+                    <button class="icon-btn" type="button" aria-label="Opciones de Ingreso mensual" aria-expanded="false" aria-controls="pop-inc">
+                      <svg class="icon" aria-hidden="true"><use href="#i-more" /></svg>
+                    </button>
+                    <span class="pop" id="pop-inc" role="menu" hidden>
+                      <button class="pop__item" type="button" role="menuitem"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-edit" /></svg>Editar</button>
+                      <button class="pop__item pop__item--danger" type="button" role="menuitem"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-trash" /></svg>Eliminar</button>
+                    </span>
+                  </span>
+                </li>
+              </ul>
+            </section>
+          </div>
+
+          <section class="card sticky" aria-labelledby="add-title">
+            <header class="card__head">
+              <span class="blob blob--mint"><svg class="icon" aria-hidden="true"><use href="#i-plus" /></svg></span>
+              <h2 class="card__title" id="add-title">Añadir ingreso</h2>
+            </header>
+            <form class="form" action="#">
+              <div class="field">
+                <label class="field__label" for="inc2-amount">Importe</label>
+                <div class="amount">
+                  <input class="input" id="inc2-amount" inputmode="decimal" placeholder="0,00" />
+                  <span class="amount__unit" aria-hidden="true">€</span>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="inc2-title">Título</label>
+                <input class="input" id="inc2-title" placeholder="Nómina, devolución…" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label class="field__label" for="inc2-date">Fecha</label>
+                <input class="input" id="inc2-date" type="date" value="2026-11-11" />
+              </div>
+              <button class="btn btn--primary btn--block" type="submit">Añadir ingreso</button>
+            </form>
+          </section>
+        </div>
+      </main>
+    </div>
+    <script src="shell.js"></script>
+    <script src="../shared/mask.js"></script>
+  </body>
+</html>

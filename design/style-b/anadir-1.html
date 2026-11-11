@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Estilo B · Añadir movimiento 1 · Rápido primero</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400..700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="screens.css" />
+  </head>
+  <body data-nav="inicio">
+    <div class="app">
+      <aside class="side" data-shell-side></aside>
+      <main class="main">
+        <header data-shell-top data-title="Inicio" data-hide-title data-month></header>
+      </main>
+    </div>
+
+    <div class="scrim" data-dialog>
+      <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="add-title">
+        <span class="dialog__handle" aria-hidden="true"></span>
+        <header class="dialog__head">
+          <div>
+            <h2 class="dialog__title" id="add-title">Añadir movimiento</h2>
+            <p class="page-sub">Se conservan la categoría y la fecha para que puedas añadir varios seguidos.</p>
+          </div>
+          <a class="icon-btn" href="inicio.html" data-close aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-close" /></svg></a>
+        </header>
+
+        <form class="quick" action="#">
+          <label class="field__label" for="q-input">Apunta en un segundo</label>
+          <div class="quick__row">
+            <input class="input" id="q-input" value="45 supermercado ayer" autocomplete="off" />
+            <button class="btn btn--primary" type="submit">Añadir</button>
+          </div>
+          <div class="parsed" aria-live="polite">
+            <span class="pill pill--soft"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-wallet" /></svg><span class="money">45,00 €</span></span>
+            <span class="pill pill--soft"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cart" /></svg>Supermercado</span>
+            <span class="pill pill--soft"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-calendar" /></svg>Ayer, 10 nov</span>
+          </div>
+          <p class="hint">Detectamos el importe, la fecha y una categoría aproximada. Revísalo antes de guardar.</p>
+        </form>
+
+        <p class="toast" role="status"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-check" /></svg>Movimiento añadido: <span class="money">12,00 €</span> en Personal. Puedes registrar otro.</p>
+
+        <a class="text-btn" href="anadir-2.html">Añadir gasto completo <svg class="icon icon--sm" aria-hidden="true"><use href="#i-right" /></svg></a>
+      </section>
+    </div>
+    <script src="shell.js"></script>
+  </body>
+</html>

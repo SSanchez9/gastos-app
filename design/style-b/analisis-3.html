@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Estilo B · Análisis 3 · Tarjetas por categoría</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400..700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="screens.css" />
+  </head>
+  <body data-nav="analisis">
+    <div class="app">
+      <aside class="side" data-shell-side></aside>
+      <main class="main">
+        <header data-shell-top data-title="Análisis" data-subtitle="Cada categoría en su tarjeta, con su parte del sueldo." data-month data-mask></header>
+
+        <div class="screen">
+          <section class="kpis" aria-label="Resumen de noviembre">
+            <div class="kpi"><span class="kpi__label">Ingresos</span><span class="kpi__value money">2.900,69 €</span></div>
+            <div class="kpi"><span class="kpi__label">Gastado</span><span class="kpi__value money">1.643,49 €</span></div>
+            <div class="kpi kpi--save"><span class="kpi__label">Ahorro, 43,3 %</span><span class="kpi__value money">1.257,20 €</span></div>
+          </section>
+
+          <section aria-labelledby="cats-title">
+            <header class="section-head">
+              <h2 class="section-title" id="cats-title">Gastos por categoría</h2>
+              <p class="total-tag">Gasto total <strong class="money">1.643,49 €</strong></p>
+            </header>
+            <div class="tile-grid tile-grid--4">
+              <article class="tile">
+                <div class="tile__top"><span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-key" /></svg></span><span class="pill pill--soft">31,0 %</span></div>
+                <h3 class="tile__title">Alquiler</h3>
+                <p class="tile__value money">900,00 €</p>
+                <span class="hbar__track"><span class="hbar__fill" style="--v: 100%"></span></span>
+              </article>
+              <article class="tile">
+                <div class="tile__top"><span class="blob blob--sky"><svg class="icon" aria-hidden="true"><use href="#i-car" /></svg></span><span class="pill pill--soft">8,8 %</span></div>
+                <h3 class="tile__title">Coche</h3>
+                <p class="tile__value money">255,00 €</p>
+                <span class="hbar__track"><span class="hbar__fill" style="--v: 28.3%"></span></span>
+              </article>
+              <article class="tile">
+                <div class="tile__top"><span class="blob blob--mint"><svg class="icon" aria-hidden="true"><use href="#i-social" /></svg></span><span class="pill pill--soft">4,4 %</span></div>
+                <h3 class="tile__title">Social</h3>
+                <p class="tile__value money">128,17 €</p>
+                <span class="hbar__track"><span class="hbar__fill" style="--v: 14.2%"></span></span>
+              </article>
+              <article class="tile">
+                <div class="tile__top"><span class="blob blob--lilac"><svg class="icon" aria-hidden="true"><use href="#i-user" /></svg></span><span class="pill pill--soft">3,7 %</span></div>
+                <h3 class="tile__title">Personal</h3>
+                <p class="tile__value money">106,59 €</p>
+                <span class="hbar__track"><span class="hbar__fill" style="--v: 11.8%"></span></span>
+              </article>
+              <article class="tile">
+                <div class="tile__top"><span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-cart" /></svg></span><span class="pill pill--soft">3,6 %</span></div>
+                <h3 class="tile__title">Supermercado</h3>
+                <p class="tile__value money">104,47 €</p>
+                <span class="hbar__track"><span class="hbar__fill" style="--v: 11.6%"></span></span>
+              </article>
+              <article class="tile">
+                <div class="tile__top"><span class="blob blob--sky"><svg class="icon" aria-hidden="true"><use href="#i-home" /></svg></span><span class="pill pill--soft">2,9 %</span></div>
+                <h3 class="tile__title">Casa</h3>
+                <p class="tile__value money">84,26 €</p>
+                <span class="hbar__track"><span class="hbar__fill" style="--v: 9.4%"></span></span>
+              </article>
+              <article class="tile">
+                <div class="tile__top"><span class="blob blob--neutral"><svg class="icon" aria-hidden="true"><use href="#i-tag" /></svg></span><span class="pill pill--soft">1,4 %</span></div>
+                <h3 class="tile__title">Otros</h3>
+                <p class="tile__value money">40,00 €</p>
+                <span class="hbar__track"><span class="hbar__fill" style="--v: 4.4%"></span></span>
+              </article>
+              <article class="tile">
+                <div class="tile__top"><span class="blob blob--lilac"><svg class="icon" aria-hidden="true"><use href="#i-fuel" /></svg></span><span class="pill pill--soft">0,9 %</span></div>
+                <h3 class="tile__title">Gasolina</h3>
+                <p class="tile__value money">25,00 €</p>
+                <span class="hbar__track"><span class="hbar__fill" style="--v: 2.8%"></span></span>
+              </article>
+            </div>
+            <p class="note">El porcentaje es la parte del sueldo de noviembre; la barra compara cada categoría con la mayor.</p>
+          </section>
+
+          <section class="card" aria-labelledby="trend-title">
+            <header class="section-head">
+              <h2 class="section-title" id="trend-title">Ahorro de los últimos 6 meses</h2>
+            </header>
+            <div class="cols cols--wide" role="img" aria-label="Ahorro: junio a septiembre sin sueldo registrado, octubre 946 €, noviembre 1.257,20 €">
+              <div class="col"><span class="col__value col__value--empty">—</span><span class="col__slot"><span class="col__bar col__bar--empty"></span></span><span class="col__label">jun</span></div>
+              <div class="col"><span class="col__value col__value--empty">—</span><span class="col__slot"><span class="col__bar col__bar--empty"></span></span><span class="col__label">jul</span></div>
+              <div class="col"><span class="col__value col__value--empty">—</span><span class="col__slot"><span class="col__bar col__bar--empty"></span></span><span class="col__label">ago</span></div>
+              <div class="col"><span class="col__value col__value--empty">—</span><span class="col__slot"><span class="col__bar col__bar--empty"></span></span><span class="col__label">sep</span></div>
+              <div class="col"><span class="col__value money">946 €</span><span class="col__slot"><span class="col__bar" style="--v: 75%"></span></span><span class="col__label">oct</span></div>
+              <div class="col"><span class="col__value money">1.257 €</span><span class="col__slot"><span class="col__bar col__bar--current" style="--v: 100%"></span></span><span class="col__label">nov</span></div>
+            </div>
+            <p class="note">«—» significa que ese mes no tiene sueldo registrado.</p>
+          </section>
+        </div>
+      </main>
+    </div>
+    <script src="shell.js"></script>
+    <script src="../shared/mask.js"></script>
+  </body>
+</html>

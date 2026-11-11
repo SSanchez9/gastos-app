@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Estilo B · Gastos fijos 2 · Línea de tiempo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400..700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="screens.css" />
+  </head>
+  <body data-nav="mas">
+    <div class="app">
+      <aside class="side" data-shell-side></aside>
+      <main class="main">
+        <header data-shell-top data-title="Gastos fijos" data-back="mas-2.html" data-back-label="Volver a Más" data-month data-mask></header>
+
+        <div class="screen narrow">
+          <section class="kpis" aria-label="Resumen de gastos fijos de noviembre">
+            <div class="kpi"><span class="kpi__label">Total del mes</span><span class="kpi__value money">915,00 €</span></div>
+            <div class="kpi"><span class="kpi__label">Ya registrado</span><span class="kpi__value money">915,00 €</span></div>
+            <div class="kpi"><span class="kpi__label">Próximo cargo</span><span class="kpi__value">—</span><span class="hint">Nada pendiente este mes</span></div>
+          </section>
+
+          <section aria-labelledby="tl-title">
+            <header class="section-head">
+              <h2 class="section-title" id="tl-title">Noviembre, día a día</h2>
+              <button class="btn btn--primary btn--sm" type="button"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-plus" /></svg>Añadir gasto fijo</button>
+            </header>
+            <ol class="timeline">
+              <li class="tl">
+                <span class="tl__day" aria-label="Día 1">1</span>
+                <div class="tl__card">
+                  <span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-key" /></svg></span>
+                  <span class="row__text"><span class="row__title">alquiler</span><span class="row__meta">Alquiler</span></span>
+                  <span class="pill pill--ok"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-check" /></svg>Registrado el 1 nov</span>
+                  <span class="row__amount money">900,00 €</span>
+                  <button class="icon-btn" type="button" aria-label="Opciones de alquiler"><svg class="icon" aria-hidden="true"><use href="#i-more" /></svg></button>
+                </div>
+              </li>
+              <li class="tl">
+                <span class="tl__day" aria-label="Día 1">1</span>
+                <div class="tl__card">
+                  <span class="blob blob--sky"><svg class="icon" aria-hidden="true"><use href="#i-home" /></svg></span>
+                  <span class="row__text"><span class="row__title">Digi</span><span class="row__meta">Casa</span></span>
+                  <span class="pill pill--ok"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-check" /></svg>Registrado el 1 nov</span>
+                  <span class="row__amount money">15,00 €</span>
+                  <button class="icon-btn" type="button" aria-label="Opciones de Digi"><svg class="icon" aria-hidden="true"><use href="#i-more" /></svg></button>
+                </div>
+              </li>
+              <li class="tl">
+                <span class="tl__day tl__day--today" aria-label="Hoy, día 11">11</span>
+                <p class="tl__today"><strong>Hoy.</strong> No quedan cargos en noviembre.</p>
+              </li>
+              <li class="tl tl--next">
+                <span class="tl__day tl__day--next" aria-label="1 de diciembre">1 dic</span>
+                <p class="tl__today">En diciembre se registrarán alquiler y Digi, <span class="money">915,00 €</span>.</p>
+              </li>
+            </ol>
+          </section>
+
+          <p class="note">Se registran automáticamente el día que indiques. Si eliminas una regla, los movimientos ya registrados se conservan.</p>
+        </div>
+      </main>
+    </div>
+    <script src="shell.js"></script>
+    <script src="../shared/mask.js"></script>
+  </body>
+</html>

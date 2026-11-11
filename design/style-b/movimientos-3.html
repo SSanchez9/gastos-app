@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Estilo B · Movimientos 3 · Por categoría</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400..700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="screens.css" />
+  </head>
+  <body data-nav="movimientos">
+    <div class="app">
+      <aside class="side" data-shell-side></aside>
+      <main class="main">
+        <header data-shell-top data-title="Movimientos" data-subtitle="Agrupados por categoría, de mayor a menor gasto." data-month data-mask></header>
+
+        <div class="screen narrow">
+          <div class="toolbar">
+            <div class="seg" role="group" aria-label="Agrupar movimientos">
+              <button class="seg__btn" type="button" aria-pressed="true">Por categoría</button>
+              <button class="seg__btn" type="button" aria-pressed="false">Por fecha</button>
+            </div>
+            <p class="toolbar__total">Total <strong class="money">1.643,49 €</strong></p>
+          </div>
+
+          <details class="acc">
+            <summary class="acc__sum">
+              <span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-key" /></svg></span>
+              <span class="row__text"><span class="row__title">Alquiler</span><span class="acc__bar"><span style="--v: 54.8%"></span></span></span>
+              <span class="row__amount money">900,00 €</span>
+              <svg class="icon acc__chev" aria-hidden="true"><use href="#i-right" /></svg>
+            </summary>
+          </details>
+
+          <details class="acc" open>
+            <summary class="acc__sum">
+              <span class="blob blob--sky"><svg class="icon" aria-hidden="true"><use href="#i-car" /></svg></span>
+              <span class="row__text"><span class="row__title">Coche</span><span class="acc__bar"><span style="--v: 15.5%"></span></span></span>
+              <span class="row__amount money">255,00 €</span>
+              <svg class="icon acc__chev" aria-hidden="true"><use href="#i-right" /></svg>
+            </summary>
+            <ul class="rows acc__body">
+              <li class="row">
+                <span class="row__text"><span class="row__title">letra</span><span class="row__meta">Jueves, 5 nov</span></span>
+                <span class="row__amount money">−255,00 €</span>
+                <span class="row__actions">
+                  <button class="icon-btn" type="button" aria-label="Editar letra"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-edit" /></svg></button>
+                  <button class="icon-btn icon-btn--danger" type="button" aria-label="Eliminar letra"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-trash" /></svg></button>
+                </span>
+              </li>
+            </ul>
+          </details>
+
+          <details class="acc">
+            <summary class="acc__sum">
+              <span class="blob blob--mint"><svg class="icon" aria-hidden="true"><use href="#i-social" /></svg></span>
+              <span class="row__text"><span class="row__title">Social</span><span class="acc__bar"><span style="--v: 7.8%"></span></span></span>
+              <span class="row__amount money">128,17 €</span>
+              <svg class="icon acc__chev" aria-hidden="true"><use href="#i-right" /></svg>
+            </summary>
+          </details>
+
+          <details class="acc">
+            <summary class="acc__sum">
+              <span class="blob blob--lilac"><svg class="icon" aria-hidden="true"><use href="#i-user" /></svg></span>
+              <span class="row__text"><span class="row__title">Personal</span><span class="acc__bar"><span style="--v: 6.5%"></span></span></span>
+              <span class="row__amount money">106,59 €</span>
+              <svg class="icon acc__chev" aria-hidden="true"><use href="#i-right" /></svg>
+            </summary>
+          </details>
+
+          <details class="acc">
+            <summary class="acc__sum">
+              <span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-cart" /></svg></span>
+              <span class="row__text"><span class="row__title">Supermercado</span><span class="acc__bar"><span style="--v: 6.4%"></span></span></span>
+              <span class="row__amount money">104,47 €</span>
+              <svg class="icon acc__chev" aria-hidden="true"><use href="#i-right" /></svg>
+            </summary>
+          </details>
+
+          <details class="acc">
+            <summary class="acc__sum">
+              <span class="blob blob--sky"><svg class="icon" aria-hidden="true"><use href="#i-home" /></svg></span>
+              <span class="row__text"><span class="row__title">Casa</span><span class="acc__bar"><span style="--v: 5.1%"></span></span></span>
+              <span class="row__amount money">84,26 €</span>
+              <svg class="icon acc__chev" aria-hidden="true"><use href="#i-right" /></svg>
+            </summary>
+          </details>
+
+          <details class="acc" open>
+            <summary class="acc__sum">
+              <span class="blob blob--neutral"><svg class="icon" aria-hidden="true"><use href="#i-tag" /></svg></span>
+              <span class="row__text"><span class="row__title">Otros</span><span class="acc__bar"><span style="--v: 2.4%"></span></span></span>
+              <span class="row__amount money">40,00 €</span>
+              <svg class="icon acc__chev" aria-hidden="true"><use href="#i-right" /></svg>
+            </summary>
+            <ul class="rows acc__body">
+              <li class="row">
+                <span class="row__text"><span class="row__title">regalo mamá cami</span><span class="row__meta">Martes, 10 nov</span></span>
+                <span class="row__amount money">−40,00 €</span>
+                <span class="row__actions">
+                  <button class="icon-btn" type="button" aria-label="Editar regalo mamá cami"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-edit" /></svg></button>
+                  <button class="icon-btn icon-btn--danger" type="button" aria-label="Eliminar regalo mamá cami"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-trash" /></svg></button>
+                </span>
+              </li>
+            </ul>
+          </details>
+
+          <details class="acc">
+            <summary class="acc__sum">
+              <span class="blob blob--lilac"><svg class="icon" aria-hidden="true"><use href="#i-fuel" /></svg></span>
+              <span class="row__text"><span class="row__title">Gasolina</span><span class="acc__bar"><span style="--v: 1.5%"></span></span></span>
+              <span class="row__amount money">25,00 €</span>
+              <svg class="icon acc__chev" aria-hidden="true"><use href="#i-right" /></svg>
+            </summary>
+          </details>
+
+          <p class="hint">La barra de cada categoría indica su parte del gasto total del mes.</p>
+        </div>
+      </main>
+    </div>
+    <script src="shell.js"></script>
+    <script src="../shared/mask.js"></script>
+  </body>
+</html>

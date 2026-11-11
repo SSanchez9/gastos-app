@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Estilo B · Añadir movimiento 3 · Panel lateral</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400..700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="screens.css" />
+  </head>
+  <body data-nav="inicio">
+    <div class="app">
+      <aside class="side" data-shell-side></aside>
+      <main class="main">
+        <header data-shell-top data-title="Inicio" data-hide-title data-month></header>
+      </main>
+    </div>
+
+    <div class="scrim scrim--drawer" data-dialog>
+      <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="add3-title">
+        <span class="dialog__handle" aria-hidden="true"></span>
+        <header class="dialog__head">
+          <div>
+            <h2 class="dialog__title" id="add3-title">Añadir movimiento</h2>
+            <p class="page-sub">Se conservan la categoría y la fecha para el siguiente.</p>
+          </div>
+          <a class="icon-btn" href="inicio.html" data-close aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-close" /></svg></a>
+        </header>
+
+        <p class="toast" role="status"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-check" /></svg>Añadido: <span class="money">14,81 €</span> en Supermercado.</p>
+
+        <form class="quick" action="#">
+          <label class="field__label" for="a3-quick"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-bolt" /></svg> Apunta en un segundo</label>
+          <div class="quick__row">
+            <input class="input" id="a3-quick" placeholder="12 café, 45 supermercado ayer" autocomplete="off" />
+            <button class="btn btn--primary" type="submit">Añadir</button>
+          </div>
+        </form>
+
+        <p class="divider"><span>o rellena los campos</span></p>
+
+        <form class="form" action="#">
+          <div class="field">
+            <label class="field__label" for="a3-amount">Importe</label>
+            <div class="amount">
+              <input class="input" id="a3-amount" inputmode="decimal" placeholder="0,00" />
+              <span class="amount__unit" aria-hidden="true">€</span>
+            </div>
+          </div>
+          <fieldset class="field">
+            <legend class="field__label">Categoría</legend>
+            <div class="cats">
+              <label class="cat"><input type="radio" name="a3-cat" checked /><span class="cat__face">Supermercado</span></label>
+              <label class="cat"><input type="radio" name="a3-cat" /><span class="cat__face">Personal</span></label>
+              <label class="cat"><input type="radio" name="a3-cat" /><span class="cat__face">Coche</span></label>
+              <label class="cat"><input type="radio" name="a3-cat" /><span class="cat__face">Gasolina</span></label>
+              <label class="cat"><input type="radio" name="a3-cat" /><span class="cat__face">Alquiler</span></label>
+              <label class="cat"><input type="radio" name="a3-cat" /><span class="cat__face">Casa</span></label>
+              <label class="cat"><input type="radio" name="a3-cat" /><span class="cat__face">Otros</span></label>
+              <label class="cat"><input type="radio" name="a3-cat" /><span class="cat__face">Social</span></label>
+            </div>
+          </fieldset>
+          <div class="form-row form-row--2">
+            <div class="field">
+              <label class="field__label" for="a3-date">Fecha</label>
+              <input class="input" id="a3-date" type="date" value="2026-11-06" />
+            </div>
+            <div class="field">
+              <label class="field__label" for="a3-wallet">Cartera</label>
+              <select class="input" id="a3-wallet"><option>Sin asignar</option></select>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="a3-note">Nota (opcional)</label>
+            <input class="input" id="a3-note" placeholder="Añade un detalle" autocomplete="off" />
+          </div>
+          <button class="btn btn--primary btn--block" type="submit">Añadir</button>
+        </form>
+      </section>
+    </div>
+    <script src="shell.js"></script>
+  </body>
+</html>

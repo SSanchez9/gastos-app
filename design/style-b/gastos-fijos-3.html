@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Estilo B · Gastos fijos 3 · Tarjetas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400..700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="screens.css" />
+  </head>
+  <body data-nav="mas">
+    <div class="app">
+      <aside class="side" data-shell-side></aside>
+      <main class="main">
+        <header data-shell-top data-title="Gastos fijos" data-back="mas-3.html" data-back-label="Volver a Más" data-month data-mask></header>
+
+        <div class="screen">
+          <section class="card progress" aria-labelledby="prog-title">
+            <div class="ring" style="--v: 100" role="img" aria-label="100 % de los gastos fijos de noviembre registrados">
+              <span class="ring__value" aria-hidden="true">100 %</span>
+            </div>
+            <div>
+              <h2 class="section-title" id="prog-title">Noviembre al día</h2>
+              <p class="card__text"><strong class="money">915,00 €</strong> de <span class="money">915,00 €</span> ya registrados. No queda ningún cargo este mes.</p>
+            </div>
+          </section>
+
+          <div class="tile-grid tile-grid--3">
+            <article class="tile">
+              <div class="tile__top">
+                <span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-key" /></svg></span>
+                <span class="pill pill--ok"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-check" /></svg>Registrado</span>
+              </div>
+              <h2 class="tile__title">alquiler</h2>
+              <p class="tile__value money">900,00 €</p>
+              <p class="tile__text">Alquiler, el día 1 de cada mes</p>
+              <div class="actions actions--top">
+                <button class="btn btn--ghost btn--sm" type="button"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-edit" /></svg>Editar</button>
+                <button class="icon-btn icon-btn--danger" type="button" aria-label="Eliminar alquiler"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-trash" /></svg></button>
+              </div>
+            </article>
+            <article class="tile">
+              <div class="tile__top">
+                <span class="blob blob--sky"><svg class="icon" aria-hidden="true"><use href="#i-home" /></svg></span>
+                <span class="pill pill--ok"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-check" /></svg>Registrado</span>
+              </div>
+              <h2 class="tile__title">Digi</h2>
+              <p class="tile__value money">15,00 €</p>
+              <p class="tile__text">Casa, el día 1 de cada mes</p>
+              <div class="actions actions--top">
+                <button class="btn btn--ghost btn--sm" type="button"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-edit" /></svg>Editar</button>
+                <button class="icon-btn icon-btn--danger" type="button" aria-label="Eliminar Digi"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-trash" /></svg></button>
+              </div>
+            </article>
+            <button class="tile tile--add" type="button">
+              <span class="blob blob--lilac"><svg class="icon" aria-hidden="true"><use href="#i-plus" /></svg></span>
+              <span class="tile__title">Añadir gasto fijo</span>
+              <span class="tile__text">Alquiler, suscripciones u otros pagos que se repiten</span>
+            </button>
+          </div>
+
+          <p class="note">Se registran automáticamente el día que indiques. Si eliminas una regla, los movimientos ya registrados se conservan.</p>
+        </div>
+      </main>
+    </div>
+    <script src="shell.js"></script>
+    <script src="../shared/mask.js"></script>
+  </body>
+</html>

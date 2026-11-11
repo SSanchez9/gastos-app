@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Estilo B · Más 2 · Tarjetas con resumen</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400..700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="screens.css" />
+  </head>
+  <body data-nav="mas">
+    <div class="app">
+      <aside class="side" data-shell-side></aside>
+      <main class="main">
+        <header data-shell-top data-title="Más" data-subtitle="Todo lo que planificas, con su estado de un vistazo."></header>
+
+        <nav class="tile-grid tile-grid--3" aria-label="Secciones de Más">
+          <a class="tile tile--mint" href="ingresos-2.html">
+            <div class="tile__top"><span class="blob blob--mint"><svg class="icon" aria-hidden="true"><use href="#i-arrow-in" /></svg></span><svg class="icon row__chev" aria-hidden="true"><use href="#i-right" /></svg></div>
+            <h2 class="tile__title">Ingresos</h2>
+            <p class="tile__value money">2.900,69 €</p>
+            <p class="tile__text">1 ingreso en noviembre</p>
+          </a>
+          <a class="tile tile--sky" href="gastos-fijos-2.html">
+            <div class="tile__top"><span class="blob blob--sky"><svg class="icon" aria-hidden="true"><use href="#i-repeat" /></svg></span><svg class="icon row__chev" aria-hidden="true"><use href="#i-right" /></svg></div>
+            <h2 class="tile__title">Gastos fijos</h2>
+            <p class="tile__value money">915,00 €</p>
+            <p class="tile__text">2 pagos al mes, los dos registrados en noviembre</p>
+          </a>
+          <a class="tile tile--peach" href="#">
+            <div class="tile__top"><span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-wallet" /></svg></span><svg class="icon row__chev" aria-hidden="true"><use href="#i-right" /></svg></div>
+            <h2 class="tile__title">Carteras</h2>
+            <p class="tile__text">Saldos de cada cartera y traspasos entre ellas</p>
+          </a>
+          <a class="tile tile--empty" href="#">
+            <div class="tile__top"><span class="blob blob--mint"><svg class="icon" aria-hidden="true"><use href="#i-jar" /></svg></span><svg class="icon row__chev" aria-hidden="true"><use href="#i-right" /></svg></div>
+            <h2 class="tile__title">Metas de ahorro</h2>
+            <p class="tile__value">Sin metas</p>
+            <p class="tile__text">Crea una meta para empezar a ahorrar</p>
+          </a>
+          <a class="tile tile--empty" href="#">
+            <div class="tile__top"><span class="blob blob--lilac"><svg class="icon" aria-hidden="true"><use href="#i-gauge" /></svg></span><svg class="icon row__chev" aria-hidden="true"><use href="#i-right" /></svg></div>
+            <h2 class="tile__title">Presupuestos</h2>
+            <p class="tile__value">Sin límite</p>
+            <p class="tile__text">Fija un límite de gasto para noviembre</p>
+          </a>
+          <a class="tile" href="#">
+            <div class="tile__top"><span class="blob blob--neutral"><svg class="icon" aria-hidden="true"><use href="#i-download" /></svg></span><svg class="icon row__chev" aria-hidden="true"><use href="#i-right" /></svg></div>
+            <h2 class="tile__title">Copias de seguridad</h2>
+            <p class="tile__text">Exporta tus datos o importa una copia</p>
+          </a>
+        </nav>
+      </main>
+    </div>
+    <script src="shell.js"></script>
+  </body>
+</html>

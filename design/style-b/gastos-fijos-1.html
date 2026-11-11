@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>Estilo B · Gastos fijos 1 · Calendario</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400..700&display=swap" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="screens.css" />
+  </head>
+  <body data-nav="mas">
+    <div class="app">
+      <aside class="side" data-shell-side></aside>
+      <main class="main">
+        <header data-shell-top data-title="Gastos fijos" data-back="mas-1.html" data-back-label="Volver a Más" data-month data-mask></header>
+
+        <div class="screen">
+          <section class="band" aria-label="Resumen de gastos fijos de noviembre">
+            <div class="band__item"><span class="band__label">Total del mes</span><span class="band__value band__value--main"><span class="money">915,00 €</span></span></div>
+            <div class="band__item"><span class="band__label">Ya registrado</span><span class="band__value"><span class="money">915,00 €</span></span></div>
+            <div class="band__item"><span class="band__label">Próximo cargo</span><span class="band__value">Nada pendiente este mes</span></div>
+          </section>
+
+          <div class="aside-layout aside-layout--wide">
+            <section class="card" aria-labelledby="cal-title">
+              <header class="section-head">
+                <h2 class="section-title" id="cal-title">Noviembre de 2026</h2>
+              </header>
+              <div class="calendar" role="group" aria-labelledby="cal-title">
+                <span class="calendar__dow" aria-hidden="true">L</span>
+                <span class="calendar__dow" aria-hidden="true">M</span>
+                <span class="calendar__dow" aria-hidden="true">X</span>
+                <span class="calendar__dow" aria-hidden="true">J</span>
+                <span class="calendar__dow" aria-hidden="true">V</span>
+                <span class="calendar__dow" aria-hidden="true">S</span>
+                <span class="calendar__dow" aria-hidden="true">D</span>
+                  <span class="calendar__day calendar__day--blank" aria-hidden="true"></span>
+                  <span class="calendar__day calendar__day--blank" aria-hidden="true"></span>
+                  <span class="calendar__day calendar__day--blank" aria-hidden="true"></span>
+                  <span class="calendar__day calendar__day--blank" aria-hidden="true"></span>
+                  <span class="calendar__day calendar__day--blank" aria-hidden="true"></span>
+                  <span class="calendar__day calendar__day--blank" aria-hidden="true"></span>
+                  <span class="calendar__day calendar__day--past calendar__day--charge">1<span class="sr-only">, 2 cargos registrados</span></span>
+                  <span class="calendar__day calendar__day--past">2</span>
+                  <span class="calendar__day calendar__day--past">3</span>
+                  <span class="calendar__day calendar__day--past">4</span>
+                  <span class="calendar__day calendar__day--past">5</span>
+                  <span class="calendar__day calendar__day--past">6</span>
+                  <span class="calendar__day calendar__day--past">7</span>
+                  <span class="calendar__day calendar__day--past">8</span>
+                  <span class="calendar__day calendar__day--past">9</span>
+                  <span class="calendar__day calendar__day--past">10</span>
+                  <span class="calendar__day calendar__day--today">11<span class="sr-only">, hoy</span></span>
+                  <span class="calendar__day">12</span>
+                  <span class="calendar__day">13</span>
+                  <span class="calendar__day">14</span>
+                  <span class="calendar__day">15</span>
+                  <span class="calendar__day">16</span>
+                  <span class="calendar__day">17</span>
+                  <span class="calendar__day">18</span>
+                  <span class="calendar__day">19</span>
+                  <span class="calendar__day">20</span>
+                  <span class="calendar__day">21</span>
+                  <span class="calendar__day">22</span>
+                  <span class="calendar__day">23</span>
+                  <span class="calendar__day">24</span>
+                  <span class="calendar__day">25</span>
+                  <span class="calendar__day">26</span>
+                  <span class="calendar__day">27</span>
+                  <span class="calendar__day">28</span>
+                  <span class="calendar__day">29</span>
+                  <span class="calendar__day">30</span>
+              </div>
+              <p class="legend-row legend-row--top"><span><span class="sw"></span>Día con cargos</span><span><span class="sw sw--today"></span>Hoy</span></p>
+            </section>
+
+            <section class="card" aria-labelledby="rules-title">
+              <header class="section-head">
+                <h2 class="section-title" id="rules-title">Día 1 de cada mes</h2>
+              </header>
+              <ul class="rows">
+                <li class="row">
+                  <span class="blob blob--peach"><svg class="icon" aria-hidden="true"><use href="#i-key" /></svg></span>
+                  <span class="row__text"><span class="row__title">alquiler</span><span class="row__meta">Alquiler</span></span>
+                  <span class="row__end"><span class="row__amount money">900,00 €</span><span class="pill pill--ok"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-check" /></svg>1 nov</span></span>
+                  <button class="icon-btn" type="button" aria-label="Opciones de alquiler"><svg class="icon" aria-hidden="true"><use href="#i-more" /></svg></button>
+                </li>
+                <li class="row">
+                  <span class="blob blob--sky"><svg class="icon" aria-hidden="true"><use href="#i-home" /></svg></span>
+                  <span class="row__text"><span class="row__title">Digi</span><span class="row__meta">Casa</span></span>
+                  <span class="row__end"><span class="row__amount money">15,00 €</span><span class="pill pill--ok"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-check" /></svg>1 nov</span></span>
+                  <button class="icon-btn" type="button" aria-label="Opciones de Digi"><svg class="icon" aria-hidden="true"><use href="#i-more" /></svg></button>
+                </li>
+              </ul>
+              <p class="hint hint--top">La marca verde indica que ya se registró este mes.</p>
+              <button class="btn btn--primary btn--block actions--top" type="button"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-plus" /></svg>Añadir gasto fijo</button>
+              <p class="note">Se registran automáticamente el día que indiques. Si eliminas una regla, los movimientos ya registrados se conservan.</p>
+            </section>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script src="shell.js"></script>
+    <script src="../shared/mask.js"></script>
+  </body>
+</html>
