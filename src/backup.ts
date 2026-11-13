@@ -1,3 +1,4 @@
+import { getCategories } from "./categories";
 import { MAX_IMPORT_BYTES } from "./config";
 import { formatDate, getTodayIso } from "./format";
 import {
@@ -132,14 +133,15 @@ function exportJson(): void {
 
 function exportCsv(): void {
   if (!ensureDataReady()) return;
-  const { expenses } = state.getState().data;
+  const { data } = state.getState();
+  const { expenses } = data;
   if (expenses.length === 0) {
     showStatus("No hay gastos que exportar.", true);
     return;
   }
   downloadFile(
     buildFileName("gastos", "csv", getTodayIso()),
-    expensesToCsv(expenses),
+    expensesToCsv(expenses, getCategories(data)),
     "text/csv;charset=utf-8",
   );
   showStatus(`Exportados ${plural(expenses.length, "gasto", "gastos")} a CSV.`);

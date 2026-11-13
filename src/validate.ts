@@ -1,3 +1,4 @@
+import { CATEGORY_COLORS, CATEGORY_ICONS, CATEGORY_NAME_MAX_LENGTH } from "./categories";
 import { DATA_VERSION, NOTE_MAX_LENGTH, isCategoryKey } from "./config";
 import { isValidIsoDate, isValidMonthKey } from "./format";
 import type {
@@ -12,6 +13,9 @@ import type {
   Result,
   GoalContribution,
   IncomeEntry,
+  CategoryColor,
+  CategoryIcon,
+  UserCategory,
 } from "./types";
 
 function fail(error: string): Result<never> {
@@ -161,6 +165,18 @@ export function parseAppData(raw: unknown): AppData | null {
       return null;
     result.migratedIncomeMonths = [...new Set(raw["migratedIncomeMonths"] as string[])];
   }
+  if (raw["categories"] !== undefined) {
+    if (!Array.isArray(raw["categories"])) return null;
+    const categories = raw["categories"].map(parseCategory);
+    if (categories.some((category) => category === null)) return null;
+    const parsedCategories = categories as UserCategory[];
+    if (
+      new Set(parsedCategories.map((category) => category.id)).size !==
+      parsedCategories.length
+    )
+      return null;
+    result.categories = parsedCategories;
+  }
   if (raw["goals"] !== undefined) {
     if (!Array.isArray(raw["goals"])) return null;
     const goals = raw["goals"].map(parseGoal);
@@ -213,6 +229,28 @@ export function parseAppData(raw: unknown): AppData | null {
   )
     return null;
   return result;
+}
+
+function parseCategory(raw: unknown): UserCategory | null {
+  if (!isRecord(raw)) return null;
+  const { id, name, icon, color, createdAt } = raw;
+  if (
+    !isCategoryKey(id) ||
+    typeof name !== "string" ||
+    !name.trim() ||
+    name.trim().length > CATEGORY_NAME_MAX_LENGTH ||
+    !CATEGORY_ICONS.includes(icon as CategoryIcon) ||
+    !CATEGORY_COLORS.includes(color as CategoryColor) ||
+    !isFiniteNumber(createdAt)
+  )
+    return null;
+  return {
+    id,
+    name: name.trim(),
+    icon: icon as CategoryIcon,
+    color: color as CategoryColor,
+    createdAt,
+  };
 }
 
 function parseWallet(raw: unknown): Wallet | null {

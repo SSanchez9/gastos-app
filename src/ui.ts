@@ -8,7 +8,8 @@ import {
   sumCents,
 } from "./calc";
 import type { MonthComparison } from "./calc";
-import { CATEGORIES, CATEGORY_KEYS, isCategoryKey } from "./config";
+import { findCategory, getCategories } from "./categories";
+import { isBuiltInCategoryKey, isCategoryKey } from "./config";
 import {
   centsToInputString,
   eurosToCents,
@@ -22,12 +23,15 @@ import {
 } from "./format";
 import type {
   AppState,
+  BuiltInCategoryKey,
+  CategoryColor,
   CategoryKey,
   Expense,
   IsoDate,
   NewExpense,
   RecurringExpense,
   Result,
+  UserCategory,
   WalletKind,
 } from "./types";
 
@@ -90,17 +94,37 @@ export const dom = {
 
 type Tone = "peach" | "mint" | "lilac" | "sky" | "neutral";
 
-/** Icono y tono de cada categoría: la identidad nunca depende solo del color. */
-const CATEGORY_LOOK: Record<CategoryKey, { icon: string; tone: Tone }> = {
-  supermercado: { icon: "cart", tone: "peach" },
-  personal: { icon: "user", tone: "lilac" },
-  coche: { icon: "car", tone: "sky" },
-  gasolina: { icon: "fuel", tone: "lilac" },
-  alquiler: { icon: "key", tone: "peach" },
-  casa: { icon: "home", tone: "sky" },
-  otros: { icon: "tag", tone: "neutral" },
-  social: { icon: "social", tone: "mint" },
+/** Fondo del icono de las categorías de siempre (se mantiene el de antes). */
+const BUILT_IN_TONE: Record<BuiltInCategoryKey, Tone> = {
+  supermercado: "peach",
+  personal: "lilac",
+  coche: "sky",
+  gasolina: "lilac",
+  alquiler: "peach",
+  casa: "sky",
+  otros: "neutral",
+  social: "mint",
 };
+
+/** Fondo del icono de las categorías creadas, según su color de gráfico. */
+const COLOR_TONE: Record<CategoryColor, Tone> = {
+  plum: "lilac",
+  orange: "peach",
+  green: "mint",
+  blue: "sky",
+  rose: "peach",
+  sky: "sky",
+  brick: "peach",
+  grey: "neutral",
+};
+
+/** Lista de categorías de la persona; se actualiza en cada renderApp. */
+let categoryList: UserCategory[] = getCategories({ expenses: [] });
+
+/** Nombre, icono y color de una categoría (también si ya no está en la lista). */
+export function categoryInfo(id: CategoryKey): UserCategory {
+  return findCategory(categoryList, id);
+}
 
 const WALLET_LOOK: Record<WalletKind, { icon: string; tone: Tone; label: string }> = {
   bank: { icon: "wallet", tone: "sky", label: "Banco" },
@@ -140,8 +164,11 @@ function createBlob(icon: string, tone: Tone): HTMLSpanElement {
 }
 
 function createCategoryBlob(category: CategoryKey): HTMLSpanElement {
-  const look = CATEGORY_LOOK[category];
-  return createBlob(look.icon, look.tone);
+  const info = categoryInfo(category);
+  const tone = isBuiltInCategoryKey(category)
+    ? BUILT_IN_TONE[category]
+    : COLOR_TONE[info.color];
+  return createBlob(info.icon, tone);
 }
 
 function createMoney(
@@ -193,7 +220,7 @@ export interface ChartSeries {
 
 /** Color fijo de una categoría en los gráficos (tokens --cat-* de base.css). */
 export function categoryColor(category: CategoryKey): string {
-  return `var(--cat-${category})`;
+  return `var(--cat-${categoryInfo(category).color})`;
 }
 
 /**
@@ -207,7 +234,7 @@ export function buildSeries(
   const series: ChartSeries[] = [...expenses]
     .sort((a, b) => b.cents - a.cents)
     .map((item) => ({
-      label: CATEGORIES[item.category].label,
+      label: categoryInfo(item.category).name,
       cents: item.cents,
       pct: item.pct,
       color: categoryColor(item.category),
@@ -245,7 +272,7 @@ export function showExpenseSavedToast(expense: Expense, edited: boolean): void {
   showToast(
     edited
       ? "Cambios guardados."
-      : `Movimiento añadido: ${formatMoney(expense.amountCents)} en ${CATEGORIES[expense.category].label}.`,
+      : `Movimiento añadido: ${formatMoney(expense.amountCents)} en ${categoryInfo(expense.category).name}.`,
   );
 }
 
@@ -256,45 +283,70 @@ function createOption(value: string, label: string): HTMLOptionElement {
   return option;
 }
 
-/** Rellena los desplegables y selectores de categoría a partir de config.ts. */
+let categoryControlsKey = "";
+
+/** Primer pintado de los selectores de categoría (antes de cargar los datos). */
 export function initCategorySelects(): void {
-  dom.category.replaceChildren(
-    ...CATEGORY_KEYS.map((key) => createOption(key, CATEGORIES[key].label)),
-  );
-  dom.filterCategory.replaceChildren(
-    createOption("all", "Todas"),
-    ...CATEGORY_KEYS.map((key) => createOption(key, CATEGORIES[key].label)),
-  );
+  renderCategoryControls();
+}
+
+/**
+ * Rellena los desplegables y selectores de categoría con la lista de la persona.
+ * Solo se rehacen si la lista cambia, para no perder el foco ni la selección.
+ */
+function renderCategoryControls(): void {
+  const key = categoryList
+    .map((category) => `${category.id}:${category.name}:${category.icon}`)
+    .join("|");
+  if (key === categoryControlsKey) return;
+  categoryControlsKey = key;
+  const previousCategory = dom.category.value;
+  const previousFilter = dom.filterCategory.value;
+  const options = (): HTMLOptionElement[] =>
+    categoryList.map((category) => createOption(category.id, category.name));
+
+  dom.category.replaceChildren(...options());
+  if (categoryList.some((category) => category.id === previousCategory))
+    dom.category.value = previousCategory;
+  dom.filterCategory.replaceChildren(createOption("all", "Todas"), ...options());
+  dom.filterCategory.value = categoryList.some(
+    (category) => category.id === previousFilter,
+  )
+    ? previousFilter
+    : "all";
+  const recurringCategory = document.getElementById("recurring-category");
+  if (recurringCategory instanceof HTMLSelectElement) {
+    const previous = recurringCategory.value;
+    recurringCategory.replaceChildren(...options());
+    if (categoryList.some((category) => category.id === previous))
+      recurringCategory.value = previous;
+  }
   // Las etiquetas de filtro actualizan el desplegable y avisan a main.ts con «change».
   dom.filterChips.replaceChildren(
-    ...["all", ...CATEGORY_KEYS].map((value) => {
-      const button = el(
-        "button",
-        "filter",
-        value === "all" ? "Todas" : CATEGORIES[value as CategoryKey].label,
-      );
+    ...[{ id: "all", name: "Todas" }, ...categoryList].map(({ id, name }) => {
+      const button = el("button", "filter", name);
       button.type = "button";
-      button.dataset["filter"] = value;
+      button.dataset["filter"] = id;
       button.setAttribute("aria-pressed", "false");
       button.addEventListener("click", () => {
-        dom.filterCategory.value = value;
+        dom.filterCategory.value = id;
         dom.filterCategory.dispatchEvent(new Event("change"));
       });
       return button;
     }),
   );
   dom.categoryPicker.replaceChildren(
-    ...CATEGORY_KEYS.map((category) => {
+    ...categoryList.map((category) => {
       const button = el("button", "category-chip");
       button.type = "button";
-      button.dataset["category"] = category;
+      button.dataset["category"] = category.id;
       button.setAttribute("aria-pressed", "false");
       button.append(
-        createCategoryBlob(category),
-        el("span", "category-chip__label", CATEGORIES[category].label),
+        createCategoryBlob(category.id),
+        el("span", "category-chip__label", category.name),
       );
       button.addEventListener("click", () => {
-        dom.category.value = category;
+        dom.category.value = category.id;
         syncCategoryPicker();
       });
       return button;
@@ -423,7 +475,7 @@ export function renderQuickEntryPreview(preview: QuickEntryPreview | null): void
   };
   dom.quickEntryPreview.replaceChildren(
     chip("wallet", formatMoney(preview.amountCents)),
-    chip(CATEGORY_LOOK[preview.category].icon, CATEGORIES[preview.category].label),
+    chip(categoryInfo(preview.category).icon, categoryInfo(preview.category).name),
     chip("calendar", relativeDayLabel(preview.date)),
   );
   dom.quickEntryPreview.hidden = false;
@@ -663,8 +715,8 @@ function createBreakdownItem(
 ): HTMLLIElement {
   const name = el("span", "hbar__name");
   name.append(
-    createIcon(CATEGORY_LOOK[category].icon, "icon icon--sm"),
-    el("span", "", CATEGORIES[category].label),
+    createIcon(categoryInfo(category).icon, "icon icon--sm"),
+    el("span", "", categoryInfo(category).name),
   );
   const value = el("span", "hbar__value");
   value.append(
@@ -761,7 +813,7 @@ function createExpenseActions(expense: Expense): HTMLSpanElement {
 }
 
 function createExpenseRow(expense: Expense): HTMLLIElement {
-  const label = CATEGORIES[expense.category].label;
+  const label = categoryInfo(expense.category).name;
   const title = expense.note || label;
   const text = el("span", "row__text");
   text.append(
@@ -807,8 +859,8 @@ function renderRecentActivity(state: AppState): void {
       id: expense.id,
       date: expense.date,
       createdAt: expense.createdAt,
-      title: expense.note || CATEGORIES[expense.category].label,
-      subtitle: expense.note ? CATEGORIES[expense.category].label : "Sin nota",
+      title: expense.note || categoryInfo(expense.category).name,
+      subtitle: expense.note ? categoryInfo(expense.category).name : "Sin nota",
       amountCents: expense.amountCents,
       income: false,
       category: expense.category,
@@ -1167,6 +1219,52 @@ function renderMoreStates(state: AppState): void {
       ? `Sin límite en ${monthName(month)}`
       : `Límite de ${formatMoney(budget)}`,
   );
+}
+
+// ---------- Categorías ----------
+
+function renderCategoriesScreen(state: AppState): void {
+  const list = document.getElementById("categories-list");
+  if (!(list instanceof HTMLUListElement)) return;
+  const count = (id: CategoryKey): { expenses: number; recurring: number } => ({
+    expenses: state.data.expenses.filter((expense) => expense.category === id).length,
+    recurring: (state.data.recurring ?? []).filter((item) => item.category === id).length,
+  });
+  list.replaceChildren(
+    ...categoryList.map((category) => {
+      const uses = count(category.id);
+      const meta =
+        uses.expenses === 0 && uses.recurring === 0
+          ? "Sin movimientos"
+          : [
+              uses.expenses > 0
+                ? `${uses.expenses} ${uses.expenses === 1 ? "movimiento" : "movimientos"}`
+                : "",
+              uses.recurring > 0
+                ? `${uses.recurring} ${uses.recurring === 1 ? "gasto fijo" : "gastos fijos"}`
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" y ");
+      const row = el("li", "row");
+      const text = el("span", "row__text");
+      text.append(el("span", "row__title", category.name), el("span", "row__meta", meta));
+      const actions = el("span", "row__actions");
+      const remove = el("button", "icon-btn icon-btn--danger");
+      remove.type = "button";
+      remove.dataset["action"] = "category-delete";
+      remove.dataset["id"] = category.id;
+      remove.setAttribute("aria-label", `Borrar la categoría ${category.name}`);
+      remove.disabled = categoryList.length === 1;
+      remove.append(createIcon("trash", "icon icon--sm"));
+      actions.append(remove);
+      row.append(createCategoryBlob(category.id), text, actions);
+      return row;
+    }),
+  );
+  const moreState = document.getElementById("more-categories-state");
+  if (moreState)
+    moreState.textContent = `${categoryList.length} ${categoryList.length === 1 ? "categoría" : "categorías"}`;
 }
 
 // ---------- Presupuesto, metas, gastos fijos y carteras ----------
@@ -1587,7 +1685,7 @@ function createRecurringRow(
     el(
       "p",
       "row__meta",
-      `${CATEGORIES[template.category].label}, día ${template.dayOfMonth}`,
+      `${categoryInfo(template.category).name}, día ${template.dayOfMonth}`,
     ),
   );
   const view = el("div", "recurring-card__view");
@@ -1640,9 +1738,13 @@ function createRecurringRow(
   editCategory.dataset["recurringField"] = "category";
   editCategory.id = `recurring-category-${template.id}`;
   editCategory.replaceChildren(
-    ...CATEGORY_KEYS.map((categoryKey) => {
-      const option = createOption(categoryKey, CATEGORIES[categoryKey].label);
-      option.selected = categoryKey === template.category;
+    // Las de la lista y, si ya no está en ella, la que tiene ahora el gasto fijo.
+    ...(categoryList.some((category) => category.id === template.category)
+      ? categoryList
+      : [...categoryList, categoryInfo(template.category)]
+    ).map((category) => {
+      const option = createOption(category.id, category.name);
+      option.selected = category.id === template.category;
       return option;
     }),
   );
@@ -1677,6 +1779,8 @@ export function renderApp(state: AppState): void {
   const today = getTodayIso();
   dom.currentDate.dateTime = today;
   dom.currentDate.textContent = `Hoy es ${formatDate(today)}`;
+  categoryList = getCategories(state.data);
+  renderCategoryControls();
   dom.monthSelect.value = state.ui.selectedMonth;
   dom.filterCategory.value = state.ui.categoryFilter;
   syncFilterChips();
@@ -1687,5 +1791,6 @@ export function renderApp(state: AppState): void {
   renderRecentActivity(state);
   renderHomeHighlights(state);
   renderMoreStates(state);
+  renderCategoriesScreen(state);
   renderPlanner(state);
 }

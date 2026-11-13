@@ -28,12 +28,13 @@ Comandos habituales:
 - `src/state.ts` mantiene el estado de la aplicación, valida cuándo se puede escribir y coordina la sincronización.
 - El acceso a Firestore se implementa en `src/firebase/repository.ts`. Mantén fuera de los componentes las lecturas y escrituras directas de Firestore.
 - `src/firebase/paths.ts` define las rutas de Firestore; `mappers.ts` convierte y valida documentos; `diff.ts` calcula cambios para importar copias.
-- Los movimientos y los ingresos mensuales se guardan bajo `users/{uid}/expenses` y `users/{uid}/monthlyIncomes`. Los presupuestos, metas, gastos fijos, carteras y traspasos se guardan en `users/{uid}/finance/settings`.
+- Los movimientos y los ingresos mensuales se guardan bajo `users/{uid}/expenses` y `users/{uid}/monthlyIncomes`. Los presupuestos, metas, gastos fijos, carteras, traspasos y categorías se guardan en `users/{uid}/finance/settings`.
 - `src/firebase/auth.ts` gestiona el acceso con Google; `src/session.ts` representa la sesión en la aplicación.
 - `src/firebase/config.ts` contiene la configuración cliente de Firebase. La clave web de Firebase no sustituye las reglas de seguridad: los datos deben protegerse en Firestore Rules y limitarse al usuario autenticado correspondiente.
 - El inicio de sesión abre Google mediante popup. `watchAuthState` actualiza `session.ts`; cuando hay usuario, `main.ts` inicia `state.startSync(uid)`. Al cerrar sesión se detienen las escuchas y se limpia el estado en memoria.
 - `state.startSync` espera las tres suscripciones de `repository.ts` (gastos, ingresos mensuales y ajustes financieros) antes de marcar los datos como listos. Los cambios remotos vuelven a renderizar la interfaz.
 - Las escrituras pasan por acciones de `state.ts` y `repository.ts`; comprueba sesión, carga completa y conexión. Presenta errores de Firebase traducidos y permite reintentar la carga.
+- Categorías: cada persona tiene su lista en el campo opcional `categories` de `finance/settings`. Las de siempre conservan su clave (`supermercado`, `otros`…) y las creadas usan `cat-<id>`. Si falta la lista (datos y copias anteriores), `src/categories.ts` la calcula sin escribir nada: Social, Otros, Casa y Personal más las de siempre que ya se hayan usado. Al borrar una categoría, sus movimientos y gastos fijos pasan a «Otros» tras avisar a la persona; «Otros» solo se puede borrar sin movimientos y se vuelve a crear si hace falta. Icono y color se asignan solos.
 - La aplicación requiere conexión para escribir. No presupongas persistencia offline en disco: el cliente de Firestore usa memoria.
 - PWA: el service worker solo guarda la «carcasa» de cada versión (HTML, JS, CSS, fuente e iconos) para abrir la app sin conexión. No añadas reglas que guarden en caché peticiones a Firebase, Google Auth o Firestore. Sin datos cargados, `sync-ui.ts` muestra un aviso en lugar de estados vacíos.
 - El service worker se registra en `main.ts` en modo «prompt»: una versión nueva no se activa sola, se muestra la barra «Hay una versión nueva» (`#update-bar`). La tarjeta «Instalar Tarro» (`#install-card`) usa `beforeinstallprompt` y, en iPhone, explica cómo añadirla desde Safari.
@@ -82,7 +83,7 @@ La interfaz principal se define en `index.html`; `ui.ts` renderiza los datos y `
 - Análisis: reparto del sueldo por categoría, ahorro de los últimos seis meses y desglose por categoría.
 - Movimientos: lista del mes agrupada por día, filtro por categoría y botones de editar y eliminar en cada fila.
 - Añadir o editar movimiento (diálogo): entrada rápida con vista previa y formulario completo.
-- Más: ingresos, gastos fijos, carteras, metas, presupuestos, copias de seguridad JSON y CSV, cuenta, apariencia (modo claro u oscuro) e instalación de la app.
+- Más: ingresos, gastos fijos, carteras, categorías, metas, presupuestos, copias de seguridad JSON y CSV, cuenta, apariencia (modo claro u oscuro) e instalación de la app.
 - El mes seleccionado determina el resumen, los movimientos, los ingresos, el presupuesto y los análisis mensuales; las metas de ahorro no dependen del mes. Los formularios deben conservar el contexto necesario al añadir varios movimientos.
 
 ## Flujo de trabajo para cambios
@@ -136,6 +137,7 @@ Alcance en tareas de diseño: `index.html`, `src/styles/`, `src/ui.ts`, `src/aut
 - `src/state.ts`, `src/session.ts`, `src/storage.ts`: estado, sesión y migración desde almacenamiento heredado.
 - `src/firebase/`: cliente, autenticación, rutas, repositorio, mappers y sincronización con Firestore.
 - `src/calc.ts`, `src/format.ts`, `src/charts.ts`: cálculos, formato y gráficos.
+- `src/categories.ts`: lista de categorías de cada persona, icono y color automáticos, plan de borrado y detección en la entrada rápida (módulo puro).
 - `src/io.ts`, `src/backup.ts`: importación, exportación y copias de seguridad.
 - `src/styles/`: `base.css` (tokens, tema y fuente), `layout.css` (estructura y navegación), `components.css` (piezas compartidas) y `screens.css` (estilos de cada pantalla).
 - `src/assets/fonts/`: fuente Rubik y su licencia.

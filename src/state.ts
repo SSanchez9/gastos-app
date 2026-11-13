@@ -1,3 +1,9 @@
+import {
+  FALLBACK_CATEGORY,
+  createCategory,
+  getCategories,
+  planCategoryDeletion,
+} from "./categories";
 import { isCategoryKey } from "./config";
 import { createLegacyIncomeMigration } from "./calc";
 import * as repository from "./firebase/repository";
@@ -13,6 +19,7 @@ import type {
   AppData,
   AppState,
   CategoryFilter,
+  CategoryKey,
   Expense,
   MonthKey,
   NewExpense,
@@ -183,12 +190,21 @@ function requireWritable(): Result<string> {
 
 // ---------- Gastos ----------
 
+/** Una categoría solo se puede usar si está en la lista de la persona. */
+function isAvailableCategory(category: CategoryKey): boolean {
+  return getCategories(state.data).some((item) => item.id === category);
+}
+
+const MISSING_CATEGORY_ERROR = "Esa categoría ya no existe. Elige otra.";
+
 export async function addExpense(input: NewExpense): Promise<Result<Expense>> {
   const writable = requireWritable();
   if (!writable.ok) return writable;
 
   const checked = validateExpenseInput(input);
   if (!checked.ok) return checked;
+  if (!isAvailableCategory(checked.value.category))
+    return { ok: false, error: MISSING_CATEGORY_ERROR };
   if (
     input.walletId &&
     !(state.data.wallets ?? []).some((wallet) => wallet.id === input.walletId)
@@ -219,6 +235,12 @@ export async function updateExpense(
 
   const checked = validateExpenseInput(input);
   if (!checked.ok) return checked;
+  // Se puede conservar la categoría que ya tenía; cambiarla exige una de la lista.
+  if (
+    checked.value.category !== existing.category &&
+    !isAvailableCategory(checked.value.category)
+  )
+    return { ok: false, error: MISSING_CATEGORY_ERROR };
   if (
     input.walletId &&
     !(state.data.wallets ?? []).some((wallet) => wallet.id === input.walletId)
@@ -371,12 +393,23 @@ async function saveFinancialSettings(
       | "transfers"
       | "incomeEntries"
       | "migratedIncomeMonths"
+      | "categories"
     >
   >,
 ): Promise<Result<null>> {
   const writable = requireWritable();
   if (!writable.ok) return writable;
-  const settings = {
+  const settings: Pick<
+    AppData,
+    | "budgets"
+    | "goals"
+    | "recurring"
+    | "wallets"
+    | "transfers"
+    | "incomeEntries"
+    | "migratedIncomeMonths"
+    | "categories"
+  > = {
     budgets: patch.budgets ?? state.data.budgets ?? {},
     goals: patch.goals ?? state.data.goals ?? [],
     recurring: patch.recurring ?? state.data.recurring ?? [],
@@ -385,6 +418,7 @@ async function saveFinancialSettings(
     incomeEntries: patch.incomeEntries ?? state.data.incomeEntries ?? [],
     migratedIncomeMonths:
       patch.migratedIncomeMonths ?? state.data.migratedIncomeMonths ?? [],
+    categories: patch.categories ?? state.data.categories,
   };
   const saved = await repository.saveFinanceSettings(writable.value, settings);
   if (saved.ok) publish({ ...state, data: { ...state.data, ...settings } });
@@ -468,6 +502,8 @@ export function deleteSavingsGoal(id: string): Promise<Result<null>> {
 export function addRecurringExpense(
   input: Omit<RecurringExpense, "id" | "active" | "lastRunMonth">,
 ): Promise<Result<null>> {
+  if (!isAvailableCategory(input.category))
+    return Promise.resolve({ ok: false, error: MISSING_CATEGORY_ERROR });
   const recurring: RecurringExpense = {
     ...input,
     id: crypto.randomUUID(),
@@ -494,6 +530,13 @@ export function updateRecurringExpense(
     return Promise.resolve({ ok: false, error: "El importe no es válido." });
   if (patch.category !== undefined && !isCategoryKey(patch.category))
     return Promise.resolve({ ok: false, error: "La categoría no es válida." });
+  const current = (state.data.recurring ?? []).find((item) => item.id === id);
+  if (
+    patch.category !== undefined &&
+    patch.category !== current?.category &&
+    !isAvailableCategory(patch.category)
+  )
+    return Promise.resolve({ ok: false, error: MISSING_CATEGORY_ERROR });
   if (
     patch.dayOfMonth !== undefined &&
     (!Number.isInteger(patch.dayOfMonth) || patch.dayOfMonth < 1 || patch.dayOfMonth > 28)
@@ -515,6 +558,50 @@ export function deleteRecurringExpense(id: string): Promise<Result<null>> {
   return saveFinancialSettings({
     recurring: (state.data.recurring ?? []).filter((item) => item.id !== id),
   });
+}
+
+// ---------- Categorías ----------
+
+/** Añade una categoría con icono y color automáticos. */
+export function addCategory(name: string): Promise<Result<null>> {
+  const created = createCategory(
+    name,
+    getCategories(state.data),
+    `cat-${crypto.randomUUID()}`,
+    Date.now(),
+  );
+  if (!created.ok) return Promise.resolve(created);
+  return saveFinancialSettings({
+    categories: [...getCategories(state.data), created.value],
+  });
+}
+
+/**
+ * Borra una categoría. Sus movimientos y gastos fijos pasan a «Otros»: primero se
+ * mueven los movimientos y después se guarda la lista. Si algo falla a medias,
+ * repetir el borrado termina el trabajo sin duplicar nada.
+ */
+export async function deleteCategory(
+  id: CategoryKey,
+): Promise<Result<{ movedExpenses: number; movedRecurring: number }>> {
+  const writable = requireWritable();
+  if (!writable.ok) return writable;
+  const plan = planCategoryDeletion(state.data, id);
+  if (!plan.ok) return plan;
+  const { categories, expenseIds, recurring, movedRecurring } = plan.value;
+  if (expenseIds.length > 0) {
+    const moved = await repository.moveExpensesToCategory(
+      writable.value,
+      expenseIds,
+      FALLBACK_CATEGORY,
+    );
+    if (!moved.ok) return moved;
+  }
+  const saved = await saveFinancialSettings({ categories, recurring });
+  if (!saved.ok) return saved;
+  if (state.ui.categoryFilter === id)
+    publish({ ...state, ui: { ...state.ui, categoryFilter: "all" } });
+  return { ok: true, value: { movedExpenses: expenseIds.length, movedRecurring } };
 }
 
 export function createWallet(input: {

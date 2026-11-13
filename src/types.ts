@@ -1,4 +1,5 @@
-export type CategoryKey =
+/** Categorías que trae la app desde el principio; sus claves se conservan siempre. */
+export type BuiltInCategoryKey =
   | "personal"
   | "social"
   | "supermercado"
@@ -7,6 +8,40 @@ export type CategoryKey =
   | "gasolina"
   | "coche"
   | "otros";
+
+/**
+ * Identificador de categoría: una de las de siempre o una creada por la persona
+ * ("cat-…"). Los movimientos antiguos siguen usando las claves de siempre.
+ */
+export type CategoryKey = BuiltInCategoryKey | `cat-${string}`;
+
+/** Iconos disponibles para una categoría (símbolos del sprite de index.html). */
+export type CategoryIcon =
+  | "cart"
+  | "user"
+  | "car"
+  | "fuel"
+  | "key"
+  | "home"
+  | "tag"
+  | "social"
+  | "plane"
+  | "heart"
+  | "gift"
+  | "book";
+
+/** Colores de categoría (tokens --cat-* de src/styles/base.css). */
+export type CategoryColor =
+  "plum" | "orange" | "green" | "blue" | "rose" | "sky" | "brick" | "grey";
+
+/** Categoría de la lista de una persona (guardada en finance/settings). */
+export interface UserCategory {
+  id: CategoryKey;
+  name: string;
+  icon: CategoryIcon;
+  color: CategoryColor;
+  createdAt: number;
+}
 
 export type CategoryFilter = CategoryKey | "all";
 
@@ -107,6 +142,11 @@ export interface AppData {
   transfers?: WalletTransfer[];
   incomeEntries?: IncomeEntry[];
   migratedIncomeMonths?: MonthKey[];
+  /**
+   * Categorías de la persona. Si falta (datos y copias anteriores), la lista se
+   * calcula con las básicas y las de siempre que ya se hayan usado (categories.ts).
+   */
+  categories?: UserCategory[];
 }
 
 /** Ajustes de pantalla: no se guardan ni se exportan. */

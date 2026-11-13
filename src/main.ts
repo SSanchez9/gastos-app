@@ -6,7 +6,8 @@ import { registerSW } from "virtual:pwa-register";
 import { initAuthUi } from "./auth-ui";
 import { initBackup } from "./backup";
 import { renderChart } from "./charts";
-import { CATEGORIES, CATEGORY_KEYS, isCategoryFilter } from "./config";
+import { getCategories, guessCategoryFromText } from "./categories";
+import { isCategoryFilter, isCategoryKey } from "./config";
 import { eurosToCents, getMonthKey, getTodayIso, shiftMonth } from "./format";
 import { subscribeSession } from "./session";
 import * as state from "./state";
@@ -83,6 +84,7 @@ function syncScreenNavigation(): void {
     "recurring",
     "wallets",
     "backups",
+    "categories",
   ].includes(target)
     ? "more"
     : target;
@@ -122,6 +124,8 @@ document.addEventListener("click", (event) => {
     }
     return;
   }
+  const openDialog = document.getElementById("expense-dialog");
+  if (openDialog instanceof HTMLDialogElement && openDialog.open) cancelEditing();
   if (screen) window.location.hash = screen;
   syncScreenNavigation();
 });
@@ -222,26 +226,8 @@ if (
       .replace(/\b(?:hoy|ayer)\b/gi, " ")
       .replace(/\s+/g, " ")
       .trim();
-    const lower = raw.toLocaleLowerCase("es");
-    const category = /gasolina|combustible|fuel/.test(lower)
-      ? "gasolina"
-      : /supermercado|mercadona|carrefour|lidl|compra|batido|leche|cocacola|coca cola|monster/.test(
-            lower,
-          )
-        ? "supermercado"
-        : /alquiler/.test(lower)
-          ? "alquiler"
-          : /coche|parking|aparcamiento|taller|mantenimiento/.test(lower)
-            ? "coche"
-            : /casa|luz|agua|internet|hogar|digi/.test(lower)
-              ? "casa"
-              : /amigo|amiga|cena|bar|restaurante|cine/.test(lower)
-                ? "social"
-                : /ropa|farmacia|peluqueria|cejas|pull|berska|berskha|zara|gimnasio|personal/.test(
-                      lower,
-                    )
-                  ? "personal"
-                  : "otros";
+    const category = guessCategoryFromText(raw, getCategories(state.getState().data));
+    if (category === null) return null;
     const date = new Date();
     if (/\bayer\b/i.test(raw)) date.setDate(date.getDate() - 1);
     return {
@@ -467,16 +453,6 @@ function form(id: string): HTMLFormElement | null {
 }
 
 const recurringCategory = document.getElementById("recurring-category");
-if (recurringCategory instanceof HTMLSelectElement) {
-  recurringCategory.replaceChildren(
-    ...CATEGORY_KEYS.map((key) => {
-      const option = document.createElement("option");
-      option.value = key;
-      option.textContent = CATEGORIES[key].label;
-      return option;
-    }),
-  );
-}
 
 const recurringAddToggle = document.getElementById("recurring-add-toggle");
 const recurringForm = form("recurring-form");
@@ -535,7 +511,7 @@ recurringForm?.addEventListener("submit", (event) => {
     !Number.isInteger(dayOfMonth) ||
     dayOfMonth < 1 ||
     dayOfMonth > 28 ||
-    !CATEGORY_KEYS.includes(categoryValue as (typeof CATEGORY_KEYS)[number])
+    !isCategoryKey(categoryValue)
   ) {
     showPlannerError(
       "recurring-error",
@@ -546,7 +522,7 @@ recurringForm?.addEventListener("submit", (event) => {
   const result = state.addRecurringExpense({
     name,
     amountCents: cents,
-    category: categoryValue as (typeof CATEGORY_KEYS)[number],
+    category: categoryValue,
     dayOfMonth,
   });
   void result.then((saved) => {
@@ -693,7 +669,7 @@ document.getElementById("recurring-list")?.addEventListener("click", async (even
       !Number.isInteger(dayOfMonth) ||
       dayOfMonth < 1 ||
       dayOfMonth > 28 ||
-      !CATEGORY_KEYS.includes(category.value as (typeof CATEGORY_KEYS)[number])
+      !isCategoryKey(category.value)
     ) {
       error.textContent = "Revisa el título, el importe, la categoría y el día (1–28).";
       error.hidden = false;
@@ -703,7 +679,7 @@ document.getElementById("recurring-list")?.addEventListener("click", async (even
     const result = await state.updateRecurringExpense(id, {
       name: name.value,
       amountCents,
-      category: category.value as (typeof CATEGORY_KEYS)[number],
+      category: category.value,
       dayOfMonth,
     });
     if (!result.ok) {
@@ -737,6 +713,66 @@ document.getElementById("wallets-list")?.addEventListener("click", (event) => {
   if (!id || !window.confirm("¿Eliminar esta cartera?")) return;
   void state.deleteWallet(id).then((result) => {
     if (!result.ok) window.alert(result.error);
+  });
+});
+
+// ---------- Categorías ----------
+
+form("category-form")?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  clearPlannerError("category-error");
+  const name = input("category-name");
+  if (!name) return;
+  void state.addCategory(name.value).then((result) => {
+    if (!result.ok) {
+      showPlannerError("category-error", result.error);
+      return;
+    }
+    showToast(`Categoría «${name.value.trim()}» añadida.`);
+    form("category-form")?.reset();
+    name.focus();
+  });
+});
+
+document.getElementById("categories-list")?.addEventListener("click", (event) => {
+  if (!(event.target instanceof Element)) return;
+  const button = event.target.closest<HTMLButtonElement>(
+    "button[data-action='category-delete']",
+  );
+  const id = button?.dataset["id"];
+  if (!button || !id || !isCategoryKey(id)) return;
+  const { data } = state.getState();
+  const category = getCategories(data).find((item) => item.id === id);
+  if (!category) return;
+  const expenses = data.expenses.filter((expense) => expense.category === id).length;
+  const recurring = (data.recurring ?? []).filter((item) => item.category === id).length;
+  const moving = [
+    expenses > 0 ? `${expenses} ${expenses === 1 ? "movimiento" : "movimientos"}` : "",
+    recurring > 0
+      ? `${recurring} ${recurring === 1 ? "gasto fijo" : "gastos fijos"}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" y ");
+  // Se avisa antes de mover nada a «Otros».
+  const question = moving
+    ? `¿Borrar la categoría «${category.name}»? Sus ${moving} pasarán a la categoría «Otros».`
+    : `¿Borrar la categoría «${category.name}»?`;
+  if (!window.confirm(question)) return;
+  button.disabled = true;
+  void state.deleteCategory(id).then((result) => {
+    button.disabled = false;
+    if (!result.ok) {
+      window.alert(result.error);
+      return;
+    }
+    const { movedExpenses, movedRecurring } = result.value;
+    const moved = movedExpenses + movedRecurring;
+    showToast(
+      moved > 0
+        ? `Categoría borrada. ${moved} ${moved === 1 ? "elemento pasa" : "elementos pasan"} a «Otros».`
+        : "Categoría borrada.",
+    );
   });
 });
 

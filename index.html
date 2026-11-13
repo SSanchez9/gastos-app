@@ -157,6 +157,25 @@
       <symbol id="i-alert" viewBox="0 0 24 24">
         <path d="M12 3 2 20h20zM12 10v4M12 17h.01" />
       </symbol>
+      <symbol id="i-plane" viewBox="0 0 24 24">
+        <path
+          d="M3 13.5l7-2V5.5a2 2 0 0 1 4 0v6l7 2v2l-7-1.5V19l2 1.5V22l-4-1-4 1v-1.5l2-1.5v-5L3 15.5z"
+        />
+      </symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24">
+        <path
+          d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.3a4.3 4.3 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20z"
+        />
+      </symbol>
+      <symbol id="i-gift" viewBox="0 0 24 24">
+        <rect x="4" y="9" width="16" height="11" rx="2" />
+        <path d="M3 9h18M12 9v11M12 9S10.5 4 8 5s.5 4 4 4zM12 9s1.5-5 4-4-.5 4-4 4z" />
+      </symbol>
+      <symbol id="i-book" viewBox="0 0 24 24">
+        <path
+          d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5zM5 19.5A1.5 1.5 0 0 0 6.5 21H19"
+        />
+      </symbol>
       <symbol id="i-swap" viewBox="0 0 24 24">
         <path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" />
       </symbol>
@@ -660,6 +679,16 @@
                   ><svg class="icon menu__chev" aria-hidden="true">
                     <use href="#i-right" /></svg
                 ></a>
+                <a class="menu__item" href="#categories" data-screen-target="categories"
+                  ><span class="blob blob--lilac" aria-hidden="true"
+                    ><svg class="icon"><use href="#i-tag" /></svg></span
+                  ><span class="menu__text"
+                    ><span class="menu__title">Categorías</span
+                    ><span class="menu__meta">Añade o borra tus categorías</span></span
+                  ><span class="menu__state" id="more-categories-state"></span
+                  ><svg class="icon menu__chev" aria-hidden="true">
+                    <use href="#i-right" /></svg
+                ></a>
               </nav>
             </section>
 
@@ -1080,6 +1109,48 @@
           </section>
         </section>
 
+        <!-- Categorías -->
+        <section
+          class="app-screen"
+          data-screen="categories"
+          aria-labelledby="categories-title"
+          hidden
+        >
+          <div class="screen-heading">
+            <button class="back-link" type="button" data-screen-target="more">
+              <svg class="icon icon--sm" aria-hidden="true"><use href="#i-back" /></svg
+              >Volver a Más
+            </button>
+            <h1 class="screen-title" id="categories-title">Categorías</h1>
+            <p class="screen-sub">
+              Elige con qué categorías ordenas tus gastos. Si borras una, sus movimientos
+              pasan a «Otros».
+            </p>
+          </div>
+          <div class="aside-layout">
+            <section class="card" aria-label="Tus categorías">
+              <ul class="rows" id="categories-list"></ul>
+            </section>
+            <form class="card form sticky" id="category-form">
+              <h2 class="section-title">Nueva categoría</h2>
+              <div class="field">
+                <label class="field__label" for="category-name">Nombre</label>
+                <input
+                  class="field__input"
+                  id="category-name"
+                  maxlength="40"
+                  placeholder="Viajes, mascotas, gimnasio…"
+                  autocomplete="off"
+                  required
+                />
+              </div>
+              <p class="note">El icono y el color se eligen solos a partir del nombre.</p>
+              <button class="button button--block" type="submit">Añadir categoría</button>
+              <p class="form__error" id="category-error" role="alert" hidden></p>
+            </form>
+          </div>
+        </section>
+
         <!-- Carteras -->
         <section
           class="app-screen"
@@ -1348,6 +1419,12 @@
               role="group"
               aria-labelledby="expense-category-label"
             ></div>
+            <a
+              class="text-link field__link"
+              href="#categories"
+              data-screen-target="categories"
+              >Gestionar categorías</a
+            >
           </div>
           <div class="form-row form-row--2">
             <div class="field">

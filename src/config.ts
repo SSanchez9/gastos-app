@@ -1,4 +1,4 @@
-import type { CategoryFilter, CategoryKey } from "./types";
+import type { BuiltInCategoryKey, CategoryFilter, CategoryKey } from "./types";
 
 export const DATA_VERSION = 1;
 export const BACKUP_VERSION = 2;
@@ -13,8 +13,8 @@ export interface CategoryInfo {
   color: string;
 }
 
-/** Record<CategoryKey, ...> obliga a definir todas las categorías. */
-export const CATEGORIES: Record<CategoryKey, CategoryInfo> = {
+/** Categorías de siempre. Record<BuiltInCategoryKey, ...> obliga a definirlas todas. */
+export const CATEGORIES: Record<BuiltInCategoryKey, CategoryInfo> = {
   supermercado: { label: "Supermercado", color: "#f6ad55" },
   personal: { label: "Personal", color: "#c084fc" },
   coche: { label: "Coche", color: "#6db7e8" },
@@ -25,14 +25,25 @@ export const CATEGORIES: Record<CategoryKey, CategoryInfo> = {
   social: { label: "Social", color: "#f0abfc" },
 };
 
-export const CATEGORY_KEYS = Object.keys(CATEGORIES) as CategoryKey[];
+export const CATEGORY_KEYS = Object.keys(CATEGORIES) as BuiltInCategoryKey[];
+
+/** Formato de las categorías creadas por la persona: "cat-" y un identificador aleatorio. */
+const CUSTOM_CATEGORY_ID = /^cat-[a-z0-9-]{8,64}$/;
+
+export function isBuiltInCategoryKey(value: unknown): value is BuiltInCategoryKey {
+  return (
+    typeof value === "string" && (CATEGORY_KEYS as readonly string[]).includes(value)
+  );
+}
 
 /** Color de la porción "Ahorro" del gráfico. */
 export const SAVINGS_COLOR = "#62c6a8";
 
+/** Clave de categoría válida: una de las de siempre o una creada con formato "cat-…". */
 export function isCategoryKey(value: unknown): value is CategoryKey {
   return (
-    typeof value === "string" && (CATEGORY_KEYS as readonly string[]).includes(value)
+    isBuiltInCategoryKey(value) ||
+    (typeof value === "string" && CUSTOM_CATEGORY_ID.test(value))
   );
 }
 

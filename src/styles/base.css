@@ -66,17 +66,17 @@
 
   --accent-hover: #eaa52a;
 
-  /* Color fijo de cada categoría en los gráficos. Con 9 series no hay paleta que
+  /* Paleta de colores de categoría (cada categoría guarda el suyo, ver categories.ts). Con 9 series no hay paleta que
      separe todos los pares para daltonismo: la leyenda con nombre, los iconos y la
      separación entre porciones sustituyen al color como única pista. */
-  --cat-alquiler: #7a4795;
-  --cat-coche: #e0703f;
-  --cat-social: #1e9c6e;
-  --cat-casa: #4462c9;
-  --cat-supermercado: #d65a8a;
-  --cat-personal: #40afd3;
-  --cat-gasolina: #a0412e;
-  --cat-otros: #857e8a;
+  --cat-plum: #7a4795;
+  --cat-orange: #e0703f;
+  --cat-green: #1e9c6e;
+  --cat-blue: #4462c9;
+  --cat-rose: #d65a8a;
+  --cat-sky: #40afd3;
+  --cat-brick: #a0412e;
+  --cat-grey: #857e8a;
   --savings-color: #d9a520;
 
   /* Tipografía · Rubik, escala 13-15-17-20-26-34-56 */
@@ -215,14 +215,14 @@
   --shadow-rgb: 0 0 0;
 
   /* Categorías en oscuro (sobre #261e2d) */
-  --cat-alquiler: #a877c8;
-  --cat-coche: #d9714a;
-  --cat-social: #2ea982;
-  --cat-casa: #6f8fe6;
-  --cat-supermercado: #d2608c;
-  --cat-personal: #3a9bbd;
-  --cat-gasolina: #b95a45;
-  --cat-otros: #8e8794;
+  --cat-plum: #a877c8;
+  --cat-orange: #d9714a;
+  --cat-green: #2ea982;
+  --cat-blue: #6f8fe6;
+  --cat-rose: #d2608c;
+  --cat-sky: #3a9bbd;
+  --cat-brick: #b95a45;
+  --cat-grey: #8e8794;
   --savings-color: #ad8618;
 }
 
