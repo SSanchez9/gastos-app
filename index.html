@@ -27,13 +27,13 @@
       })();
     </script>
     <meta name="robots" content="noindex" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Tarro" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="description" content="Controla tus gastos mensuales y cuánto ahorras." />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400..700&display=swap"
-    />
     <title>Tarro · Control de gastos</title>
   </head>
   <body>
@@ -148,6 +148,15 @@
       <symbol id="i-logout" viewBox="0 0 24 24">
         <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M9 8l-4 4 4 4M5 12h11" />
       </symbol>
+      <symbol id="i-wifi-off" viewBox="0 0 24 24">
+        <path
+          d="M3 3l18 18M8.5 16.5a5 5 0 0 1 7 0M5 13a10 10 0 0 1 5.2-2.8M19 13a10 10 0 0 0-2.4-1.7M2 9a15 15 0 0 1 4.6-2.9M22 9a15 15 0 0 0-9.4-3.9M12 20h.01"
+        />
+      </symbol>
+      <symbol id="i-loader" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9" /></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24">
+        <path d="M12 3 2 20h20zM12 10v4M12 17h.01" />
+      </symbol>
       <symbol id="i-swap" viewBox="0 0 24 24">
         <path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" />
       </symbol>
@@ -156,7 +165,7 @@
     <!-- Pantalla de acceso -->
     <main class="login" id="login-screen">
       <section class="login__panel" aria-labelledby="login-title">
-        <span class="brand__mark brand__mark--lg" aria-hidden="true"></span>
+        <img class="login__logo" src="/favicon.svg" alt="" width="96" height="96" />
         <h1 class="login__title" id="login-title" translate="no">Tarro</h1>
         <p class="login__tagline">Tus gastos, tus ingresos y lo que ahorras cada mes.</p>
         <p class="hint" id="login-status" role="status">Comprobando sesión…</p>
@@ -258,7 +267,19 @@
       </header>
 
       <div class="alert" id="sync-banner" role="status" hidden>
-        <span id="sync-message"></span>
+        <svg class="icon alert__icon alert__icon--offline" aria-hidden="true">
+          <use href="#i-wifi-off" />
+        </svg>
+        <svg class="icon alert__icon alert__icon--loading" aria-hidden="true">
+          <use href="#i-loader" />
+        </svg>
+        <svg class="icon alert__icon alert__icon--error" aria-hidden="true">
+          <use href="#i-alert" />
+        </svg>
+        <span class="alert__text">
+          <span id="sync-message"></span>
+          <span class="alert__hint">Aparecerán en cuanto vuelvas a tener conexión.</span>
+        </span>
         <button
           class="button button--ghost button--small"
           type="button"
@@ -719,6 +740,25 @@
                   aria-pressed="false"
                 >
                   Modo claro
+                </button>
+              </div>
+              <div class="card account" id="install-card" hidden>
+                <span class="blob blob--peach" aria-hidden="true"
+                  ><svg class="icon"><use href="#i-download" /></svg
+                ></span>
+                <span class="menu__text"
+                  ><span class="menu__title">Instalar Tarro</span
+                  ><span class="menu__meta" id="install-hint"
+                    >Ábrela como una app desde tu pantalla de inicio.</span
+                  ></span
+                >
+                <button
+                  class="button button--small"
+                  type="button"
+                  id="install-app"
+                  hidden
+                >
+                  Instalar
                 </button>
               </div>
             </section>
@@ -1377,6 +1417,23 @@
       </dialog>
 
       <p class="toast" id="app-toast" role="status" aria-live="polite" hidden></p>
+    </div>
+
+    <!-- Aviso de nueva versión (fuera de la app para verse también en el acceso) -->
+    <div class="update-bar" id="update-bar" role="status" hidden>
+      <svg class="icon" aria-hidden="true"><use href="#i-download" /></svg>
+      <span class="update-bar__text">Hay una versión nueva de Tarro.</span>
+      <button class="button button--small" type="button" id="update-apply">
+        Actualizar
+      </button>
+      <button
+        class="icon-btn update-bar__close"
+        type="button"
+        id="update-dismiss"
+        aria-label="Más tarde"
+      >
+        <svg class="icon icon--sm" aria-hidden="true"><use href="#i-close" /></svg>
+      </button>
     </div>
 
     <script type="module" src="/src/main.ts"></script>

@@ -35,10 +35,6 @@
   border-radius: var(--radius-pill) var(--radius-pill) var(--radius-pill) var(--radius-sm);
   background: var(--accent);
 }
-.brand__mark--lg {
-  width: var(--tap-lg);
-  height: var(--tap-lg);
-}
 
 /* ---------- Acceso ---------- */
 
@@ -58,6 +54,10 @@
   background: var(--surface);
   box-shadow: var(--shadow-soft);
   text-align: center;
+}
+.login__logo {
+  width: var(--logo-size);
+  height: var(--logo-size);
 }
 .login__title {
   color: var(--primary);
@@ -169,7 +169,6 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-3);
   width: calc(100% - 2 * var(--gutter));
   max-width: var(--content-max);
@@ -180,6 +179,61 @@
   color: var(--warning);
   font-size: var(--fs-sm);
   font-weight: var(--fw-medium);
+}
+
+.alert__icon,
+.alert__hint {
+  display: none;
+}
+.alert[data-kind="offline"] .alert__icon--offline,
+.alert[data-kind="loading"] .alert__icon--loading,
+.alert[data-kind="error"] .alert__icon--error {
+  display: block;
+}
+.alert__text {
+  display: grid;
+  flex: 1;
+  gap: var(--space-1);
+}
+.alert[data-kind="error"] {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+/* Sin datos todavía (cargando o con error): el aviso ocupa el lugar del contenido. */
+.app-shell[data-sync="loading"] .app-main,
+.app-shell[data-sync="error"] .app-main {
+  display: none;
+}
+.app-shell[data-sync="loading"] .alert,
+.app-shell[data-sync="error"] .alert {
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-4);
+  max-width: var(--dialog-w);
+  margin-top: var(--space-7);
+  padding: var(--space-7) var(--space-6);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-soft);
+  font-size: var(--fs-base);
+  text-align: center;
+}
+.app-shell[data-sync="loading"] .alert__icon,
+.app-shell[data-sync="error"] .alert__icon {
+  width: var(--tap);
+  height: var(--tap);
+  color: var(--primary);
+}
+.app-shell[data-sync="error"] .alert__icon {
+  color: var(--danger);
+}
+.app-shell[data-sync="loading"] .alert[data-kind="offline"] .alert__hint {
+  display: block;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-regular);
 }
 
 .app-main {
@@ -387,6 +441,10 @@
     grid-area: alert;
     margin-top: calc(var(--space-6) + var(--tap-lg) + var(--space-4));
   }
+  .app-shell[data-sync="loading"] .alert,
+  .app-shell[data-sync="error"] .alert {
+    margin-top: calc(var(--space-6) + var(--tap-lg) + var(--space-7));
+  }
   .app-main {
     grid-area: main;
     padding-top: var(--space-6);
@@ -423,6 +481,9 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .alert__icon--loading {
+    animation: spin var(--dur-slow) linear infinite;
+  }
   .round-btn,
   .nav-add,
   .mobile-nav__add {
@@ -434,5 +495,11 @@
   .nav-add:active,
   .mobile-nav__add:active {
     transform: scale(var(--press));
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
   }
 }
