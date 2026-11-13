@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#ecdef4"/>
+  <circle cx="512" cy="0" r="205" fill="#dfc8ee"/>
+  <g transform="translate(256 262) scale(0.8) translate(-256 -262)">
+  <g>
+    <rect x="182" y="162" width="148" height="24" rx="4" fill="#fbe9d0"/>
+    <clipPath id="jar"><rect x="133" y="177" width="246" height="224" rx="52"/></clipPath>
+    <rect x="133" y="177" width="246" height="224" rx="52" fill="#f5bd3c"/>
+    <ellipse cx="398" cy="289" rx="88" ry="150" fill="#dc9f1f" clip-path="url(#jar)"/>
+    <rect x="157" y="221" width="16" height="58" rx="8" fill="#fbe2a8"/>
+    <circle cx="165" cy="298" r="8" fill="#fbe2a8"/>
+    <ellipse cx="189" cy="317" rx="21" ry="12" fill="#f19a86"/>
+    <ellipse cx="331" cy="317" rx="21" ry="12" fill="#f19a86"/>
+    <circle cx="215" cy="276" r="17" fill="#3d1f4e"/>
+    <circle cx="221" cy="270" r="5" fill="#ffffff"/>
+    <path d="M274 283 Q298 262 323 283" fill="none" stroke="#3d1f4e" stroke-width="10" stroke-linecap="round"/>
+    <ellipse cx="262" cy="341" rx="9" ry="8" fill="#e8768a"/>
+    <path d="M222 322 Q260 352 298 322" fill="none" stroke="#3d1f4e" stroke-width="10" stroke-linecap="round"/>
+    <g transform="rotate(12 259 128)">
+      <rect x="170" y="103" width="179" height="51" rx="22" fill="#4a2a5b"/>
+      <rect x="193" y="117" width="54" height="9" rx="4.5" fill="#7d5a91"/>
+    </g>
+  </g>
+  </g>
+</svg>

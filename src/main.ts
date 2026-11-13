@@ -2,6 +2,7 @@ import "./styles/base.css";
 import "./styles/layout.css";
 import "./styles/components.css";
 import "./styles/screens.css";
+import { registerSW } from "virtual:pwa-register";
 import { initAuthUi } from "./auth-ui";
 import { initBackup } from "./backup";
 import { renderChart } from "./charts";
@@ -24,6 +25,7 @@ import {
   showFormError,
   setAmountsHidden,
   showCompleteExpenseForm,
+  showToast,
 } from "./ui";
 
 declare global {
@@ -820,3 +822,80 @@ subscribeSession((session) => {
   }
 });
 initAuthUi();
+
+// ---------- PWA: versión sin conexión, actualizaciones e instalación ----------
+
+// El service worker guarda la app para abrirla sin conexión (en desarrollo no hace
+// nada). Una versión nueva no se activa sola: se avisa para no perder un formulario
+// a medio rellenar.
+const updateBar = document.getElementById("update-bar");
+const UPDATE_CHECK_MS = 60 * 60 * 1000;
+const updateServiceWorker = registerSW({
+  immediate: true,
+  onNeedRefresh() {
+    if (updateBar) updateBar.hidden = false;
+  },
+  onOfflineReady() {
+    showToast("Tarro ya funciona sin conexión.");
+  },
+  onRegisteredSW(_url, registration) {
+    // Si la app queda abierta mucho tiempo, comprueba de vez en cuando si hay versión nueva.
+    if (registration)
+      window.setInterval(() => {
+        if (navigator.onLine) void registration.update();
+      }, UPDATE_CHECK_MS);
+  },
+});
+document.getElementById("update-apply")?.addEventListener("click", () => {
+  void updateServiceWorker(true);
+});
+document.getElementById("update-dismiss")?.addEventListener("click", () => {
+  if (updateBar) updateBar.hidden = true;
+});
+
+/** Evento de instalación de Chrome y Android (no está en los tipos del DOM). */
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
+const installCard = document.getElementById("install-card");
+const installButton = document.getElementById("install-app");
+const installHint = document.getElementById("install-hint");
+const isStandalone = (): boolean =>
+  window.matchMedia("(display-mode: standalone)").matches ||
+  ("standalone" in navigator && navigator.standalone === true);
+const isIos =
+  /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+  (navigator.userAgent.includes("Macintosh") && navigator.maxTouchPoints > 1);
+let installPrompt: BeforeInstallPromptEvent | null = null;
+
+// Safari en iPhone no tiene aviso de instalación: se explica cómo hacerlo a mano.
+if (installCard && installHint && isIos && !isStandalone()) {
+  installHint.textContent =
+    "En Safari, pulsa Compartir y después «Añadir a pantalla de inicio».";
+  installCard.hidden = false;
+}
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  installPrompt = event as BeforeInstallPromptEvent;
+  if (installCard && installButton && !isStandalone()) {
+    installCard.hidden = false;
+    installButton.hidden = false;
+  }
+});
+installButton?.addEventListener("click", () => {
+  const prompt = installPrompt;
+  if (!prompt) return;
+  installPrompt = null;
+  void prompt.prompt().then(() =>
+    prompt.userChoice.then(({ outcome }) => {
+      if (outcome === "accepted" && installCard) installCard.hidden = true;
+    }),
+  );
+});
+window.addEventListener("appinstalled", () => {
+  installPrompt = null;
+  if (installCard) installCard.hidden = true;
+  showToast("Tarro se ha instalado.");
+});
