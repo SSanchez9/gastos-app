@@ -666,8 +666,21 @@
 /* ---------- Presupuesto, metas, carteras y copias ---------- */
 
 .budget-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-5);
+}
+.budget-card__text {
   display: grid;
-  gap: var(--space-3);
+  flex: 1 1 var(--basis-md);
+  gap: var(--space-2);
+}
+.ring--lg {
+  --ring: var(--ring-lg);
+}
+.ring--lg .ring__value {
+  font-size: var(--fs-xl);
 }
 .budget-card__progress {
   font-size: var(--fs-lg);

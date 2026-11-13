@@ -4,6 +4,7 @@ import {
   eurosToCents,
   formatDate,
   formatMonth,
+  formatDayHeading,
   formatMoney,
   getMonthKey,
   isValidIsoDate,
@@ -47,6 +48,13 @@ describe("formatMoney", () => {
     expect(formatMoney(0).replace(/\s/g, " ")).toBe("0,00 €");
     expect(formatMoney(1234567).replace(/\s/g, " ")).toBe("12.345,67 €");
   });
+
+  it("pone el punto de miles también con cuatro cifras", () => {
+    expect(formatMoney(122200).replace(/\s/g, " ")).toBe("1.222,00 €");
+    expect(formatMoney(128462).replace(/\s/g, " ")).toBe("1.284,62 €");
+    expect(formatMoney(-171727).replace(/\s/g, " ")).toBe("-1.717,27 €");
+    expect(formatMoney(99999).replace(/\s/g, " ")).toBe("999,99 €");
+  });
 });
 
 describe("fechas", () => {
@@ -81,5 +89,22 @@ describe("fechas", () => {
 
   it("rechaza meses no válidos", () => {
     expect(() => shiftMonth("2026-99", 1)).toThrow(RangeError);
+  });
+});
+
+describe("formatDayHeading", () => {
+  it("usa Hoy y Ayer con la fecha, y el día de la semana en el resto", () => {
+    expect(formatDayHeading("2026-11-11", "2026-11-11")).toBe("Hoy, 11 de noviembre");
+    expect(formatDayHeading("2026-11-10", "2026-11-11")).toBe("Ayer, 10 de noviembre");
+    expect(formatDayHeading("2026-11-09", "2026-11-11")).toBe("Lunes, 9 de noviembre");
+  });
+
+  it("añade el año cuando no es el actual", () => {
+    expect(formatDayHeading("2025-12-09", "2026-11-11")).toBe(
+      "Martes, 9 de diciembre de 2025",
+    );
+    expect(formatDayHeading("2025-12-31", "2026-01-01")).toBe(
+      "Ayer, 31 de diciembre de 2025",
+    );
   });
 });

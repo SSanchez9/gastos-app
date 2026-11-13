@@ -1,6 +1,7 @@
 import {
   compareWithPreviousMonth,
   categoryIncomeShares,
+  dailyBudgetAllowance,
   expensesOfMonth,
   filterExpenses,
   getSavingsSummary,
@@ -12,6 +13,7 @@ import {
   centsToInputString,
   eurosToCents,
   formatDate,
+  formatDayHeading,
   formatMoney,
   formatMonth,
   formatPercent,
@@ -508,6 +510,7 @@ function renderIncomeEntries(state: AppState): void {
         : formatDate(entry.date),
       sortDate: entry.date,
       createdAt: entry.createdAt,
+      legacy: false,
     }));
   const migratedMonths = new Set(state.data.migratedIncomeMonths ?? []);
   for (const [legacyMonth, amountCents] of Object.entries(state.data.income.byMonth)) {
@@ -519,6 +522,7 @@ function renderIncomeEntries(state: AppState): void {
       dateLabel: formatMonth(legacyMonth),
       sortDate: `${legacyMonth}-01`,
       createdAt: 0,
+      legacy: true,
     });
   }
   entries.sort(
@@ -530,7 +534,7 @@ function renderIncomeEntries(state: AppState): void {
   if (list instanceof HTMLUListElement) {
     list.replaceChildren(
       ...entries.map((entry) => {
-        const item = el("li", "row");
+        const item = el("li", "row row--editable");
         const detail = el("span", "row__text");
         detail.append(
           el("span", "row__title", entry.title),
@@ -557,12 +561,69 @@ function renderIncomeEntries(state: AppState): void {
           detail,
           createMoney(entry.amountCents, "row__amount row__amount--in", "+"),
           actions,
+          createIncomeEditForm(entry),
         );
         return item;
       }),
     );
   }
   if (empty instanceof HTMLParagraphElement) empty.hidden = count > 0;
+}
+
+/**
+ * Formulario de edición de un ingreso, oculto dentro de su fila. El ingreso mensual
+ * heredado (income.byMonth) solo admite cambiar el importe.
+ */
+function createIncomeEditForm(entry: {
+  id: string;
+  title: string;
+  amountCents: number;
+  sortDate: IsoDate;
+  legacy: boolean;
+}): HTMLDivElement {
+  const form = el("div", "inline-edit");
+  form.hidden = true;
+  form.setAttribute("role", "group");
+  form.setAttribute("aria-label", `Editar ${entry.title}`);
+  const field = (
+    name: "title" | "amount" | "date",
+    labelText: string,
+    value: string,
+  ): void => {
+    const wrap = el("div", "field");
+    const input = el("input", "field__input");
+    input.id = `income-edit-${name}-${entry.id}`;
+    input.value = value;
+    input.required = true;
+    input.autocomplete = "off";
+    input.dataset["incomeField"] = name;
+    if (name === "title") input.maxLength = 80;
+    if (name === "amount") input.inputMode = "decimal";
+    if (name === "date") input.type = "date";
+    const label = el("label", "field__label", labelText);
+    label.htmlFor = input.id;
+    wrap.append(label, input);
+    form.append(wrap);
+  };
+  if (!entry.legacy) field("title", "Título", entry.title);
+  field("amount", "Importe (€)", centsToInputString(entry.amountCents));
+  if (!entry.legacy) field("date", "Fecha", entry.sortDate);
+  const error = el("p", "form__error");
+  error.setAttribute("role", "alert");
+  error.dataset["incomeError"] = "true";
+  error.hidden = true;
+  const actions = el("div", "button-group");
+  const save = el("button", "button button--small", "Guardar cambios");
+  save.type = "button";
+  save.dataset["action"] = "income-save";
+  save.dataset["id"] = entry.id;
+  const cancel = el("button", "button button--ghost button--small", "Cancelar");
+  cancel.type = "button";
+  cancel.dataset["action"] = "income-cancel";
+  cancel.dataset["id"] = entry.id;
+  actions.append(save, cancel);
+  form.append(error, actions);
+  return form;
 }
 
 type Trend = "up" | "down" | "flat" | "none";
@@ -672,7 +733,7 @@ function groupByDay<T extends { date: IsoDate }>(items: readonly T[]): [IsoDate,
 }
 
 function createDayHeading(date: IsoDate, tag: "h2" | "h3"): HTMLElement {
-  return el(tag, "day__title", relativeDayLabel(date));
+  return el(tag, "day__title", formatDayHeading(date, getTodayIso()));
 }
 
 /** Lápiz y papelera de un movimiento; main.ts los atiende por data-action. */
@@ -870,8 +931,13 @@ function renderHomeHighlights(state: AppState): void {
           : spentCents > 0
             ? 100
             : 0;
-      budgetValue.textContent = `Quedan ${formatMoney(Math.max(0, budget - spentCents))}`;
-      budgetNote.textContent = `Has usado el ${formatPercent(usedPct)} de ${formatMoney(budget)}`;
+      const remaining = Math.max(0, budget - spentCents);
+      const daily = dailyBudgetAllowance(remaining, month, getTodayIso());
+      budgetValue.textContent = `Quedan ${formatMoney(remaining)}`;
+      budgetNote.textContent =
+        daily === null
+          ? `Has usado el ${formatPercent(usedPct)} de ${formatMoney(budget)}`
+          : `Unos ${formatMoney(daily)} al día hasta fin de mes`;
       budgetMeter.hidden = false;
       budgetFill.style.width = `${usedPct}%`;
       budgetMeter.style.setProperty("--v", String(usedPct));
@@ -1125,7 +1191,9 @@ function renderPlanner(state: AppState): void {
   const budgetKey = `${month}:${budget ?? ""}`;
   const budgetInput = document.getElementById("budget-amount");
   const budgetProgress = document.getElementById("budget-progress");
-  const budgetFill = document.getElementById("budget-meter-fill");
+  const budgetRing = document.getElementById("budget-ring");
+  const budgetRingLabel = document.getElementById("budget-ring-label");
+  const budgetDaily = document.getElementById("budget-daily");
   const budgetClear = document.getElementById("budget-clear");
   if (budgetInput instanceof HTMLInputElement && budgetKey !== plannerBudgetKey) {
     plannerBudgetKey = budgetKey;
@@ -1137,19 +1205,39 @@ function renderPlanner(state: AppState): void {
         ? "Aún no has fijado un límite para este mes."
         : `${formatMoney(spent)} gastados de ${formatMoney(budget)}. Te quedan ${formatMoney(Math.max(0, budget - spent))}.`;
   }
-  if (budgetFill instanceof HTMLElement && budget !== null) {
-    budgetFill.style.width = `${Math.min(100, (spent / budget) * 100)}%`;
-    budgetFill.parentElement?.classList.toggle(
-      "budget-meter--warning",
-      spent >= budget * 0.75 && spent < budget,
-    );
-    budgetFill.parentElement?.classList.toggle("budget-meter--danger", spent >= budget);
-  } else if (budgetFill instanceof HTMLElement) {
-    budgetFill.style.width = "0%";
-    budgetFill.parentElement?.classList.remove(
-      "budget-meter--warning",
-      "budget-meter--danger",
-    );
+  if (budgetRing && budgetRingLabel && budgetDaily) {
+    if (budget === null) {
+      budgetRing.hidden = true;
+      budgetDaily.hidden = true;
+    } else {
+      const usedPct =
+        budget > 0 ? Math.min(100, (spent / budget) * 100) : spent > 0 ? 100 : 0;
+      budgetRing.hidden = false;
+      budgetRing.style.setProperty("--v", String(usedPct));
+      budgetRing.setAttribute("aria-valuenow", String(Math.round(usedPct)));
+      budgetRing.setAttribute(
+        "aria-valuetext",
+        `${formatPercent(usedPct)} del presupuesto utilizado`,
+      );
+      budgetRing.classList.toggle(
+        "ring--warning",
+        spent >= budget * 0.75 && spent < budget,
+      );
+      budgetRing.classList.toggle("ring--danger", spent >= budget);
+      budgetRingLabel.textContent = formatPercent(Math.round(usedPct));
+      const daily = dailyBudgetAllowance(
+        Math.max(0, budget - spent),
+        month,
+        getTodayIso(),
+      );
+      budgetDaily.textContent =
+        spent >= budget
+          ? "Has llegado al límite de este mes."
+          : daily === null
+            ? ""
+            : `Puedes gastar unos ${formatMoney(daily)} al día hasta fin de mes.`;
+      budgetDaily.hidden = budgetDaily.textContent === "";
+    }
   }
   if (budgetClear instanceof HTMLButtonElement) budgetClear.hidden = budget === null;
 
@@ -1162,20 +1250,19 @@ function renderPlanner(state: AppState): void {
         const progress = Math.min(100, (goal.savedCents / goal.targetCents) * 100);
         const item = el("li", "tile");
         const top = el("div", "tile__top");
-        top.append(createBlob("jar", "mint"));
+        const jar = el("div", "jar jar--tile");
+        jar.setAttribute("role", "progressbar");
+        jar.setAttribute("aria-label", `Progreso de ${goal.name}`);
+        jar.setAttribute("aria-valuemin", "0");
+        jar.setAttribute("aria-valuemax", "100");
+        jar.setAttribute("aria-valuenow", String(Math.round(progress)));
+        jar.style.setProperty("--v", `${progress}%`);
+        const jarPct = el("span", "jar__pct", formatPercent(Math.round(progress)));
+        jarPct.setAttribute("aria-hidden", "true");
+        jar.append(el("span", "jar__fill"), jarPct);
+        top.append(jar);
         if (goal.savedCents >= goal.targetCents)
           top.append(createStatusPill("ok", "Meta cumplida"));
-        else
-          top.append(el("span", "pill pill--soft", formatPercent(Math.round(progress))));
-        const meter = el("div", "meter");
-        meter.setAttribute("role", "progressbar");
-        meter.setAttribute("aria-label", `Progreso de ${goal.name}`);
-        meter.setAttribute("aria-valuemin", "0");
-        meter.setAttribute("aria-valuemax", "100");
-        meter.setAttribute("aria-valuenow", String(Math.round(progress)));
-        const fill = el("span");
-        fill.style.width = `${progress}%`;
-        meter.append(fill);
         const amounts = el("p", "tile__value");
         amounts.append(
           createMoney(goal.savedCents, ""),
@@ -1208,7 +1295,7 @@ function renderPlanner(state: AppState): void {
         remove.dataset["action"] = "goal-delete";
         remove.dataset["id"] = goal.id;
         controls.append(contribution, add, remove);
-        item.append(top, el("h2", "tile__title", goal.name), amounts, meter, history);
+        item.append(top, el("h2", "tile__title", goal.name), amounts, history);
         if (goal.dueDate)
           item.append(
             el("p", "tile__text", `Fecha objetivo: ${formatDate(goal.dueDate)}`),
@@ -1288,6 +1375,37 @@ function renderPlanner(state: AppState): void {
     );
   }
   if (walletsEmpty) walletsEmpty.hidden = wallets.length > 0;
+
+  const transfersSection = document.getElementById("transfers-section");
+  const transfersList = document.getElementById("transfers-list");
+  if (transfersSection && transfersList instanceof HTMLUListElement) {
+    const transfers = [...(state.data.transfers ?? [])].sort(
+      (a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt,
+    );
+    const walletName = (id: string): string =>
+      wallets.find((wallet) => wallet.id === id)?.name ?? "Cartera eliminada";
+    transfersList.replaceChildren(
+      ...transfers.map((transfer) => {
+        const row = el("li", "row");
+        const text = el("span", "row__text");
+        text.append(
+          el(
+            "span",
+            "row__title",
+            `De ${walletName(transfer.fromWalletId)} a ${walletName(transfer.toWalletId)}`,
+          ),
+          el("span", "row__meta", formatDate(transfer.date)),
+        );
+        row.append(
+          createBlob("swap", "lilac"),
+          text,
+          createMoney(transfer.amountCents, "row__amount"),
+        );
+        return row;
+      }),
+    );
+    transfersSection.hidden = transfers.length === 0;
+  }
 }
 
 function renderRecurringTimeline(state: AppState): void {

@@ -4,10 +4,24 @@ import { VitePWA } from "vite-plugin-pwa";
 export default defineConfig({
   // La web vivirá en https://ssanchez9.github.io/gastos-app/
   base: "/gastos-app/",
+  build: {
+    // El único archivo que supera los 500 kB es el de Firebase (≈ 555 kB, 167 kB
+    // comprimido); el código de la app va aparte y pesa mucho menos.
+    chunkSizeWarningLimit: 600,
+    rolldownOptions: {
+      output: {
+        // Firebase va en su propio archivo: cambia poco, así que tras publicar una
+        // versión nueva el navegador solo vuelve a descargar el código de la app.
+        codeSplitting: {
+          groups: [{ name: "firebase", test: /node_modules[\\/]@?firebase/ }],
+        },
+      },
+    },
+  },
   plugins: [
     VitePWA({
-      // El registro del service worker se hará a mano desde main.ts (fase 2),
-      // con aviso de actualización en lugar de recargar sola (fase 4).
+      // El service worker se registra a mano desde main.ts, con aviso de nueva
+      // versión en lugar de recargar sola.
       injectRegister: false,
       registerType: "prompt",
       workbox: {
@@ -15,7 +29,7 @@ export default defineConfig({
         // fuente e iconos. No hay reglas para otros dominios, así que Firebase,
         // Google Auth y Firestore siguen yendo siempre a la red.
         globPatterns: ["**/*.{html,js,css,woff2,png,svg,webmanifest}"],
-        globIgnores: ["icons.svg", "icon-maskable.svg"],
+        globIgnores: ["icon-maskable.svg"],
         navigateFallback: "index.html",
         cleanupOutdatedCaches: true,
       },

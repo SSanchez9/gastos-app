@@ -7,6 +7,7 @@ import type {
   Expense,
   Income,
   IncomeEntry,
+  IsoDate,
   MonthKey,
 } from "./types";
 
@@ -337,4 +338,23 @@ export function getChartData(data: AppData, month: MonthKey): ChartData {
       pct: item.pct,
     })),
   };
+}
+
+/**
+ * Lo que queda por gastar cada día hasta fin de mes, contando hoy. Solo tiene
+ * sentido en el mes en curso y si queda presupuesto; en otro caso, null.
+ */
+export function dailyBudgetAllowance(
+  remainingCents: number,
+  month: MonthKey,
+  today: IsoDate,
+): number | null {
+  if (getMonthKey(today) !== month || remainingCents <= 0) return null;
+  const lastDay = new Date(
+    Number(month.slice(0, 4)),
+    Number(month.slice(5, 7)),
+    0,
+  ).getDate();
+  const daysLeft = lastDay - Number(today.slice(8, 10)) + 1;
+  return Math.floor(remainingCents / daysLeft);
 }

@@ -434,6 +434,12 @@
 .rows {
   display: grid;
 }
+/* Los elementos de rejilla no encogen por debajo de su contenido sin esto: con
+   títulos largos la fila se saldría de la tarjeta en lugar de recortarlos. */
+.rows > *,
+.day-groups > * {
+  min-width: 0;
+}
 .row {
   display: flex;
   align-items: center;
@@ -470,15 +476,42 @@
   display: flex;
   gap: var(--space-1);
 }
-/* En pantallas estrechas, las acciones bajan de línea antes que cortar el título. */
-.row:has(.row__actions) {
+/* Edición dentro de la fila (ingresos): al editar se oculta la vista de la fila. */
+.row--editable {
   flex-wrap: wrap;
 }
-.row:has(.row__actions) .row__text {
-  flex-basis: var(--basis-sm);
+.row.is-editing > :not(.inline-edit) {
+  display: none;
 }
-.row:has(.row__actions) .row__actions {
-  margin-left: auto;
+.inline-edit {
+  display: grid;
+  flex-basis: 100%;
+  gap: var(--space-3);
+}
+.inline-edit .form__error,
+.inline-edit .button-group {
+  grid-column: 1 / -1;
+}
+
+/* Filas con acciones: en móvil los botones son algo más pequeños y el título se
+   recorta antes de que los botones bajen de línea. */
+.row:has(.row__actions) .row__text {
+  min-width: var(--row-text-min);
+}
+/* En pantallas muy estrechas el icono sobra: la categoría ya va escrita bajo el título. */
+@media (max-width: 379.98px) {
+  .row:has(.row__actions) > .blob {
+    display: none;
+  }
+}
+@media (max-width: 639.98px) {
+  .row:has(.row__actions) {
+    gap: var(--space-2);
+  }
+  .row__actions .icon-btn {
+    width: var(--tap-sm);
+    height: var(--tap-sm);
+  }
 }
 .day-groups {
   display: grid;
@@ -559,12 +592,6 @@
   height: 100%;
   border-radius: var(--radius-pill);
   background: var(--primary);
-}
-.budget-meter--warning > span {
-  background: var(--savings-color);
-}
-.budget-meter--danger > span {
-  background: var(--danger);
 }
 
 /* ---------- Rejilla de tarjetas ---------- */
@@ -841,6 +868,9 @@
   .form-row--recurring {
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 0.8fr);
     align-items: end;
+  }
+  .inline-edit {
+    grid-template-columns: repeat(auto-fit, minmax(var(--basis-md), 1fr));
   }
   .form-row--recurring > .button {
     grid-column: 1 / -1;

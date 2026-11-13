@@ -862,11 +862,26 @@
           </div>
           <div class="screen narrow">
             <section class="card budget-card" aria-label="Estado del presupuesto">
-              <p class="budget-card__progress" id="budget-progress">
-                Aún no has fijado un límite para este mes.
-              </p>
-              <div class="meter budget-meter" aria-hidden="true">
-                <span id="budget-meter-fill"></span>
+              <div
+                class="ring ring--lg"
+                id="budget-ring"
+                role="progressbar"
+                aria-label="Presupuesto utilizado"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                hidden
+              >
+                <span
+                  class="ring__value"
+                  id="budget-ring-label"
+                  aria-hidden="true"
+                ></span>
+              </div>
+              <div class="budget-card__text">
+                <p class="budget-card__progress" id="budget-progress">
+                  Aún no has fijado un límite para este mes.
+                </p>
+                <p class="note" id="budget-daily" hidden></p>
               </div>
             </section>
             <form class="card form" id="budget-form">
@@ -1088,6 +1103,15 @@
               <p class="empty card" id="wallets-empty">
                 Añade tu banco, efectivo o cuenta de ahorro.
               </p>
+              <section
+                class="card"
+                id="transfers-section"
+                aria-labelledby="transfers-title"
+                hidden
+              >
+                <h2 class="section-title" id="transfers-title">Traspasos</h2>
+                <ul class="rows" id="transfers-list"></ul>
+              </section>
             </section>
             <div class="stack">
               <form class="card form" id="wallet-form">

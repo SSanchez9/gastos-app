@@ -127,6 +127,7 @@
   --blob: 2.5rem;
   --tap: 2.75rem;
   --tap-lg: 3.5rem;
+  --tap-sm: 2.25rem;
   --input-h: 3.25rem;
   --amount-h: 3.5rem;
   --blob-sm: 1.75rem;
@@ -136,6 +137,7 @@
   --meter-h: 0.75rem;
   --track-h: 0.375rem;
   --ring: 3.75rem;
+  --ring-lg: 8rem;
   --ring-hole: 68%;
   --jar-w: 3rem;
   --jar-h: 3.75rem;
@@ -162,6 +164,7 @@
   --tooltip-max-sm: 11rem;
   --pct-min: 3.5em;
   --basis-sm: 7rem;
+  --row-text-min: 3.5rem;
   --basis-md: 8rem;
   --slice-focus-stroke: 44;
   --focus-w: 3px;
