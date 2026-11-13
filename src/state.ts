@@ -3,6 +3,7 @@ import {
   createCategory,
   getCategories,
   planCategoryDeletion,
+  renameCategory as renameInList,
 } from "./categories";
 import { isCategoryKey } from "./config";
 import { createLegacyIncomeMigration } from "./calc";
@@ -574,6 +575,13 @@ export function addCategory(name: string): Promise<Result<null>> {
   return saveFinancialSettings({
     categories: [...getCategories(state.data), created.value],
   });
+}
+
+/** Cambia el nombre de una categoría; sus movimientos no se modifican. */
+export function renameCategory(id: CategoryKey, name: string): Promise<Result<null>> {
+  const renamed = renameInList(getCategories(state.data), id, name);
+  if (!renamed.ok) return Promise.resolve(renamed);
+  return saveFinancialSettings({ categories: renamed.value });
 }
 
 /**

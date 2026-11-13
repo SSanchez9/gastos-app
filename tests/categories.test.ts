@@ -8,6 +8,7 @@ import {
   guessCategoryIcon,
   nextCategoryColor,
   planCategoryDeletion,
+  renameCategory,
 } from "../src/categories";
 import { isCategoryKey } from "../src/config";
 import { documentToExpense } from "../src/firebase/mappers";
@@ -315,5 +316,34 @@ describe("datos con categorías", () => {
 
   it("si ninguna copia tiene lista, al combinar no se crea una", () => {
     expect(mergeAppData(makeData(), makeData()).data.categories).toBeUndefined();
+  });
+});
+
+describe("renameCategory", () => {
+  const list = [builtInCategory("personal"), builtInCategory("otros"), gym];
+
+  it("cambia el nombre y conserva id y color", () => {
+    const renamed = renameCategory(list, CUSTOM_ID, "  Gimnasio y piscina ");
+    expect(renamed.ok && renamed.value[2]).toEqual({
+      ...gym,
+      name: "Gimnasio y piscina",
+    });
+  });
+
+  it("cambia el icono solo si el nombre nuevo sugiere uno", () => {
+    const toTrips = renameCategory(list, CUSTOM_ID, "Viajes");
+    expect(toTrips.ok && toTrips.value[2]?.icon).toBe("plane");
+    const toOther = renameCategory(list, "personal", "Yo");
+    expect(toOther.ok && toOther.value[0]?.icon).toBe("user");
+  });
+
+  it("permite cambiar solo mayúsculas o tildes del propio nombre", () => {
+    expect(renameCategory(list, CUSTOM_ID, "GIMNÁSIO").ok).toBe(true);
+  });
+
+  it("rechaza nombres vacíos, repetidos o categorías que no existen", () => {
+    expect(renameCategory(list, CUSTOM_ID, "  ").ok).toBe(false);
+    expect(renameCategory(list, CUSTOM_ID, "otros").ok).toBe(false);
+    expect(renameCategory(list, "coche", "Moto").ok).toBe(false);
   });
 });

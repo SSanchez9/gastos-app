@@ -1223,6 +1223,42 @@ function renderMoreStates(state: AppState): void {
 
 // ---------- Categorías ----------
 
+/** Formulario para cambiar el nombre, oculto dentro de la fila de la categoría. */
+function createCategoryEditForm(category: UserCategory): HTMLDivElement {
+  const form = el("div", "inline-edit");
+  form.hidden = true;
+  form.setAttribute("role", "group");
+  form.setAttribute("aria-label", `Cambiar el nombre de ${category.name}`);
+  const wrap = el("div", "field");
+  const input = el("input", "field__input");
+  input.id = `category-edit-${category.id}`;
+  input.value = category.name;
+  input.maxLength = 40;
+  input.required = true;
+  input.autocomplete = "off";
+  input.dataset["categoryName"] = "true";
+  const label = el("label", "field__label", "Nombre");
+  label.htmlFor = input.id;
+  wrap.append(label, input);
+  const error = el("p", "form__error");
+  error.setAttribute("role", "alert");
+  error.dataset["categoryError"] = "true";
+  error.hidden = true;
+  const buttons = el("div", "button-group");
+  for (const [action, text, className] of [
+    ["category-save", "Guardar", "button button--small"],
+    ["category-cancel", "Cancelar", "button button--ghost button--small"],
+  ] as const) {
+    const button = el("button", className, text);
+    button.type = "button";
+    button.dataset["action"] = action;
+    button.dataset["id"] = category.id;
+    buttons.append(button);
+  }
+  form.append(wrap, error, buttons);
+  return form;
+}
+
 function renderCategoriesScreen(state: AppState): void {
   const list = document.getElementById("categories-list");
   if (!(list instanceof HTMLUListElement)) return;
@@ -1246,10 +1282,17 @@ function renderCategoriesScreen(state: AppState): void {
             ]
               .filter(Boolean)
               .join(" y ");
-      const row = el("li", "row");
+      const row = el("li", "row row--editable");
       const text = el("span", "row__text");
       text.append(el("span", "row__title", category.name), el("span", "row__meta", meta));
       const actions = el("span", "row__actions");
+      const edit = el("button", "icon-btn");
+      edit.type = "button";
+      edit.dataset["action"] = "category-edit";
+      edit.dataset["id"] = category.id;
+      edit.setAttribute("aria-label", `Cambiar el nombre de ${category.name}`);
+      edit.append(createIcon("edit", "icon icon--sm"));
+      actions.append(edit);
       const remove = el("button", "icon-btn icon-btn--danger");
       remove.type = "button";
       remove.dataset["action"] = "category-delete";
@@ -1258,7 +1301,12 @@ function renderCategoriesScreen(state: AppState): void {
       remove.disabled = categoryList.length === 1;
       remove.append(createIcon("trash", "icon icon--sm"));
       actions.append(remove);
-      row.append(createCategoryBlob(category.id), text, actions);
+      row.append(
+        createCategoryBlob(category.id),
+        text,
+        actions,
+        createCategoryEditForm(category),
+      );
       return row;
     }),
   );

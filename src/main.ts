@@ -734,6 +734,49 @@ form("category-form")?.addEventListener("submit", (event) => {
   });
 });
 
+// Cambiar el nombre: el formulario está oculto dentro de cada fila.
+document.getElementById("categories-list")?.addEventListener("click", (event) => {
+  if (!(event.target instanceof Element)) return;
+  const button = event.target.closest<HTMLButtonElement>("button[data-action]");
+  const action = button?.dataset["action"];
+  const id = button?.dataset["id"];
+  if (!button || !id || !isCategoryKey(id)) return;
+  const row = button.closest<HTMLLIElement>(".row--editable");
+  const editForm = row?.querySelector<HTMLElement>(".inline-edit");
+  if (!row || !editForm) return;
+  if (action === "category-edit" || action === "category-cancel") {
+    const editing = action === "category-edit";
+    row.classList.toggle("is-editing", editing);
+    editForm.hidden = !editing;
+    if (editing) editForm.querySelector<HTMLInputElement>("input")?.select();
+    else row.querySelector<HTMLButtonElement>('[data-action="category-edit"]')?.focus();
+    return;
+  }
+  if (action !== "category-save") return;
+  const name = editForm.querySelector<HTMLInputElement>("[data-category-name]");
+  const error = editForm.querySelector<HTMLParagraphElement>("[data-category-error]");
+  button.disabled = true;
+  void state.renameCategory(id, name?.value ?? "").then((result) => {
+    button.disabled = false;
+    if (result.ok) showToast("Nombre de la categoría cambiado.");
+    else if (error) {
+      error.textContent = result.error;
+      error.hidden = false;
+    }
+  });
+});
+
+// Guardar con Intro dentro del formulario de nombre.
+document.getElementById("categories-list")?.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" || !(event.target instanceof HTMLInputElement)) return;
+  if (!event.target.matches("[data-category-name]")) return;
+  event.preventDefault();
+  event.target
+    .closest(".inline-edit")
+    ?.querySelector<HTMLButtonElement>('[data-action="category-save"]')
+    ?.click();
+});
+
 document.getElementById("categories-list")?.addEventListener("click", (event) => {
   if (!(event.target instanceof Element)) return;
   const button = event.target.closest<HTMLButtonElement>(

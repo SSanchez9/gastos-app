@@ -142,6 +142,26 @@ export function createCategory(
   id: CategoryKey,
   createdAt: number,
 ): Result<UserCategory> {
+  const checked = checkCategoryName(name, existing);
+  if (!checked.ok) return checked;
+  return {
+    ok: true,
+    value: {
+      id,
+      name: checked.value,
+      icon: guessCategoryIcon(checked.value),
+      color: nextCategoryColor(existing),
+      createdAt,
+    },
+  };
+}
+
+/** Nombre limpio y sin repetir (sin contar la categoría `exceptId`, al renombrar). */
+function checkCategoryName(
+  name: string,
+  existing: readonly UserCategory[],
+  exceptId?: CategoryKey,
+): Result<string> {
   const trimmed = name.trim().replace(/\s+/g, " ");
   if (!trimmed) return { ok: false, error: "Escribe un nombre para la categoría." };
   if (trimmed.length > CATEGORY_NAME_MAX_LENGTH)
@@ -150,17 +170,42 @@ export function createCategory(
       error: `El nombre no puede superar los ${CATEGORY_NAME_MAX_LENGTH} caracteres.`,
     };
   const normalized = normalizeName(trimmed);
-  if (existing.some((category) => normalizeName(category.name) === normalized))
+  if (
+    existing.some(
+      (category) =>
+        category.id !== exceptId && normalizeName(category.name) === normalized,
+    )
+  )
     return { ok: false, error: `Ya tienes una categoría llamada «${trimmed}».` };
+  return { ok: true, value: trimmed };
+}
+
+/**
+ * Cambia el nombre de una categoría. Los movimientos no se tocan: guardan el id, no
+ * el nombre. El color se mantiene; el icono solo cambia si el nombre nuevo sugiere
+ * uno concreto (si no, se conserva el que tenía).
+ */
+export function renameCategory(
+  categories: readonly UserCategory[],
+  id: CategoryKey,
+  name: string,
+): Result<UserCategory[]> {
+  const current = categories.find((category) => category.id === id);
+  if (!current) return { ok: false, error: "Esa categoría ya no existe." };
+  const checked = checkCategoryName(name, categories, id);
+  if (!checked.ok) return checked;
+  const guessed = guessCategoryIcon(checked.value);
   return {
     ok: true,
-    value: {
-      id,
-      name: trimmed,
-      icon: guessCategoryIcon(trimmed),
-      color: nextCategoryColor(existing),
-      createdAt,
-    },
+    value: categories.map((category) =>
+      category.id === id
+        ? {
+            ...category,
+            name: checked.value,
+            icon: guessed === "tag" ? category.icon : guessed,
+          }
+        : category,
+    ),
   };
 }
 
