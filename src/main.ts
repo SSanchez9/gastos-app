@@ -8,7 +8,18 @@ import { initBackup } from "./backup";
 import { renderChart } from "./charts";
 import { getCategories, guessCategoryFromText } from "./categories";
 import { isCategoryFilter, isCategoryKey } from "./config";
-import { eurosToCents, getMonthKey, getTodayIso, shiftMonth } from "./format";
+import {
+  parseExpenseLink,
+  stripExpenseLinkParams,
+  type ExpenseLink,
+} from "./expense-link";
+import {
+  centsToInputString,
+  eurosToCents,
+  getMonthKey,
+  getTodayIso,
+  shiftMonth,
+} from "./format";
 import { subscribeSession } from "./session";
 import * as state from "./state";
 import { initSyncUi } from "./sync-ui";
@@ -870,6 +881,34 @@ dom.filterCategory.addEventListener("change", () => {
   }
 });
 
+// ---------- Enlace para añadir un gasto (p. ej. desde Atajos del iPhone) ----------
+
+// ?nuevo=1&importe=12,50&comercio=Mercadona abre «Añadir movimiento» ya relleno.
+// Se quita de la URL para que no vuelva a abrirse al recargar, y se usa una sola vez.
+let pendingExpenseLink = parseExpenseLink(window.location.search);
+const searchWithoutLink = stripExpenseLinkParams(window.location.search);
+if (searchWithoutLink !== window.location.search) {
+  const { pathname, hash } = window.location;
+  history.replaceState(history.state, "", `${pathname}${searchWithoutLink}${hash}`);
+}
+
+/** Abre el formulario completo con los datos del enlace. No guarda nada. */
+function openExpenseFromLink(link: ExpenseLink): void {
+  if (!(expenseDialog instanceof HTMLDialogElement)) return;
+  cancelEditing(false);
+  dom.quickEntry.value = "";
+  renderQuickEntryPreview(null);
+  dom.amount.value = centsToInputString(link.amountCents);
+  dom.note.value = link.note;
+  dom.date.value = link.date ?? getTodayIso();
+  const category = guessCategoryFromText(link.note, getCategories(state.getState().data));
+  dom.categoryPicker
+    .querySelector<HTMLButtonElement>(`[data-category="${category}"]`)
+    ?.click();
+  if (!expenseDialog.open) expenseDialog.showModal();
+  showCompleteExpenseForm();
+}
+
 // ---------- Arranque ----------
 
 initCategorySelects();
@@ -877,6 +916,11 @@ dom.date.value = getTodayIso();
 let automaticRecurringTrigger = "";
 state.subscribe((appState) => {
   render(appState);
+  if (pendingExpenseLink !== null && appState.sync.status === "ready") {
+    const link = pendingExpenseLink;
+    pendingExpenseLink = null;
+    openExpenseFromLink(link);
+  }
   const month = appState.ui.selectedMonth;
   const trigger = `${appState.sync.status}|${appState.sync.online}|${month}`;
   if (
