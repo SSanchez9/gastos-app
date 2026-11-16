@@ -1,5 +1,7 @@
 .agents/
+.claude/
 design/
 AGENTS.md
+CLAUDE.md
 REGLAS.md
 src/storage.ts

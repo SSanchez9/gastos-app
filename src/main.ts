@@ -6,7 +6,8 @@ import { registerSW } from "virtual:pwa-register";
 import { initAuthUi } from "./auth-ui";
 import { initBackup } from "./backup";
 import { renderChart } from "./charts";
-import { CATEGORIES, CATEGORY_KEYS, isCategoryFilter } from "./config";
+import { getCategories, guessCategoryFromText } from "./categories";
+import { isCategoryFilter, isCategoryKey } from "./config";
 import { eurosToCents, getMonthKey, getTodayIso, shiftMonth } from "./format";
 import { subscribeSession } from "./session";
 import * as state from "./state";
@@ -83,6 +84,7 @@ function syncScreenNavigation(): void {
     "recurring",
     "wallets",
     "backups",
+    "categories",
   ].includes(target)
     ? "more"
     : target;
@@ -122,6 +124,8 @@ document.addEventListener("click", (event) => {
     }
     return;
   }
+  const openDialog = document.getElementById("expense-dialog");
+  if (openDialog instanceof HTMLDialogElement && openDialog.open) cancelEditing();
   if (screen) window.location.hash = screen;
   syncScreenNavigation();
 });
@@ -203,7 +207,7 @@ dom.form.addEventListener("submit", (event) => {
 
 dom.cancel.addEventListener("click", () => cancelEditing());
 
-// Entrada rápida inspirada en el registro conversacional de Boti.
+// Entrada rápida: interpreta textos como «12 café» o «45 supermercado ayer».
 const quickEntryInput = document.getElementById("quick-entry-input");
 const quickEntrySubmit = document.getElementById("quick-entry-submit");
 if (
@@ -222,26 +226,8 @@ if (
       .replace(/\b(?:hoy|ayer)\b/gi, " ")
       .replace(/\s+/g, " ")
       .trim();
-    const lower = raw.toLocaleLowerCase("es");
-    const category = /gasolina|combustible|fuel/.test(lower)
-      ? "gasolina"
-      : /supermercado|mercadona|carrefour|lidl|compra|batido|leche|cocacola|coca cola|monster/.test(
-            lower,
-          )
-        ? "supermercado"
-        : /alquiler/.test(lower)
-          ? "alquiler"
-          : /coche|parking|aparcamiento|taller|mantenimiento/.test(lower)
-            ? "coche"
-            : /casa|luz|agua|internet|hogar|digi/.test(lower)
-              ? "casa"
-              : /amigo|amiga|cena|bar|restaurante|cine/.test(lower)
-                ? "social"
-                : /ropa|farmacia|peluqueria|cejas|pull|berska|berskha|zara|gimnasio|personal/.test(
-                      lower,
-                    )
-                  ? "personal"
-                  : "otros";
+    const category = guessCategoryFromText(raw, getCategories(state.getState().data));
+    if (category === null) return null;
     const date = new Date();
     if (/\bayer\b/i.test(raw)) date.setDate(date.getDate() - 1);
     return {
@@ -374,64 +360,71 @@ document.getElementById("income-entry-list")?.addEventListener("click", (event) 
   const button = event.target.closest<HTMLButtonElement>("button[data-action]");
   const id = button?.dataset["id"];
   if (!button || !id) return;
+  const action = button.dataset["action"];
   const current = state.getState();
+  const legacyId = `legacy-income:${current.ui.selectedMonth}`;
   const entry = (current.data.incomeEntries ?? []).find((item) => item.id === id);
-  if (!entry && id === `legacy-income:${current.ui.selectedMonth}`) {
-    const month = current.ui.selectedMonth;
-    const legacyIncome = current.data.income.byMonth[month];
-    if (legacyIncome === undefined) return;
-    if (button.dataset["action"] === "income-delete") {
-      if (window.confirm("¿Eliminar el ingreso mensual guardado este mes?")) {
-        void state.clearIncome(month).then((result) => {
-          if (!result.ok) window.alert(result.error);
-        });
-      }
+
+  // Edición dentro de la fila: el formulario está oculto en el mismo elemento.
+  const row = button.closest<HTMLLIElement>(".row--editable");
+  const editForm = row?.querySelector<HTMLElement>(".inline-edit");
+  if (action === "income-edit" || action === "income-cancel") {
+    if (!row || !editForm) return;
+    const editing = action === "income-edit";
+    row.classList.toggle("is-editing", editing);
+    editForm.hidden = !editing;
+    if (editing) editForm.querySelector<HTMLInputElement>("input")?.focus();
+    else row.querySelector<HTMLButtonElement>('[data-action="income-edit"]')?.focus();
+    return;
+  }
+  // Guardar o eliminar exige que el ingreso exista en el estado actual.
+  if (!entry && id !== legacyId) return;
+  if (action === "income-save") {
+    if (!editForm) return;
+    const field = (name: string): HTMLInputElement | null =>
+      editForm.querySelector<HTMLInputElement>(`[data-income-field="${name}"]`);
+    const error = editForm.querySelector<HTMLParagraphElement>("[data-income-error]");
+    const showError = (message: string): void => {
+      if (!error) return;
+      error.textContent = message;
+      error.hidden = false;
+    };
+    const amountCents = eurosToCents(field("amount")?.value ?? "");
+    if (amountCents === null) {
+      showError("Introduce un importe válido, por ejemplo 1.250,00.");
       return;
     }
-    if (button.dataset["action"] === "income-edit") {
-      const amount = window.prompt(
-        "Importe del ingreso mensual",
-        (legacyIncome / 100).toFixed(2).replace(".", ","),
-      );
-      if (amount === null) return;
-      const amountCents = eurosToCents(amount);
-      if (amountCents === null) {
-        window.alert("Introduce un importe válido.");
-        return;
-      }
-      void state.setIncome(month, amountCents).then((result) => {
+    button.disabled = true;
+    const saving = entry
+      ? state.updateIncomeEntry(id, {
+          title: field("title")?.value ?? entry.title,
+          amountCents,
+          date: field("date")?.value ?? entry.date,
+        })
+      : state.setIncome(current.ui.selectedMonth, amountCents);
+    void saving.then((result) => {
+      button.disabled = false;
+      // Si se guarda, la suscripción vuelve a pintar la lista con el formulario cerrado.
+      if (!result.ok) showError(result.error);
+    });
+    return;
+  }
+
+  if (action !== "income-delete") return;
+  if (!entry) {
+    if (window.confirm("¿Eliminar el ingreso mensual guardado este mes?")) {
+      void state.clearIncome(current.ui.selectedMonth).then((result) => {
         if (!result.ok) window.alert(result.error);
       });
     }
     return;
   }
-  if (!entry) return;
-  if (button.dataset["action"] === "income-delete") {
-    if (window.confirm(`¿Eliminar el ingreso «${entry.title}»?`)) {
-      const deletion = entry.legacySourceMonth
-        ? state.clearIncome(entry.legacySourceMonth)
-        : state.deleteIncomeEntry(id);
-      void deletion.then((result) => {
-        if (!result.ok) window.alert(result.error);
-      });
-    }
-  }
-  if (button.dataset["action"] === "income-edit") {
-    const title = window.prompt("Título", entry.title);
-    if (title === null) return;
-    const amount = window.prompt(
-      "Importe",
-      (entry.amountCents / 100).toFixed(2).replace(".", ","),
-    );
-    if (amount === null) return;
-    const amountCents = eurosToCents(amount);
-    const date = window.prompt("Fecha (AAAA-MM-DD)", entry.date);
-    if (date === null || amountCents === null) return;
-    void state.updateIncomeEntry(id, { title, amountCents, date }).then((result) => {
-      if (!result.ok && incomeEntryError instanceof HTMLParagraphElement) {
-        incomeEntryError.textContent = result.error;
-        incomeEntryError.hidden = false;
-      }
+  if (window.confirm(`¿Eliminar el ingreso «${entry.title}»?`)) {
+    const deletion = entry.legacySourceMonth
+      ? state.clearIncome(entry.legacySourceMonth)
+      : state.deleteIncomeEntry(id);
+    void deletion.then((result) => {
+      if (!result.ok) window.alert(result.error);
     });
   }
 });
@@ -460,16 +453,6 @@ function form(id: string): HTMLFormElement | null {
 }
 
 const recurringCategory = document.getElementById("recurring-category");
-if (recurringCategory instanceof HTMLSelectElement) {
-  recurringCategory.replaceChildren(
-    ...CATEGORY_KEYS.map((key) => {
-      const option = document.createElement("option");
-      option.value = key;
-      option.textContent = CATEGORIES[key].label;
-      return option;
-    }),
-  );
-}
 
 const recurringAddToggle = document.getElementById("recurring-add-toggle");
 const recurringForm = form("recurring-form");
@@ -528,7 +511,7 @@ recurringForm?.addEventListener("submit", (event) => {
     !Number.isInteger(dayOfMonth) ||
     dayOfMonth < 1 ||
     dayOfMonth > 28 ||
-    !CATEGORY_KEYS.includes(categoryValue as (typeof CATEGORY_KEYS)[number])
+    !isCategoryKey(categoryValue)
   ) {
     showPlannerError(
       "recurring-error",
@@ -539,7 +522,7 @@ recurringForm?.addEventListener("submit", (event) => {
   const result = state.addRecurringExpense({
     name,
     amountCents: cents,
-    category: categoryValue as (typeof CATEGORY_KEYS)[number],
+    category: categoryValue,
     dayOfMonth,
   });
   void result.then((saved) => {
@@ -686,7 +669,7 @@ document.getElementById("recurring-list")?.addEventListener("click", async (even
       !Number.isInteger(dayOfMonth) ||
       dayOfMonth < 1 ||
       dayOfMonth > 28 ||
-      !CATEGORY_KEYS.includes(category.value as (typeof CATEGORY_KEYS)[number])
+      !isCategoryKey(category.value)
     ) {
       error.textContent = "Revisa el título, el importe, la categoría y el día (1–28).";
       error.hidden = false;
@@ -696,7 +679,7 @@ document.getElementById("recurring-list")?.addEventListener("click", async (even
     const result = await state.updateRecurringExpense(id, {
       name: name.value,
       amountCents,
-      category: category.value as (typeof CATEGORY_KEYS)[number],
+      category: category.value,
       dayOfMonth,
     });
     if (!result.ok) {
@@ -730,6 +713,109 @@ document.getElementById("wallets-list")?.addEventListener("click", (event) => {
   if (!id || !window.confirm("¿Eliminar esta cartera?")) return;
   void state.deleteWallet(id).then((result) => {
     if (!result.ok) window.alert(result.error);
+  });
+});
+
+// ---------- Categorías ----------
+
+form("category-form")?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  clearPlannerError("category-error");
+  const name = input("category-name");
+  if (!name) return;
+  void state.addCategory(name.value).then((result) => {
+    if (!result.ok) {
+      showPlannerError("category-error", result.error);
+      return;
+    }
+    showToast(`Categoría «${name.value.trim()}» añadida.`);
+    form("category-form")?.reset();
+    name.focus();
+  });
+});
+
+// Cambiar el nombre: el formulario está oculto dentro de cada fila.
+document.getElementById("categories-list")?.addEventListener("click", (event) => {
+  if (!(event.target instanceof Element)) return;
+  const button = event.target.closest<HTMLButtonElement>("button[data-action]");
+  const action = button?.dataset["action"];
+  const id = button?.dataset["id"];
+  if (!button || !id || !isCategoryKey(id)) return;
+  const row = button.closest<HTMLLIElement>(".row--editable");
+  const editForm = row?.querySelector<HTMLElement>(".inline-edit");
+  if (!row || !editForm) return;
+  if (action === "category-edit" || action === "category-cancel") {
+    const editing = action === "category-edit";
+    row.classList.toggle("is-editing", editing);
+    editForm.hidden = !editing;
+    if (editing) editForm.querySelector<HTMLInputElement>("input")?.select();
+    else row.querySelector<HTMLButtonElement>('[data-action="category-edit"]')?.focus();
+    return;
+  }
+  if (action !== "category-save") return;
+  const name = editForm.querySelector<HTMLInputElement>("[data-category-name]");
+  const error = editForm.querySelector<HTMLParagraphElement>("[data-category-error]");
+  button.disabled = true;
+  void state.renameCategory(id, name?.value ?? "").then((result) => {
+    button.disabled = false;
+    if (result.ok) showToast("Nombre de la categoría cambiado.");
+    else if (error) {
+      error.textContent = result.error;
+      error.hidden = false;
+    }
+  });
+});
+
+// Guardar con Intro dentro del formulario de nombre.
+document.getElementById("categories-list")?.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" || !(event.target instanceof HTMLInputElement)) return;
+  if (!event.target.matches("[data-category-name]")) return;
+  event.preventDefault();
+  event.target
+    .closest(".inline-edit")
+    ?.querySelector<HTMLButtonElement>('[data-action="category-save"]')
+    ?.click();
+});
+
+document.getElementById("categories-list")?.addEventListener("click", (event) => {
+  if (!(event.target instanceof Element)) return;
+  const button = event.target.closest<HTMLButtonElement>(
+    "button[data-action='category-delete']",
+  );
+  const id = button?.dataset["id"];
+  if (!button || !id || !isCategoryKey(id)) return;
+  const { data } = state.getState();
+  const category = getCategories(data).find((item) => item.id === id);
+  if (!category) return;
+  const expenses = data.expenses.filter((expense) => expense.category === id).length;
+  const recurring = (data.recurring ?? []).filter((item) => item.category === id).length;
+  const moving = [
+    expenses > 0 ? `${expenses} ${expenses === 1 ? "movimiento" : "movimientos"}` : "",
+    recurring > 0
+      ? `${recurring} ${recurring === 1 ? "gasto fijo" : "gastos fijos"}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" y ");
+  // Se avisa antes de mover nada a «Otros».
+  const question = moving
+    ? `¿Borrar la categoría «${category.name}»? Sus ${moving} pasarán a la categoría «Otros».`
+    : `¿Borrar la categoría «${category.name}»?`;
+  if (!window.confirm(question)) return;
+  button.disabled = true;
+  void state.deleteCategory(id).then((result) => {
+    button.disabled = false;
+    if (!result.ok) {
+      window.alert(result.error);
+      return;
+    }
+    const { movedExpenses, movedRecurring } = result.value;
+    const moved = movedExpenses + movedRecurring;
+    showToast(
+      moved > 0
+        ? `Categoría borrada. ${moved} ${moved === 1 ? "elemento pasa" : "elementos pasan"} a «Otros».`
+        : "Categoría borrada.",
+    );
   });
 });
 

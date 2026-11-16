@@ -10,7 +10,7 @@ import {
 } from "firebase/firestore";
 import type { Unsubscribe, WriteBatch } from "firebase/firestore";
 import { isValidMonthKey } from "../format";
-import type { AppData, Expense, Income, MonthKey, Result } from "../types";
+import type { AppData, CategoryKey, Expense, Income, MonthKey, Result } from "../types";
 import { getFirebaseDb } from "./client";
 import { parseAppData } from "../validate";
 import { diffAppData } from "./diff";
@@ -97,6 +97,7 @@ export function watchFinanceSettings(
       | "transfers"
       | "incomeEntries"
       | "migratedIncomeMonths"
+      | "categories"
     >,
   ) => void,
   onError: (message: string) => void,
@@ -119,6 +120,8 @@ export function watchFinanceSettings(
         transfers: parsed?.transfers ?? [],
         incomeEntries: parsed?.incomeEntries ?? [],
         migratedIncomeMonths: parsed?.migratedIncomeMonths ?? [],
+        // Sin lista guardada se deja sin definir: la app calcula la lista (categories.ts).
+        categories: parsed?.categories,
       });
     },
     (error) => onError(describeFirestoreError(error)),
@@ -136,10 +139,17 @@ export function saveFinanceSettings(
     | "transfers"
     | "incomeEntries"
     | "migratedIncomeMonths"
+    | "categories"
   >,
 ): Promise<Result<null>> {
+  // Firestore no admite campos undefined: la lista de categorías solo se escribe si existe.
+  const { categories, ...rest } = settings;
   return attempt(() =>
-    setDoc(doc(getFirebaseDb(), financeSettingsPath(userId)), settings, { merge: true }),
+    setDoc(
+      doc(getFirebaseDb(), financeSettingsPath(userId)),
+      categories === undefined ? rest : { ...rest, categories },
+      { merge: true },
+    ),
   );
 }
 
@@ -166,6 +176,28 @@ export function updateExpense(userId: string, expense: Expense): Promise<Result<
       updatedAt: expense.updatedAt,
     }),
   );
+}
+
+/**
+ * Cambia la categoría de varios gastos (al borrar una categoría). Va por lotes de 500;
+ * si falla a medias, repetir la operación termina el trabajo sin duplicar nada.
+ */
+export function moveExpensesToCategory(
+  userId: string,
+  expenseIds: readonly string[],
+  category: CategoryKey,
+): Promise<Result<null>> {
+  const db = getFirebaseDb();
+  const updatedAt = Date.now();
+  return attempt(async () => {
+    for (let start = 0; start < expenseIds.length; start += MAX_BATCH_OPERATIONS) {
+      const batch = writeBatch(db);
+      for (const id of expenseIds.slice(start, start + MAX_BATCH_OPERATIONS)) {
+        batch.update(doc(db, expensesPath(userId), id), { category, updatedAt });
+      }
+      await batch.commit();
+    }
+  });
 }
 
 export function deleteExpense(userId: string, expenseId: string): Promise<Result<null>> {
@@ -246,6 +278,8 @@ export function replaceAppData(
         transfers: next.transfers ?? [],
         incomeEntries: next.incomeEntries ?? [],
         migratedIncomeMonths: next.migratedIncomeMonths ?? [],
+        // Una copia sin categorías deja la lista calculada, como en los datos antiguos.
+        categories: next.categories ?? deleteField(),
       },
       { merge: true },
     );

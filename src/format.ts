@@ -4,6 +4,8 @@ import type { IsoDate, MonthKey } from "./types";
 const moneyFormatter = new Intl.NumberFormat(LOCALE, {
   style: "currency",
   currency: CURRENCY,
+  // En es-ES el punto de miles solo aparece desde 10.000; así sale también en 1.222,00 €.
+  useGrouping: "always",
 });
 
 const dateFormatter = new Intl.DateTimeFormat(LOCALE, {
@@ -105,6 +107,48 @@ export function formatDate(date: IsoDate): string {
   const month = Number(date.slice(5, 7));
   const day = Number(date.slice(8, 10));
   return dateFormatter.format(new Date(year, month - 1, day));
+}
+
+const dayHeadingFormatter = new Intl.DateTimeFormat(LOCALE, {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
+
+const dayHeadingWithYearFormatter = new Intl.DateTimeFormat(LOCALE, {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+function toLocalDate(date: IsoDate): Date {
+  return new Date(
+    Number(date.slice(0, 4)),
+    Number(date.slice(5, 7)) - 1,
+    Number(date.slice(8, 10)),
+  );
+}
+
+/**
+ * Cabecera de un día en las listas, relativa a `today`:
+ * "Hoy, 11 de noviembre", "Ayer, 10 de noviembre", "Lunes, 9 de noviembre".
+ * Si el año no es el de `today`, lo añade: "Martes, 9 de diciembre de 2025".
+ */
+export function formatDayHeading(date: IsoDate, today: IsoDate): string {
+  const day = toLocalDate(date);
+  const now = toLocalDate(today);
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  const formatter =
+    day.getFullYear() === now.getFullYear()
+      ? dayHeadingFormatter
+      : dayHeadingWithYearFormatter;
+  const text = formatter.format(day);
+  // "lunes, 9 de noviembre": la parte tras la coma es la fecha sin el día de la semana.
+  const dateOnly = text.slice(text.indexOf(",") + 1).trim();
+  if (day.getTime() === now.getTime()) return `Hoy, ${dateOnly}`;
+  if (day.getTime() === yesterday.getTime()) return `Ayer, ${dateOnly}`;
+  return text.charAt(0).toLocaleUpperCase(LOCALE) + text.slice(1);
 }
 
 /** "2026-10" → "octubre de 2026" */

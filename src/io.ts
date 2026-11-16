@@ -1,4 +1,5 @@
-import { BACKUP_VERSION, CATEGORIES } from "./config";
+import { findCategory, getCategories } from "./categories";
+import { BACKUP_VERSION } from "./config";
 import { centsToInputString, getMonthKey } from "./format";
 import type { AppData, Expense, IsoDate, MonthKey, Result } from "./types";
 import { parseAppData } from "./validate";
@@ -186,6 +187,15 @@ export function mergeAppData(
   if (current.wallets !== undefined || incoming.wallets !== undefined) {
     data.wallets = mergeById(current.wallets ?? [], incoming.wallets ?? [], (a) => a);
   }
+  // Categorías: se conservan las actuales (también las calculadas si aún no hay lista)
+  // y se añaden las de la copia que no existan. Ante el mismo id gana la actual.
+  if (current.categories !== undefined || incoming.categories !== undefined) {
+    data.categories = mergeById(
+      getCategories(current),
+      getCategories(incoming),
+      (a) => a,
+    );
+  }
   if (current.transfers !== undefined || incoming.transfers !== undefined) {
     data.transfers = mergeById(
       current.transfers ?? [],
@@ -307,14 +317,20 @@ function escapeCsvCell(value: string): string {
   return text;
 }
 
-/** Gastos en CSV para es-ES: separador ";" e importes con coma decimal. */
-export function expensesToCsv(expenses: readonly Expense[]): string {
+/**
+ * Gastos en CSV para es-ES: separador ";" e importes con coma decimal. La columna
+ * Categoría lleva el nombre de la categoría de la persona (`categories`).
+ */
+export function expensesToCsv(
+  expenses: readonly Expense[],
+  categories: Parameters<typeof findCategory>[0] = [],
+): string {
   const header = ["Fecha", "Categoría", "Nota", "Importe (€)"];
   const rows = [...expenses]
     .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt)
     .map((expense) => [
       expense.date,
-      CATEGORIES[expense.category].label,
+      findCategory(categories, expense.category).name,
       expense.note,
       centsToInputString(expense.amountCents),
     ]);

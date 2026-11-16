@@ -7,6 +7,7 @@ import type {
   Expense,
   Income,
   IncomeEntry,
+  IsoDate,
   MonthKey,
 } from "./types";
 
@@ -74,6 +75,12 @@ export interface CategoryTotal {
   pct: number;
 }
 
+/** Orden estable para empates: las de siempre primero, en su orden; luego las creadas. */
+function categoryOrder(category: CategoryKey): number {
+  const index = (CATEGORY_KEYS as readonly string[]).indexOf(category);
+  return index < 0 ? CATEGORY_KEYS.length : index;
+}
+
 /** Total por categoría del mes, de mayor a menor. Solo categorías con gasto. */
 export function totalsByCategory(
   expenses: readonly Expense[],
@@ -88,7 +95,7 @@ export function totalsByCategory(
   }
 
   const entries = [...totals.entries()].sort(
-    (a, b) => b[1] - a[1] || CATEGORY_KEYS.indexOf(a[0]) - CATEGORY_KEYS.indexOf(b[0]),
+    (a, b) => b[1] - a[1] || categoryOrder(a[0]) - categoryOrder(b[0]),
   );
   const percentages = percentagesOfTotal(entries.map(([, cents]) => cents));
 
@@ -337,4 +344,23 @@ export function getChartData(data: AppData, month: MonthKey): ChartData {
       pct: item.pct,
     })),
   };
+}
+
+/**
+ * Lo que queda por gastar cada día hasta fin de mes, contando hoy. Solo tiene
+ * sentido en el mes en curso y si queda presupuesto; en otro caso, null.
+ */
+export function dailyBudgetAllowance(
+  remainingCents: number,
+  month: MonthKey,
+  today: IsoDate,
+): number | null {
+  if (getMonthKey(today) !== month || remainingCents <= 0) return null;
+  const lastDay = new Date(
+    Number(month.slice(0, 4)),
+    Number(month.slice(5, 7)),
+    0,
+  ).getDate();
+  const daysLeft = lastDay - Number(today.slice(8, 10)) + 1;
+  return Math.floor(remainingCents / daysLeft);
 }

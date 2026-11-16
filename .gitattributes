@@ -1,0 +1,10 @@
+# Saltos de línea LF en el repositorio y en la copia de trabajo, también en Windows.
+# Así Prettier (endOfLine "lf") no marca como mal formateados archivos sin cambios.
+* text=auto eol=lf
+
+# Archivos binarios: sin conversión de saltos de línea.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.woff2 binary

@@ -1,17 +1,20 @@
 import {
   compareWithPreviousMonth,
   categoryIncomeShares,
+  dailyBudgetAllowance,
   expensesOfMonth,
   filterExpenses,
   getSavingsSummary,
   sumCents,
 } from "./calc";
 import type { MonthComparison } from "./calc";
-import { CATEGORIES, CATEGORY_KEYS, isCategoryKey } from "./config";
+import { findCategory, getCategories } from "./categories";
+import { isBuiltInCategoryKey, isCategoryKey } from "./config";
 import {
   centsToInputString,
   eurosToCents,
   formatDate,
+  formatDayHeading,
   formatMoney,
   formatMonth,
   formatPercent,
@@ -20,12 +23,15 @@ import {
 } from "./format";
 import type {
   AppState,
+  BuiltInCategoryKey,
+  CategoryColor,
   CategoryKey,
   Expense,
   IsoDate,
   NewExpense,
   RecurringExpense,
   Result,
+  UserCategory,
   WalletKind,
 } from "./types";
 
@@ -88,17 +94,37 @@ export const dom = {
 
 type Tone = "peach" | "mint" | "lilac" | "sky" | "neutral";
 
-/** Icono y tono de cada categoría: la identidad nunca depende solo del color. */
-const CATEGORY_LOOK: Record<CategoryKey, { icon: string; tone: Tone }> = {
-  supermercado: { icon: "cart", tone: "peach" },
-  personal: { icon: "user", tone: "lilac" },
-  coche: { icon: "car", tone: "sky" },
-  gasolina: { icon: "fuel", tone: "lilac" },
-  alquiler: { icon: "key", tone: "peach" },
-  casa: { icon: "home", tone: "sky" },
-  otros: { icon: "tag", tone: "neutral" },
-  social: { icon: "social", tone: "mint" },
+/** Fondo del icono de las categorías de siempre (se mantiene el de antes). */
+const BUILT_IN_TONE: Record<BuiltInCategoryKey, Tone> = {
+  supermercado: "peach",
+  personal: "lilac",
+  coche: "sky",
+  gasolina: "lilac",
+  alquiler: "peach",
+  casa: "sky",
+  otros: "neutral",
+  social: "mint",
 };
+
+/** Fondo del icono de las categorías creadas, según su color de gráfico. */
+const COLOR_TONE: Record<CategoryColor, Tone> = {
+  plum: "lilac",
+  orange: "peach",
+  green: "mint",
+  blue: "sky",
+  rose: "peach",
+  sky: "sky",
+  brick: "peach",
+  grey: "neutral",
+};
+
+/** Lista de categorías de la persona; se actualiza en cada renderApp. */
+let categoryList: UserCategory[] = getCategories({ expenses: [] });
+
+/** Nombre, icono y color de una categoría (también si ya no está en la lista). */
+export function categoryInfo(id: CategoryKey): UserCategory {
+  return findCategory(categoryList, id);
+}
 
 const WALLET_LOOK: Record<WalletKind, { icon: string; tone: Tone; label: string }> = {
   bank: { icon: "wallet", tone: "sky", label: "Banco" },
@@ -138,8 +164,11 @@ function createBlob(icon: string, tone: Tone): HTMLSpanElement {
 }
 
 function createCategoryBlob(category: CategoryKey): HTMLSpanElement {
-  const look = CATEGORY_LOOK[category];
-  return createBlob(look.icon, look.tone);
+  const info = categoryInfo(category);
+  const tone = isBuiltInCategoryKey(category)
+    ? BUILT_IN_TONE[category]
+    : COLOR_TONE[info.color];
+  return createBlob(info.icon, tone);
 }
 
 function createMoney(
@@ -191,7 +220,7 @@ export interface ChartSeries {
 
 /** Color fijo de una categoría en los gráficos (tokens --cat-* de base.css). */
 export function categoryColor(category: CategoryKey): string {
-  return `var(--cat-${category})`;
+  return `var(--cat-${categoryInfo(category).color})`;
 }
 
 /**
@@ -205,7 +234,7 @@ export function buildSeries(
   const series: ChartSeries[] = [...expenses]
     .sort((a, b) => b.cents - a.cents)
     .map((item) => ({
-      label: CATEGORIES[item.category].label,
+      label: categoryInfo(item.category).name,
       cents: item.cents,
       pct: item.pct,
       color: categoryColor(item.category),
@@ -243,7 +272,7 @@ export function showExpenseSavedToast(expense: Expense, edited: boolean): void {
   showToast(
     edited
       ? "Cambios guardados."
-      : `Movimiento añadido: ${formatMoney(expense.amountCents)} en ${CATEGORIES[expense.category].label}.`,
+      : `Movimiento añadido: ${formatMoney(expense.amountCents)} en ${categoryInfo(expense.category).name}.`,
   );
 }
 
@@ -254,45 +283,70 @@ function createOption(value: string, label: string): HTMLOptionElement {
   return option;
 }
 
-/** Rellena los desplegables y selectores de categoría a partir de config.ts. */
+let categoryControlsKey = "";
+
+/** Primer pintado de los selectores de categoría (antes de cargar los datos). */
 export function initCategorySelects(): void {
-  dom.category.replaceChildren(
-    ...CATEGORY_KEYS.map((key) => createOption(key, CATEGORIES[key].label)),
-  );
-  dom.filterCategory.replaceChildren(
-    createOption("all", "Todas"),
-    ...CATEGORY_KEYS.map((key) => createOption(key, CATEGORIES[key].label)),
-  );
+  renderCategoryControls();
+}
+
+/**
+ * Rellena los desplegables y selectores de categoría con la lista de la persona.
+ * Solo se rehacen si la lista cambia, para no perder el foco ni la selección.
+ */
+function renderCategoryControls(): void {
+  const key = categoryList
+    .map((category) => `${category.id}:${category.name}:${category.icon}`)
+    .join("|");
+  if (key === categoryControlsKey) return;
+  categoryControlsKey = key;
+  const previousCategory = dom.category.value;
+  const previousFilter = dom.filterCategory.value;
+  const options = (): HTMLOptionElement[] =>
+    categoryList.map((category) => createOption(category.id, category.name));
+
+  dom.category.replaceChildren(...options());
+  if (categoryList.some((category) => category.id === previousCategory))
+    dom.category.value = previousCategory;
+  dom.filterCategory.replaceChildren(createOption("all", "Todas"), ...options());
+  dom.filterCategory.value = categoryList.some(
+    (category) => category.id === previousFilter,
+  )
+    ? previousFilter
+    : "all";
+  const recurringCategory = document.getElementById("recurring-category");
+  if (recurringCategory instanceof HTMLSelectElement) {
+    const previous = recurringCategory.value;
+    recurringCategory.replaceChildren(...options());
+    if (categoryList.some((category) => category.id === previous))
+      recurringCategory.value = previous;
+  }
   // Las etiquetas de filtro actualizan el desplegable y avisan a main.ts con «change».
   dom.filterChips.replaceChildren(
-    ...["all", ...CATEGORY_KEYS].map((value) => {
-      const button = el(
-        "button",
-        "filter",
-        value === "all" ? "Todas" : CATEGORIES[value as CategoryKey].label,
-      );
+    ...[{ id: "all", name: "Todas" }, ...categoryList].map(({ id, name }) => {
+      const button = el("button", "filter", name);
       button.type = "button";
-      button.dataset["filter"] = value;
+      button.dataset["filter"] = id;
       button.setAttribute("aria-pressed", "false");
       button.addEventListener("click", () => {
-        dom.filterCategory.value = value;
+        dom.filterCategory.value = id;
         dom.filterCategory.dispatchEvent(new Event("change"));
       });
       return button;
     }),
   );
   dom.categoryPicker.replaceChildren(
-    ...CATEGORY_KEYS.map((category) => {
+    ...categoryList.map((category) => {
       const button = el("button", "category-chip");
       button.type = "button";
-      button.dataset["category"] = category;
+      button.dataset["category"] = category.id;
       button.setAttribute("aria-pressed", "false");
       button.append(
-        createCategoryBlob(category),
-        el("span", "category-chip__label", CATEGORIES[category].label),
+        createCategoryBlob(category.id),
+        el("span", "category-chip__label", category.name),
       );
       button.addEventListener("click", () => {
-        dom.category.value = category;
+        dom.category.value = category.id;
         syncCategoryPicker();
       });
       return button;
@@ -421,7 +475,7 @@ export function renderQuickEntryPreview(preview: QuickEntryPreview | null): void
   };
   dom.quickEntryPreview.replaceChildren(
     chip("wallet", formatMoney(preview.amountCents)),
-    chip(CATEGORY_LOOK[preview.category].icon, CATEGORIES[preview.category].label),
+    chip(categoryInfo(preview.category).icon, categoryInfo(preview.category).name),
     chip("calendar", relativeDayLabel(preview.date)),
   );
   dom.quickEntryPreview.hidden = false;
@@ -508,6 +562,7 @@ function renderIncomeEntries(state: AppState): void {
         : formatDate(entry.date),
       sortDate: entry.date,
       createdAt: entry.createdAt,
+      legacy: false,
     }));
   const migratedMonths = new Set(state.data.migratedIncomeMonths ?? []);
   for (const [legacyMonth, amountCents] of Object.entries(state.data.income.byMonth)) {
@@ -519,6 +574,7 @@ function renderIncomeEntries(state: AppState): void {
       dateLabel: formatMonth(legacyMonth),
       sortDate: `${legacyMonth}-01`,
       createdAt: 0,
+      legacy: true,
     });
   }
   entries.sort(
@@ -530,7 +586,7 @@ function renderIncomeEntries(state: AppState): void {
   if (list instanceof HTMLUListElement) {
     list.replaceChildren(
       ...entries.map((entry) => {
-        const item = el("li", "row");
+        const item = el("li", "row row--editable");
         const detail = el("span", "row__text");
         detail.append(
           el("span", "row__title", entry.title),
@@ -557,12 +613,69 @@ function renderIncomeEntries(state: AppState): void {
           detail,
           createMoney(entry.amountCents, "row__amount row__amount--in", "+"),
           actions,
+          createIncomeEditForm(entry),
         );
         return item;
       }),
     );
   }
   if (empty instanceof HTMLParagraphElement) empty.hidden = count > 0;
+}
+
+/**
+ * Formulario de edición de un ingreso, oculto dentro de su fila. El ingreso mensual
+ * heredado (income.byMonth) solo admite cambiar el importe.
+ */
+function createIncomeEditForm(entry: {
+  id: string;
+  title: string;
+  amountCents: number;
+  sortDate: IsoDate;
+  legacy: boolean;
+}): HTMLDivElement {
+  const form = el("div", "inline-edit");
+  form.hidden = true;
+  form.setAttribute("role", "group");
+  form.setAttribute("aria-label", `Editar ${entry.title}`);
+  const field = (
+    name: "title" | "amount" | "date",
+    labelText: string,
+    value: string,
+  ): void => {
+    const wrap = el("div", "field");
+    const input = el("input", "field__input");
+    input.id = `income-edit-${name}-${entry.id}`;
+    input.value = value;
+    input.required = true;
+    input.autocomplete = "off";
+    input.dataset["incomeField"] = name;
+    if (name === "title") input.maxLength = 80;
+    if (name === "amount") input.inputMode = "decimal";
+    if (name === "date") input.type = "date";
+    const label = el("label", "field__label", labelText);
+    label.htmlFor = input.id;
+    wrap.append(label, input);
+    form.append(wrap);
+  };
+  if (!entry.legacy) field("title", "Título", entry.title);
+  field("amount", "Importe (€)", centsToInputString(entry.amountCents));
+  if (!entry.legacy) field("date", "Fecha", entry.sortDate);
+  const error = el("p", "form__error");
+  error.setAttribute("role", "alert");
+  error.dataset["incomeError"] = "true";
+  error.hidden = true;
+  const actions = el("div", "button-group");
+  const save = el("button", "button button--small", "Guardar cambios");
+  save.type = "button";
+  save.dataset["action"] = "income-save";
+  save.dataset["id"] = entry.id;
+  const cancel = el("button", "button button--ghost button--small", "Cancelar");
+  cancel.type = "button";
+  cancel.dataset["action"] = "income-cancel";
+  cancel.dataset["id"] = entry.id;
+  actions.append(save, cancel);
+  form.append(error, actions);
+  return form;
 }
 
 type Trend = "up" | "down" | "flat" | "none";
@@ -602,8 +715,8 @@ function createBreakdownItem(
 ): HTMLLIElement {
   const name = el("span", "hbar__name");
   name.append(
-    createIcon(CATEGORY_LOOK[category].icon, "icon icon--sm"),
-    el("span", "", CATEGORIES[category].label),
+    createIcon(categoryInfo(category).icon, "icon icon--sm"),
+    el("span", "", categoryInfo(category).name),
   );
   const value = el("span", "hbar__value");
   value.append(
@@ -672,7 +785,7 @@ function groupByDay<T extends { date: IsoDate }>(items: readonly T[]): [IsoDate,
 }
 
 function createDayHeading(date: IsoDate, tag: "h2" | "h3"): HTMLElement {
-  return el(tag, "day__title", relativeDayLabel(date));
+  return el(tag, "day__title", formatDayHeading(date, getTodayIso()));
 }
 
 /** Lápiz y papelera de un movimiento; main.ts los atiende por data-action. */
@@ -700,7 +813,7 @@ function createExpenseActions(expense: Expense): HTMLSpanElement {
 }
 
 function createExpenseRow(expense: Expense): HTMLLIElement {
-  const label = CATEGORIES[expense.category].label;
+  const label = categoryInfo(expense.category).name;
   const title = expense.note || label;
   const text = el("span", "row__text");
   text.append(
@@ -746,8 +859,8 @@ function renderRecentActivity(state: AppState): void {
       id: expense.id,
       date: expense.date,
       createdAt: expense.createdAt,
-      title: expense.note || CATEGORIES[expense.category].label,
-      subtitle: expense.note ? CATEGORIES[expense.category].label : "Sin nota",
+      title: expense.note || categoryInfo(expense.category).name,
+      subtitle: expense.note ? categoryInfo(expense.category).name : "Sin nota",
       amountCents: expense.amountCents,
       income: false,
       category: expense.category,
@@ -870,8 +983,13 @@ function renderHomeHighlights(state: AppState): void {
           : spentCents > 0
             ? 100
             : 0;
-      budgetValue.textContent = `Quedan ${formatMoney(Math.max(0, budget - spentCents))}`;
-      budgetNote.textContent = `Has usado el ${formatPercent(usedPct)} de ${formatMoney(budget)}`;
+      const remaining = Math.max(0, budget - spentCents);
+      const daily = dailyBudgetAllowance(remaining, month, getTodayIso());
+      budgetValue.textContent = `Quedan ${formatMoney(remaining)}`;
+      budgetNote.textContent =
+        daily === null
+          ? `Has usado el ${formatPercent(usedPct)} de ${formatMoney(budget)}`
+          : `Unos ${formatMoney(daily)} al día hasta fin de mes`;
       budgetMeter.hidden = false;
       budgetFill.style.width = `${usedPct}%`;
       budgetMeter.style.setProperty("--v", String(usedPct));
@@ -1103,6 +1221,100 @@ function renderMoreStates(state: AppState): void {
   );
 }
 
+// ---------- Categorías ----------
+
+/** Formulario para cambiar el nombre, oculto dentro de la fila de la categoría. */
+function createCategoryEditForm(category: UserCategory): HTMLDivElement {
+  const form = el("div", "inline-edit");
+  form.hidden = true;
+  form.setAttribute("role", "group");
+  form.setAttribute("aria-label", `Cambiar el nombre de ${category.name}`);
+  const wrap = el("div", "field");
+  const input = el("input", "field__input");
+  input.id = `category-edit-${category.id}`;
+  input.value = category.name;
+  input.maxLength = 40;
+  input.required = true;
+  input.autocomplete = "off";
+  input.dataset["categoryName"] = "true";
+  const label = el("label", "field__label", "Nombre");
+  label.htmlFor = input.id;
+  wrap.append(label, input);
+  const error = el("p", "form__error");
+  error.setAttribute("role", "alert");
+  error.dataset["categoryError"] = "true";
+  error.hidden = true;
+  const buttons = el("div", "button-group");
+  for (const [action, text, className] of [
+    ["category-save", "Guardar", "button button--small"],
+    ["category-cancel", "Cancelar", "button button--ghost button--small"],
+  ] as const) {
+    const button = el("button", className, text);
+    button.type = "button";
+    button.dataset["action"] = action;
+    button.dataset["id"] = category.id;
+    buttons.append(button);
+  }
+  form.append(wrap, error, buttons);
+  return form;
+}
+
+function renderCategoriesScreen(state: AppState): void {
+  const list = document.getElementById("categories-list");
+  if (!(list instanceof HTMLUListElement)) return;
+  const count = (id: CategoryKey): { expenses: number; recurring: number } => ({
+    expenses: state.data.expenses.filter((expense) => expense.category === id).length,
+    recurring: (state.data.recurring ?? []).filter((item) => item.category === id).length,
+  });
+  list.replaceChildren(
+    ...categoryList.map((category) => {
+      const uses = count(category.id);
+      const meta =
+        uses.expenses === 0 && uses.recurring === 0
+          ? "Sin movimientos"
+          : [
+              uses.expenses > 0
+                ? `${uses.expenses} ${uses.expenses === 1 ? "movimiento" : "movimientos"}`
+                : "",
+              uses.recurring > 0
+                ? `${uses.recurring} ${uses.recurring === 1 ? "gasto fijo" : "gastos fijos"}`
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" y ");
+      const row = el("li", "row row--editable");
+      const text = el("span", "row__text");
+      text.append(el("span", "row__title", category.name), el("span", "row__meta", meta));
+      const actions = el("span", "row__actions");
+      const edit = el("button", "icon-btn");
+      edit.type = "button";
+      edit.dataset["action"] = "category-edit";
+      edit.dataset["id"] = category.id;
+      edit.setAttribute("aria-label", `Cambiar el nombre de ${category.name}`);
+      edit.append(createIcon("edit", "icon icon--sm"));
+      actions.append(edit);
+      const remove = el("button", "icon-btn icon-btn--danger");
+      remove.type = "button";
+      remove.dataset["action"] = "category-delete";
+      remove.dataset["id"] = category.id;
+      remove.setAttribute("aria-label", `Borrar la categoría ${category.name}`);
+      remove.disabled = categoryList.length === 1;
+      remove.append(createIcon("trash", "icon icon--sm"));
+      actions.append(remove);
+      row.append(
+        createCategoryBlob(category.id),
+        text,
+        actions,
+        createCategoryEditForm(category),
+      );
+      return row;
+    }),
+  );
+  const moreState = document.getElementById("more-categories-state");
+  if (moreState)
+    moreState.textContent = `${categoryList.length} ${categoryList.length === 1 ? "categoría" : "categorías"}`;
+}
+
 // ---------- Presupuesto, metas, gastos fijos y carteras ----------
 
 function createStatusPill(
@@ -1125,7 +1337,9 @@ function renderPlanner(state: AppState): void {
   const budgetKey = `${month}:${budget ?? ""}`;
   const budgetInput = document.getElementById("budget-amount");
   const budgetProgress = document.getElementById("budget-progress");
-  const budgetFill = document.getElementById("budget-meter-fill");
+  const budgetRing = document.getElementById("budget-ring");
+  const budgetRingLabel = document.getElementById("budget-ring-label");
+  const budgetDaily = document.getElementById("budget-daily");
   const budgetClear = document.getElementById("budget-clear");
   if (budgetInput instanceof HTMLInputElement && budgetKey !== plannerBudgetKey) {
     plannerBudgetKey = budgetKey;
@@ -1137,19 +1351,39 @@ function renderPlanner(state: AppState): void {
         ? "Aún no has fijado un límite para este mes."
         : `${formatMoney(spent)} gastados de ${formatMoney(budget)}. Te quedan ${formatMoney(Math.max(0, budget - spent))}.`;
   }
-  if (budgetFill instanceof HTMLElement && budget !== null) {
-    budgetFill.style.width = `${Math.min(100, (spent / budget) * 100)}%`;
-    budgetFill.parentElement?.classList.toggle(
-      "budget-meter--warning",
-      spent >= budget * 0.75 && spent < budget,
-    );
-    budgetFill.parentElement?.classList.toggle("budget-meter--danger", spent >= budget);
-  } else if (budgetFill instanceof HTMLElement) {
-    budgetFill.style.width = "0%";
-    budgetFill.parentElement?.classList.remove(
-      "budget-meter--warning",
-      "budget-meter--danger",
-    );
+  if (budgetRing && budgetRingLabel && budgetDaily) {
+    if (budget === null) {
+      budgetRing.hidden = true;
+      budgetDaily.hidden = true;
+    } else {
+      const usedPct =
+        budget > 0 ? Math.min(100, (spent / budget) * 100) : spent > 0 ? 100 : 0;
+      budgetRing.hidden = false;
+      budgetRing.style.setProperty("--v", String(usedPct));
+      budgetRing.setAttribute("aria-valuenow", String(Math.round(usedPct)));
+      budgetRing.setAttribute(
+        "aria-valuetext",
+        `${formatPercent(usedPct)} del presupuesto utilizado`,
+      );
+      budgetRing.classList.toggle(
+        "ring--warning",
+        spent >= budget * 0.75 && spent < budget,
+      );
+      budgetRing.classList.toggle("ring--danger", spent >= budget);
+      budgetRingLabel.textContent = formatPercent(Math.round(usedPct));
+      const daily = dailyBudgetAllowance(
+        Math.max(0, budget - spent),
+        month,
+        getTodayIso(),
+      );
+      budgetDaily.textContent =
+        spent >= budget
+          ? "Has llegado al límite de este mes."
+          : daily === null
+            ? ""
+            : `Puedes gastar unos ${formatMoney(daily)} al día hasta fin de mes.`;
+      budgetDaily.hidden = budgetDaily.textContent === "";
+    }
   }
   if (budgetClear instanceof HTMLButtonElement) budgetClear.hidden = budget === null;
 
@@ -1162,20 +1396,19 @@ function renderPlanner(state: AppState): void {
         const progress = Math.min(100, (goal.savedCents / goal.targetCents) * 100);
         const item = el("li", "tile");
         const top = el("div", "tile__top");
-        top.append(createBlob("jar", "mint"));
+        const jar = el("div", "jar jar--tile");
+        jar.setAttribute("role", "progressbar");
+        jar.setAttribute("aria-label", `Progreso de ${goal.name}`);
+        jar.setAttribute("aria-valuemin", "0");
+        jar.setAttribute("aria-valuemax", "100");
+        jar.setAttribute("aria-valuenow", String(Math.round(progress)));
+        jar.style.setProperty("--v", `${progress}%`);
+        const jarPct = el("span", "jar__pct", formatPercent(Math.round(progress)));
+        jarPct.setAttribute("aria-hidden", "true");
+        jar.append(el("span", "jar__fill"), jarPct);
+        top.append(jar);
         if (goal.savedCents >= goal.targetCents)
           top.append(createStatusPill("ok", "Meta cumplida"));
-        else
-          top.append(el("span", "pill pill--soft", formatPercent(Math.round(progress))));
-        const meter = el("div", "meter");
-        meter.setAttribute("role", "progressbar");
-        meter.setAttribute("aria-label", `Progreso de ${goal.name}`);
-        meter.setAttribute("aria-valuemin", "0");
-        meter.setAttribute("aria-valuemax", "100");
-        meter.setAttribute("aria-valuenow", String(Math.round(progress)));
-        const fill = el("span");
-        fill.style.width = `${progress}%`;
-        meter.append(fill);
         const amounts = el("p", "tile__value");
         amounts.append(
           createMoney(goal.savedCents, ""),
@@ -1208,7 +1441,7 @@ function renderPlanner(state: AppState): void {
         remove.dataset["action"] = "goal-delete";
         remove.dataset["id"] = goal.id;
         controls.append(contribution, add, remove);
-        item.append(top, el("h2", "tile__title", goal.name), amounts, meter, history);
+        item.append(top, el("h2", "tile__title", goal.name), amounts, history);
         if (goal.dueDate)
           item.append(
             el("p", "tile__text", `Fecha objetivo: ${formatDate(goal.dueDate)}`),
@@ -1288,6 +1521,37 @@ function renderPlanner(state: AppState): void {
     );
   }
   if (walletsEmpty) walletsEmpty.hidden = wallets.length > 0;
+
+  const transfersSection = document.getElementById("transfers-section");
+  const transfersList = document.getElementById("transfers-list");
+  if (transfersSection && transfersList instanceof HTMLUListElement) {
+    const transfers = [...(state.data.transfers ?? [])].sort(
+      (a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt,
+    );
+    const walletName = (id: string): string =>
+      wallets.find((wallet) => wallet.id === id)?.name ?? "Cartera eliminada";
+    transfersList.replaceChildren(
+      ...transfers.map((transfer) => {
+        const row = el("li", "row");
+        const text = el("span", "row__text");
+        text.append(
+          el(
+            "span",
+            "row__title",
+            `De ${walletName(transfer.fromWalletId)} a ${walletName(transfer.toWalletId)}`,
+          ),
+          el("span", "row__meta", formatDate(transfer.date)),
+        );
+        row.append(
+          createBlob("swap", "lilac"),
+          text,
+          createMoney(transfer.amountCents, "row__amount"),
+        );
+        return row;
+      }),
+    );
+    transfersSection.hidden = transfers.length === 0;
+  }
 }
 
 function renderRecurringTimeline(state: AppState): void {
@@ -1469,7 +1733,7 @@ function createRecurringRow(
     el(
       "p",
       "row__meta",
-      `${CATEGORIES[template.category].label}, día ${template.dayOfMonth}`,
+      `${categoryInfo(template.category).name}, día ${template.dayOfMonth}`,
     ),
   );
   const view = el("div", "recurring-card__view");
@@ -1522,9 +1786,13 @@ function createRecurringRow(
   editCategory.dataset["recurringField"] = "category";
   editCategory.id = `recurring-category-${template.id}`;
   editCategory.replaceChildren(
-    ...CATEGORY_KEYS.map((categoryKey) => {
-      const option = createOption(categoryKey, CATEGORIES[categoryKey].label);
-      option.selected = categoryKey === template.category;
+    // Las de la lista y, si ya no está en ella, la que tiene ahora el gasto fijo.
+    ...(categoryList.some((category) => category.id === template.category)
+      ? categoryList
+      : [...categoryList, categoryInfo(template.category)]
+    ).map((category) => {
+      const option = createOption(category.id, category.name);
+      option.selected = category.id === template.category;
       return option;
     }),
   );
@@ -1559,6 +1827,8 @@ export function renderApp(state: AppState): void {
   const today = getTodayIso();
   dom.currentDate.dateTime = today;
   dom.currentDate.textContent = `Hoy es ${formatDate(today)}`;
+  categoryList = getCategories(state.data);
+  renderCategoryControls();
   dom.monthSelect.value = state.ui.selectedMonth;
   dom.filterCategory.value = state.ui.categoryFilter;
   syncFilterChips();
@@ -1569,5 +1839,6 @@ export function renderApp(state: AppState): void {
   renderRecentActivity(state);
   renderHomeHighlights(state);
   renderMoreStates(state);
+  renderCategoriesScreen(state);
   renderPlanner(state);
 }

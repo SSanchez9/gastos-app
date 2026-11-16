@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   compareWithPreviousMonth,
+  dailyBudgetAllowance,
   expensesOfMonth,
   filterExpenses,
   lastSixMonthsExpenseTotals,
@@ -201,5 +202,22 @@ describe("lastSixMonthsSavingsTotals", () => {
       { month: "2025-12", spentCents: 2000, savedCents: -1000 },
       { month: "2026-01", spentCents: 1000, savedCents: 2000 },
     ]);
+  });
+});
+
+describe("dailyBudgetAllowance", () => {
+  it("reparte lo que queda entre los días que faltan, contando hoy", () => {
+    // 10 de noviembre: quedan 21 días (del 10 al 30).
+    expect(dailyBudgetAllowance(39651, "2026-11", "2026-11-10")).toBe(1888);
+    // Último día del mes: todo lo que queda es para hoy.
+    expect(dailyBudgetAllowance(5000, "2026-11", "2026-11-30")).toBe(5000);
+    // Febrero de año bisiesto.
+    expect(dailyBudgetAllowance(2900, "2024-02", "2024-02-01")).toBe(100);
+  });
+
+  it("devuelve null fuera del mes en curso o sin presupuesto restante", () => {
+    expect(dailyBudgetAllowance(10000, "2026-10", "2026-11-10")).toBeNull();
+    expect(dailyBudgetAllowance(0, "2026-11", "2026-11-10")).toBeNull();
+    expect(dailyBudgetAllowance(-500, "2026-11", "2026-11-10")).toBeNull();
   });
 });
