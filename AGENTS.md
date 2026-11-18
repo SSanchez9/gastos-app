@@ -1,6 +1,6 @@
 # Tarro (antes Gastos App / Boti)
 
-Aplicación web responsive e instalable (PWA) para registrar gastos, ingresos, presupuestos, metas de ahorro, gastos fijos y carteras. Usa Firebase Authentication para iniciar sesión con Google y Cloud Firestore para sincronizar los datos de cada usuario. Se publica en GitHub Pages bajo `/gastos-app/`.
+Aplicación web responsive e instalable (PWA) para registrar gastos, ingresos, presupuestos, ahorro acumulado, metas de ahorro, gastos fijos y carteras. Usa Firebase Authentication para iniciar sesión con Google y Cloud Firestore para sincronizar los datos de cada usuario. Se publica en GitHub Pages bajo `/gastos-app/`.
 
 Idioma de la interfaz y de los textos de usuario: español (España). Importes con formato `1.717,27 €`.
 
@@ -28,13 +28,14 @@ Comandos habituales:
 - `src/state.ts` mantiene el estado de la aplicación, valida cuándo se puede escribir y coordina la sincronización.
 - El acceso a Firestore se implementa en `src/firebase/repository.ts`. Mantén fuera de los componentes las lecturas y escrituras directas de Firestore.
 - `src/firebase/paths.ts` define las rutas de Firestore; `mappers.ts` convierte y valida documentos; `diff.ts` calcula cambios para importar copias.
-- Los movimientos y los ingresos mensuales se guardan bajo `users/{uid}/expenses` y `users/{uid}/monthlyIncomes`. Los presupuestos, metas, gastos fijos, carteras, traspasos y categorías se guardan en `users/{uid}/finance/settings`.
+- Los movimientos y los ingresos mensuales se guardan bajo `users/{uid}/expenses` y `users/{uid}/monthlyIncomes`. Los presupuestos, metas, gastos fijos, carteras, traspasos, categorías y ahorro se guardan en `users/{uid}/finance/settings`.
 - `src/firebase/auth.ts` gestiona el acceso con Google; `src/session.ts` representa la sesión en la aplicación.
 - `src/firebase/config.ts` contiene la configuración cliente de Firebase. La clave web de Firebase no sustituye las reglas de seguridad: los datos deben protegerse en Firestore Rules y limitarse al usuario autenticado correspondiente.
 - El inicio de sesión abre Google mediante popup. `watchAuthState` actualiza `session.ts`; cuando hay usuario, `main.ts` inicia `state.startSync(uid)`. Al cerrar sesión se detienen las escuchas y se limpia el estado en memoria.
 - `state.startSync` espera las tres suscripciones de `repository.ts` (gastos, ingresos mensuales y ajustes financieros) antes de marcar los datos como listos. Los cambios remotos vuelven a renderizar la interfaz.
 - Las escrituras pasan por acciones de `state.ts` y `repository.ts`; comprueba sesión, carga completa y conexión. Presenta errores de Firebase traducidos y permite reintentar la carga.
 - Categorías: cada persona tiene su lista en el campo opcional `categories` de `finance/settings`. Las de siempre conservan su clave (`supermercado`, `otros`…) y las creadas usan `cat-<id>`. Si falta la lista (datos y copias anteriores), `src/categories.ts` la calcula sin escribir nada: Social, Otros, Casa y Personal más las de siempre que ya se hayan usado. Al borrar una categoría, sus movimientos y gastos fijos pasan a «Otros» tras avisar a la persona; «Otros» solo se puede borrar sin movimientos y se vuelve a crear si hace falta. Icono y color se asignan solos.
+- Ahorro: el campo opcional `savings` de `finance/settings` guarda el ahorro base (lo que se tenía al empezar `baseMonth`) y los ajustes (dinero que entra o sale del ahorro sin pasar por ingresos ni gastos). `src/savings.ts` calcula el total hasta el mes elegido: base + (ingresos − gastos) de cada mes desde la base + ajustes. Los meses sin sueldo no suman y se avisan; los ajustes anteriores a la base no cuentan. Sin `savings`, la pantalla pide el ahorro base.
 - La aplicación requiere conexión para escribir. No presupongas persistencia offline en disco: el cliente de Firestore usa memoria.
 - PWA: el service worker solo guarda la «carcasa» de cada versión (HTML, JS, CSS, fuente e iconos) para abrir la app sin conexión. No añadas reglas que guarden en caché peticiones a Firebase, Google Auth o Firestore. Sin datos cargados, `sync-ui.ts` muestra un aviso en lugar de estados vacíos.
 - El service worker se registra en `main.ts` en modo «prompt»: una versión nueva no se activa sola, se muestra la barra «Hay una versión nueva» (`#update-bar`). La tarjeta «Instalar Tarro» (`#install-card`) usa `beforeinstallprompt` y, en iPhone, explica cómo añadirla desde Safari.
@@ -77,13 +78,14 @@ La base de datos de producción (Firestore, `users/{uid}/...`) contiene datos re
 La interfaz principal se define en `index.html`; `ui.ts` renderiza los datos y `main.ts` conecta los eventos. Mantén consistentes los destinos de navegación, los títulos accesibles y los identificadores usados por el código.
 
 - Acceso con Google, visible cuando no hay una sesión activa.
-- Navegación lateral en escritorio y barra inferior en móvil: Inicio, Movimientos, Análisis y Más, con una acción destacada para añadir.
+- Navegación lateral en escritorio (Inicio, Movimientos, Análisis, Ahorro y Más) y barra inferior en móvil (Inicio, Movimientos, Ahorro y Más; Análisis se abre desde Más), con una acción destacada para añadir.
 - Cabecera: selector de mes con flechas y botón para ocultar importes.
 - Inicio: ahorro del mes con ingresos y gastado, presupuesto, próximo gasto fijo y meta, reparto del ingreso por categoría y últimos movimientos agrupados por día.
 - Análisis: reparto del sueldo por categoría, ahorro de los últimos seis meses y desglose por categoría.
+- Ahorro: total ahorrado hasta el mes elegido, cómo ha crecido, lo que sobra cada mes (con aviso de meses sin sueldo), desglose «De dónde sale», metas y ajustes. Ventanas para el ahorro base y para añadir, editar o borrar ajustes.
 - Movimientos: lista del mes agrupada por día, filtro por categoría y botones de editar y eliminar en cada fila.
 - Añadir o editar movimiento (diálogo): entrada rápida con vista previa y formulario completo.
-- Más: ingresos, gastos fijos, carteras, categorías, metas, presupuestos, copias de seguridad JSON y CSV, cuenta, apariencia (modo claro u oscuro) e instalación de la app.
+- Más: análisis (solo en móvil), ingresos, gastos fijos, carteras, categorías, metas, presupuestos, copias de seguridad JSON y CSV, cuenta, apariencia (modo claro u oscuro) e instalación de la app.
 - El mes seleccionado determina el resumen, los movimientos, los ingresos, el presupuesto y los análisis mensuales; las metas de ahorro no dependen del mes. Los formularios deben conservar el contexto necesario al añadir varios movimientos.
 
 ## Flujo de trabajo para cambios
@@ -137,6 +139,7 @@ Alcance en tareas de diseño: `index.html`, `src/styles/`, `src/ui.ts`, `src/aut
 - `src/state.ts`, `src/session.ts`, `src/storage.ts`: estado, sesión y migración desde almacenamiento heredado.
 - `src/firebase/`: cliente, autenticación, rutas, repositorio, mappers y sincronización con Firestore.
 - `src/calc.ts`, `src/format.ts`, `src/charts.ts`: cálculos, formato y gráficos.
+- `src/savings.ts`: cálculo del ahorro acumulado y validación de la base y los ajustes (módulo puro). `src/savings-ui.ts` pinta la pantalla Ahorro.
 - `src/categories.ts`: lista de categorías de cada persona, icono y color automáticos, plan de borrado y detección en la entrada rápida (módulo puro).
 - `src/io.ts`, `src/backup.ts`: importación, exportación y copias de seguridad.
 - `src/styles/`: `base.css` (tokens, tema y fuente), `layout.css` (estructura y navegación), `components.css` (piezas compartidas) y `screens.css` (estilos de cada pantalla).

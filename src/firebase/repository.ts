@@ -98,6 +98,7 @@ export function watchFinanceSettings(
       | "incomeEntries"
       | "migratedIncomeMonths"
       | "categories"
+      | "savings"
     >,
   ) => void,
   onError: (message: string) => void,
@@ -122,6 +123,7 @@ export function watchFinanceSettings(
         migratedIncomeMonths: parsed?.migratedIncomeMonths ?? [],
         // Sin lista guardada se deja sin definir: la app calcula la lista (categories.ts).
         categories: parsed?.categories,
+        savings: parsed?.savings,
       });
     },
     (error) => onError(describeFirestoreError(error)),
@@ -140,14 +142,20 @@ export function saveFinanceSettings(
     | "incomeEntries"
     | "migratedIncomeMonths"
     | "categories"
+    | "savings"
   >,
 ): Promise<Result<null>> {
-  // Firestore no admite campos undefined: la lista de categorías solo se escribe si existe.
-  const { categories, ...rest } = settings;
+  // Firestore no admite campos undefined: las categorías y el ahorro solo se escriben
+  // si existen.
+  const { categories, savings, ...rest } = settings;
   return attempt(() =>
     setDoc(
       doc(getFirebaseDb(), financeSettingsPath(userId)),
-      categories === undefined ? rest : { ...rest, categories },
+      {
+        ...rest,
+        ...(categories === undefined ? {} : { categories }),
+        ...(savings === undefined ? {} : { savings }),
+      },
       { merge: true },
     ),
   );
@@ -280,6 +288,7 @@ export function replaceAppData(
         migratedIncomeMonths: next.migratedIncomeMonths ?? [],
         // Una copia sin categorías deja la lista calculada, como en los datos antiguos.
         categories: next.categories ?? deleteField(),
+        savings: next.savings ?? deleteField(),
       },
       { merge: true },
     );

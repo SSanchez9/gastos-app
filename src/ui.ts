@@ -134,7 +134,7 @@ const WALLET_LOOK: Record<WalletKind, { icon: string; tone: Tone; label: string 
   investment: { icon: "chart", tone: "peach", label: "Inversión" },
 };
 
-function el<K extends keyof HTMLElementTagNameMap>(
+export function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   className?: string,
   text?: string,

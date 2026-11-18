@@ -20,6 +20,7 @@ import {
   getTodayIso,
   shiftMonth,
 } from "./format";
+import { renderSavings } from "./savings-ui";
 import { subscribeSession } from "./session";
 import * as state from "./state";
 import { initSyncUi } from "./sync-ui";
@@ -79,6 +80,7 @@ themeToggle?.addEventListener("click", () => {
 function render(appState: AppState): void {
   renderApp(appState);
   renderChart(appState);
+  renderSavings(appState);
   syncScreenNavigation();
 }
 
@@ -99,11 +101,15 @@ function syncScreenNavigation(): void {
   ].includes(target)
     ? "more"
     : target;
+  // En el móvil, Análisis se abre desde Más.
+  const mobileTarget = target === "analysis" ? "more" : navTarget;
   document.querySelectorAll<HTMLElement>("[data-screen]").forEach((screen) => {
     screen.hidden = screen.dataset["screen"] !== target;
   });
   document.querySelectorAll<HTMLAnchorElement>("[data-screen-target]").forEach((link) => {
-    const active = link.dataset["screenTarget"] === navTarget;
+    const active =
+      link.dataset["screenTarget"] ===
+      (link.classList.contains("mobile-nav__link") ? mobileTarget : navTarget);
     if (active && link.matches(".nav-link, .mobile-nav__link"))
       link.setAttribute("aria-current", "page");
     else link.removeAttribute("aria-current");
@@ -725,6 +731,169 @@ document.getElementById("wallets-list")?.addEventListener("click", (event) => {
   void state.deleteWallet(id).then((result) => {
     if (!result.ok) window.alert(result.error);
   });
+});
+
+// ---------- Ahorro ----------
+
+const savingsAdjustmentDialog = document.getElementById("savings-adjustment-dialog");
+const savingsBaseDialog = document.getElementById("savings-base-dialog");
+const savingsKind = document.getElementById("savings-kind");
+const savingsAdjustmentHint = document.getElementById("savings-adjustment-hint");
+const savingsAdjustmentDelete = document.getElementById("savings-adjustment-delete");
+let editingAdjustmentId: string | null = null;
+
+// Las ventanas de ahorro se cierran con su botón o tocando fuera.
+for (const dialog of [savingsAdjustmentDialog, savingsBaseDialog]) {
+  if (!(dialog instanceof HTMLDialogElement)) continue;
+  dialog.addEventListener("click", (event) => {
+    if (
+      event.target === dialog ||
+      (event.target instanceof Element && event.target.closest("[data-close-dialog]"))
+    )
+      dialog.close();
+  });
+}
+
+function selectedSavingsKind(): "in" | "out" {
+  return savingsKind?.querySelector("[data-kind='out'][aria-pressed='true']")
+    ? "out"
+    : "in";
+}
+
+function setSavingsKind(kind: "in" | "out"): void {
+  savingsKind?.querySelectorAll<HTMLButtonElement>("[data-kind]").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset["kind"] === kind));
+  });
+  if (savingsAdjustmentHint)
+    savingsAdjustmentHint.textContent = `${kind === "in" ? "Se suma a" : "Se resta de"} «Tienes ahorrado». No cuenta como ingreso ni como gasto del mes.`;
+}
+
+savingsKind?.addEventListener("click", (event) => {
+  if (!(event.target instanceof Element)) return;
+  const kind = event.target.closest<HTMLButtonElement>("[data-kind]")?.dataset["kind"];
+  if (kind === "in" || kind === "out") setSavingsKind(kind);
+});
+
+function openSavingsAdjustment(id: string | null): void {
+  if (!(savingsAdjustmentDialog instanceof HTMLDialogElement)) return;
+  const adjustment =
+    id === null
+      ? undefined
+      : state.getState().data.savings?.adjustments.find((item) => item.id === id);
+  if (id !== null && adjustment === undefined) return;
+  editingAdjustmentId = adjustment?.id ?? null;
+  clearPlannerError("savings-adjustment-error");
+  setSavingsKind(adjustment?.kind ?? "in");
+  const amount = input("savings-adjustment-amount");
+  const name = input("savings-adjustment-name");
+  const date = input("savings-adjustment-date");
+  if (amount) amount.value = adjustment ? centsToInputString(adjustment.amountCents) : "";
+  if (name) name.value = adjustment?.title ?? "";
+  if (date) date.value = adjustment?.date ?? getTodayIso();
+  const title = document.getElementById("savings-adjustment-title");
+  if (title) title.textContent = adjustment ? "Editar ajuste" : "Añadir ajuste";
+  const submit = document.getElementById("savings-adjustment-submit");
+  if (submit) submit.textContent = adjustment ? "Guardar cambios" : "Añadir ajuste";
+  if (savingsAdjustmentDelete) savingsAdjustmentDelete.hidden = adjustment === undefined;
+  savingsAdjustmentDialog.showModal();
+}
+
+function openSavingsBase(): void {
+  if (!(savingsBaseDialog instanceof HTMLDialogElement)) return;
+  const { data, ui } = state.getState();
+  clearPlannerError("savings-base-error");
+  const amount = input("savings-base-amount");
+  const month = input("savings-base-month");
+  if (amount)
+    amount.value = data.savings ? centsToInputString(data.savings.baseCents) : "";
+  if (month) month.value = data.savings?.baseMonth ?? ui.selectedMonth;
+  savingsBaseDialog.showModal();
+}
+
+document.getElementById("savings-base-start")?.addEventListener("click", openSavingsBase);
+document.getElementById("savings-base-edit")?.addEventListener("click", openSavingsBase);
+document
+  .getElementById("savings-adjustment-add")
+  ?.addEventListener("click", () => openSavingsAdjustment(null));
+
+document.getElementById("savings-adjustments")?.addEventListener("click", (event) => {
+  if (!(event.target instanceof Element)) return;
+  const button = event.target.closest<HTMLButtonElement>("button[data-action]");
+  const action = button?.dataset["action"];
+  const id = button?.dataset["id"];
+  if (action === "savings-base") openSavingsBase();
+  else if (action === "savings-edit" && id) openSavingsAdjustment(id);
+});
+
+form("savings-adjustment-form")?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  clearPlannerError("savings-adjustment-error");
+  const amountCents = eurosToCents(input("savings-adjustment-amount")?.value ?? "");
+  if (amountCents === null) {
+    showPlannerError(
+      "savings-adjustment-error",
+      "Introduce un importe válido, por ejemplo 150,00.",
+    );
+    return;
+  }
+  const values = {
+    kind: selectedSavingsKind(),
+    title: input("savings-adjustment-name")?.value ?? "",
+    amountCents,
+    date: input("savings-adjustment-date")?.value ?? "",
+  };
+  const editing = editingAdjustmentId;
+  const request =
+    editing === null
+      ? state.addSavingsAdjustment(values)
+      : state.updateSavingsAdjustment(editing, values);
+  void request.then((result) => {
+    if (!result.ok) {
+      showPlannerError("savings-adjustment-error", result.error);
+      return;
+    }
+    if (savingsAdjustmentDialog instanceof HTMLDialogElement)
+      savingsAdjustmentDialog.close();
+    showToast(editing === null ? "Ajuste añadido." : "Ajuste guardado.");
+  });
+});
+
+savingsAdjustmentDelete?.addEventListener("click", () => {
+  const id = editingAdjustmentId;
+  if (id === null) return;
+  if (!window.confirm("¿Borrar este ajuste? Dejará de contar en tu ahorro.")) return;
+  void state.deleteSavingsAdjustment(id).then((result) => {
+    if (!result.ok) {
+      showPlannerError("savings-adjustment-error", result.error);
+      return;
+    }
+    if (savingsAdjustmentDialog instanceof HTMLDialogElement)
+      savingsAdjustmentDialog.close();
+    showToast("Ajuste borrado.");
+  });
+});
+
+form("savings-base-form")?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  clearPlannerError("savings-base-error");
+  const baseCents = eurosToCents(input("savings-base-amount")?.value ?? "");
+  if (baseCents === null) {
+    showPlannerError(
+      "savings-base-error",
+      "Introduce un importe válido, por ejemplo 8.000,00.",
+    );
+    return;
+  }
+  void state
+    .setSavingsBase(baseCents, input("savings-base-month")?.value ?? "")
+    .then((result) => {
+      if (!result.ok) {
+        showPlannerError("savings-base-error", result.error);
+        return;
+      }
+      if (savingsBaseDialog instanceof HTMLDialogElement) savingsBaseDialog.close();
+      showToast("Ahorro base guardado.");
+    });
 });
 
 // ---------- Categorías ----------

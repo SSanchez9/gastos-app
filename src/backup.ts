@@ -183,6 +183,14 @@ function openImportDialog(incoming: AppData, source: ImportSource): void {
     describeMerge(report),
     `Reemplazar: se eliminarán ${plural(replacement.removedExpenses, "gasto", "gastos")}, ${plural(replacement.removedIncomes, "sueldo", "sueldos")}, ${plural(replacement.removedGoals ?? 0, "meta", "metas")}, ${plural(replacement.removedRecurring ?? 0, "gasto fijo", "gastos fijos")}, ${plural(replacement.removedWallets ?? 0, "cartera", "carteras")} y ${plural(replacement.removedTransfers ?? 0, "traspaso", "traspasos")} de la nube que no estén en estos datos.`,
   ];
+  if (replacement.removesSavingsBase)
+    lines.push(
+      "Reemplazar también borra tu ahorro base y sus ajustes: la copia no los tiene.",
+    );
+  else if (replacement.removedSavingsAdjustments)
+    lines.push(
+      `Reemplazar también borra ${plural(replacement.removedSavingsAdjustments, "ajuste", "ajustes")} del ahorro.`,
+    );
   backupDom.summary.replaceChildren(...lines.map(createLine));
 
   pendingImport = incoming;

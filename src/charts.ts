@@ -195,11 +195,26 @@ function createLegendItem(slice: ChartSeries): HTMLLIElement {
 }
 
 function renderMonthlyChart(state: AppState): void {
-  const months = lastSixMonthsSavingsTotals(state.data, state.ui.selectedMonth);
+  renderMonthColumns(
+    chartDom.monthly,
+    lastSixMonthsSavingsTotals(state.data, state.ui.selectedMonth),
+    "month-tooltip",
+  );
+}
+
+/**
+ * Columnas de lo que sobra cada mes (Análisis y Ahorro). `idPrefix` distingue los
+ * tooltips de cada gráfico.
+ */
+export function renderMonthColumns(
+  container: HTMLElement,
+  months: ReturnType<typeof lastSixMonthsSavingsTotals>,
+  idPrefix: string,
+): void {
   const maximum = Math.max(...months.map((item) => Math.abs(item.savedCents ?? 0)), 0);
   const monthLabel = new Intl.DateTimeFormat("es-ES", { month: "short" });
 
-  chartDom.monthly.replaceChildren(
+  container.replaceChildren(
     ...months.map((item, index) => {
       const month = new Date(
         Number(item.month.slice(0, 4)),
@@ -226,7 +241,7 @@ function renderMonthlyChart(state: AppState): void {
 
       const tooltip = document.createElement("span");
       tooltip.className = "month-chart__tooltip";
-      tooltip.id = `month-tooltip-${item.month}`;
+      tooltip.id = `${idPrefix}-${item.month}`;
       tooltip.setAttribute("role", "tooltip");
       tooltip.textContent = tooltipText;
       column.setAttribute("aria-describedby", tooltip.id);
@@ -279,18 +294,16 @@ function renderMonthlyChart(state: AppState): void {
 }
 
 function closeTooltips(): void {
-  chartDom.monthly
-    .querySelectorAll<HTMLButtonElement>(".month-chart__item")
-    .forEach((item) => {
-      item.setAttribute("aria-expanded", "false");
-    });
+  document.querySelectorAll<HTMLButtonElement>(".month-chart__item").forEach((item) => {
+    item.setAttribute("aria-expanded", "false");
+  });
 }
 
 document.addEventListener("pointerdown", (event) => {
   if (
     event.pointerType === "touch" &&
     event.target instanceof Node &&
-    !chartDom.monthly.contains(event.target)
+    !(event.target instanceof Element && event.target.closest(".month-chart"))
   ) {
     closeTooltips();
   }

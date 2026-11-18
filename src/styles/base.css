@@ -141,6 +141,10 @@
   --ring-hole: 68%;
   --jar-w: 3rem;
   --jar-h: 3.75rem;
+  --jar-mini-w: 2.25rem;
+  --jar-mini-h: 2.75rem;
+  --line-chart-h: 8rem;
+  --equation-min: 9.5rem;
   --handle-w: 2.5rem;
   --handle-h: 4px;
   --nav-h: 5.5rem;
