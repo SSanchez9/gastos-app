@@ -225,6 +225,10 @@
             ><svg class="icon" aria-hidden="true"><use href="#i-chart" /></svg
             ><span>Análisis</span></a
           >
+          <a class="nav-link" href="#savings" data-screen-target="savings"
+            ><svg class="icon" aria-hidden="true"><use href="#i-jar" /></svg
+            ><span>Ahorro</span></a
+          >
           <a class="nav-link" href="#more" data-screen-target="more"
             ><svg class="icon" aria-hidden="true"><use href="#i-more" /></svg
             ><span>Más</span></a
@@ -631,6 +635,121 @@
           </section>
         </section>
 
+        <!-- Ahorro -->
+        <section
+          class="app-screen"
+          data-screen="savings"
+          aria-labelledby="savings-title"
+          hidden
+        >
+          <div class="screen-heading">
+            <h1 class="screen-title" id="savings-title" tabindex="-1">Ahorro</h1>
+            <p class="screen-sub">Tu ahorro base más lo que te sobra cada mes.</p>
+          </div>
+          <div class="savings">
+            <div class="savings__col">
+              <section class="hero hero--savings" aria-labelledby="savings-total-title">
+                <div class="hero__main">
+                  <h2 class="hero__lead" id="savings-total-title">Tienes ahorrado</h2>
+                  <p class="hero__amount privacy-amount" id="savings-total">—</p>
+                  <p class="hero__sub" id="savings-total-note">
+                    Indica cuánto tenías ahorrado y desde qué mes: a partir de ahí se suma
+                    lo que te sobra cada mes.
+                  </p>
+                  <p class="hero-chip privacy-amount" id="savings-month-chip"></p>
+                  <button
+                    class="button savings__start"
+                    type="button"
+                    id="savings-base-start"
+                  >
+                    Indicar ahorro base
+                  </button>
+                </div>
+              </section>
+
+              <section class="card" aria-labelledby="savings-growth-title">
+                <div class="section-head">
+                  <h2 class="section-title" id="savings-growth-title">Cómo ha crecido</h2>
+                  <span class="section-meta">Total al final de cada mes</span>
+                </div>
+                <div class="line-chart" id="savings-growth"></div>
+                <p class="empty" id="savings-growth-empty">
+                  Cuando indiques tu ahorro base, aquí verás cómo crece.
+                </p>
+              </section>
+
+              <section class="card" aria-labelledby="savings-months-title">
+                <div class="section-head">
+                  <h2 class="section-title" id="savings-months-title">
+                    Lo que te sobra cada mes
+                  </h2>
+                  <span class="section-meta">Ingresos − gastos</span>
+                </div>
+                <div class="month-chart" id="savings-months"></div>
+                <p class="callout" id="savings-missing" hidden>
+                  <svg class="icon icon--sm" aria-hidden="true">
+                    <use href="#i-alert" /></svg
+                  ><span id="savings-missing-text"></span
+                  ><a class="text-link" href="#income" data-screen-target="income"
+                    >Añadir sueldo</a
+                  >
+                </p>
+              </section>
+            </div>
+
+            <div class="savings__col">
+              <section class="card" aria-labelledby="savings-breakdown-title">
+                <div class="section-head">
+                  <h2 class="section-title" id="savings-breakdown-title">
+                    De dónde sale
+                  </h2>
+                  <button class="pill-link" type="button" id="savings-base-edit" hidden>
+                    Cambiar base
+                  </button>
+                </div>
+                <dl class="equation privacy-amount" id="savings-breakdown"></dl>
+                <p class="empty" id="savings-breakdown-empty">
+                  Aún no has indicado tu ahorro base.
+                </p>
+              </section>
+
+              <section class="card" aria-labelledby="savings-goals-title">
+                <div class="section-head">
+                  <h2 class="section-title" id="savings-goals-title">Metas</h2>
+                  <a class="pill-link" href="#goals" data-screen-target="goals"
+                    >Ver metas</a
+                  >
+                </div>
+                <ul class="goal-minis" id="savings-goals"></ul>
+                <p class="empty" id="savings-goals-empty">
+                  Aún no tienes metas. Crea una para seguir lo que apartas para algo.
+                </p>
+              </section>
+
+              <section class="card" aria-labelledby="savings-adjustments-title">
+                <div class="section-head">
+                  <h2 class="section-title" id="savings-adjustments-title">Ajustes</h2>
+                  <button
+                    class="button button--small"
+                    type="button"
+                    id="savings-adjustment-add"
+                  >
+                    <svg class="icon icon--sm" aria-hidden="true">
+                      <use href="#i-plus" />
+                    </svg>
+                    Añadir
+                  </button>
+                </div>
+                <ul class="rows" id="savings-adjustments"></ul>
+                <p class="empty" id="savings-adjustments-empty">
+                  Regalos, herencias o dinero que sacas del ahorro: lo que no pasa por tus
+                  ingresos y gastos.
+                </p>
+              </section>
+            </div>
+          </div>
+        </section>
+
         <!-- Más -->
         <section
           class="app-screen"
@@ -646,6 +765,21 @@
             <section class="menu-group" aria-labelledby="more-money-title">
               <h2 class="menu-group__title" id="more-money-title">Tu dinero</h2>
               <nav class="menu" aria-labelledby="more-money-title">
+                <a
+                  class="menu__item menu__item--mobile"
+                  href="#analysis"
+                  data-screen-target="analysis"
+                  ><span class="blob blob--lilac" aria-hidden="true"
+                    ><svg class="icon" aria-hidden="true">
+                      <use href="#i-chart" /></svg></span
+                  ><span class="menu__text"
+                    ><span class="menu__title">Análisis</span
+                    ><span class="menu__meta"
+                      >Reparto del sueldo y últimos meses</span
+                    ></span
+                  ><svg class="icon menu__chev" aria-hidden="true">
+                    <use href="#i-right" /></svg
+                ></a>
                 <a class="menu__item" href="#income" data-screen-target="income"
                   ><span class="blob blob--mint" aria-hidden="true"
                     ><svg class="icon"><use href="#i-arrow-in" /></svg></span
@@ -1326,6 +1460,184 @@
         </section>
       </main>
 
+      <!-- Ahorro: ajuste y ahorro base -->
+      <dialog
+        class="dialog expense-dialog"
+        id="savings-adjustment-dialog"
+        aria-labelledby="savings-adjustment-title"
+      >
+        <span class="dialog__handle" aria-hidden="true"></span>
+        <div class="dialog__head">
+          <div>
+            <h2 class="dialog__title" id="savings-adjustment-title">Añadir ajuste</h2>
+            <p class="dialog__sub">
+              Para el dinero que entra o sale del ahorro sin pasar por tus ingresos y
+              gastos: un regalo, una herencia, algo que sacas…
+            </p>
+          </div>
+          <button
+            class="icon-btn"
+            type="button"
+            data-close-dialog
+            aria-label="Cerrar diálogo de ajuste"
+            autofocus
+          >
+            <svg class="icon" aria-hidden="true"><use href="#i-close" /></svg>
+          </button>
+        </div>
+        <p class="form__error" id="savings-adjustment-error" role="alert" hidden></p>
+        <form class="form" id="savings-adjustment-form" novalidate>
+          <div class="field">
+            <span class="field__label" id="savings-kind-label">¿Qué ha pasado?</span>
+            <div
+              class="category-picker"
+              id="savings-kind"
+              role="group"
+              aria-labelledby="savings-kind-label"
+            >
+              <button
+                class="category-chip"
+                type="button"
+                data-kind="in"
+                aria-pressed="true"
+              >
+                <span class="blob blob--mint" aria-hidden="true"
+                  ><svg class="icon" aria-hidden="true">
+                    <use href="#i-arrow-in" /></svg></span
+                ><span class="category-chip__label">Entra en el ahorro</span>
+              </button>
+              <button
+                class="category-chip"
+                type="button"
+                data-kind="out"
+                aria-pressed="false"
+              >
+                <span class="blob blob--peach" aria-hidden="true"
+                  ><svg class="icon" aria-hidden="true">
+                    <use href="#i-arrow-out" /></svg></span
+                ><span class="category-chip__label">Sale del ahorro</span>
+              </button>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="savings-adjustment-amount">Importe</label>
+            <div class="amount-input amount-input--big">
+              <input
+                class="field__input"
+                type="text"
+                id="savings-adjustment-amount"
+                name="amount"
+                inputmode="decimal"
+                autocomplete="off"
+                placeholder="0,00"
+                required
+              />
+              <span aria-hidden="true">€</span>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="savings-adjustment-name">Concepto</label>
+            <input
+              class="field__input"
+              type="text"
+              id="savings-adjustment-name"
+              name="title"
+              maxlength="60"
+              autocomplete="off"
+              placeholder="Regalo, herencia, arreglo del coche…"
+              required
+            />
+          </div>
+          <div class="field">
+            <label class="field__label" for="savings-adjustment-date">Fecha</label>
+            <input
+              class="field__input"
+              type="date"
+              id="savings-adjustment-date"
+              name="date"
+              required
+            />
+          </div>
+          <p class="hint" id="savings-adjustment-hint">
+            Se suma a «Tienes ahorrado». No cuenta como ingreso ni como gasto del mes.
+          </p>
+          <div class="button-group button-group--stretch">
+            <button class="button" type="submit" id="savings-adjustment-submit">
+              Añadir ajuste
+            </button>
+            <button
+              class="button button--danger"
+              type="button"
+              id="savings-adjustment-delete"
+              hidden
+            >
+              Borrar
+            </button>
+          </div>
+        </form>
+      </dialog>
+
+      <dialog
+        class="dialog expense-dialog"
+        id="savings-base-dialog"
+        aria-labelledby="savings-base-title"
+      >
+        <span class="dialog__handle" aria-hidden="true"></span>
+        <div class="dialog__head">
+          <div>
+            <h2 class="dialog__title" id="savings-base-title">Ahorro base</h2>
+            <p class="dialog__sub">
+              Lo que tenías ahorrado al empezar un mes. Desde ese mes se suma lo que te
+              sobra cada mes.
+            </p>
+          </div>
+          <button
+            class="icon-btn"
+            type="button"
+            data-close-dialog
+            aria-label="Cerrar diálogo de ahorro base"
+            autofocus
+          >
+            <svg class="icon" aria-hidden="true"><use href="#i-close" /></svg>
+          </button>
+        </div>
+        <p class="form__error" id="savings-base-error" role="alert" hidden></p>
+        <form class="form" id="savings-base-form" novalidate>
+          <div class="field">
+            <label class="field__label" for="savings-base-amount">Tenía ahorrado</label>
+            <div class="amount-input amount-input--big">
+              <input
+                class="field__input"
+                type="text"
+                id="savings-base-amount"
+                name="amount"
+                inputmode="decimal"
+                autocomplete="off"
+                placeholder="0,00"
+                required
+              />
+              <span aria-hidden="true">€</span>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="savings-base-month">Al empezar el mes</label>
+            <input
+              class="field__input"
+              type="month"
+              id="savings-base-month"
+              name="month"
+              required
+            />
+          </div>
+          <p class="hint">
+            Los meses sin sueldo apuntado no suman: nunca se supone un ingreso.
+          </p>
+          <div class="button-group button-group--stretch">
+            <button class="button" type="submit">Guardar</button>
+          </div>
+        </form>
+      </dialog>
+
       <!-- Añadir o editar movimiento -->
       <dialog
         class="dialog expense-dialog"
@@ -1483,9 +1795,9 @@
           data-screen-target="add"
           aria-label="Añadir movimiento"
           ><svg class="icon" aria-hidden="true"><use href="#i-plus" /></svg></a
-        ><a class="mobile-nav__link" href="#analysis" data-screen-target="analysis"
-          ><svg class="icon" aria-hidden="true"><use href="#i-chart" /></svg
-          ><span>Análisis</span></a
+        ><a class="mobile-nav__link" href="#savings" data-screen-target="savings"
+          ><svg class="icon" aria-hidden="true"><use href="#i-jar" /></svg
+          ><span>Ahorro</span></a
         >
         <a class="mobile-nav__link" href="#more" data-screen-target="more"
           ><svg class="icon" aria-hidden="true"><use href="#i-more" /></svg

@@ -196,6 +196,18 @@ export function mergeAppData(
       (a) => a,
     );
   }
+  // Ahorro: se conserva la base actual y se añaden los ajustes de la copia que no existan.
+  const savingsBase = current.savings ?? incoming.savings;
+  if (savingsBase !== undefined) {
+    data.savings = {
+      ...savingsBase,
+      adjustments: mergeById(
+        current.savings?.adjustments ?? [],
+        incoming.savings?.adjustments ?? [],
+        (a) => a,
+      ),
+    };
+  }
   if (current.transfers !== undefined || incoming.transfers !== undefined) {
     data.transfers = mergeById(
       current.transfers ?? [],
@@ -260,6 +272,9 @@ export interface ReplaceReport {
   removedRecurring?: number;
   removedWallets?: number;
   removedTransfers?: number;
+  removedSavingsAdjustments?: number;
+  /** El ahorro base actual se perdería porque la copia no lo tiene. */
+  removesSavingsBase?: boolean;
 }
 
 /** Qué se perdería al reemplazar los datos actuales por los importados. */
@@ -296,6 +311,14 @@ export function describeReplacement(current: AppData, incoming: AppData): Replac
   if (removedRecurring > 0) report.removedRecurring = removedRecurring;
   if (removedWallets > 0) report.removedWallets = removedWallets;
   if (removedTransfers > 0) report.removedTransfers = removedTransfers;
+  const removedSavingsAdjustments = countRemoved(
+    current.savings?.adjustments ?? [],
+    incoming.savings?.adjustments ?? [],
+  );
+  if (removedSavingsAdjustments > 0)
+    report.removedSavingsAdjustments = removedSavingsAdjustments;
+  if (current.savings !== undefined && incoming.savings === undefined)
+    report.removesSavingsBase = true;
   return report;
 }
 

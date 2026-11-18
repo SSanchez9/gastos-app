@@ -15,6 +15,11 @@ import {
   isValidIsoDate,
   isValidMonthKey,
 } from "./format";
+import {
+  checkSavingsAdjustment,
+  checkSavingsBase,
+  type SavingsAdjustmentInput,
+} from "./savings";
 import { createEmptyData } from "./storage";
 import type {
   AppData,
@@ -395,6 +400,7 @@ async function saveFinancialSettings(
       | "incomeEntries"
       | "migratedIncomeMonths"
       | "categories"
+      | "savings"
     >
   >,
 ): Promise<Result<null>> {
@@ -410,6 +416,7 @@ async function saveFinancialSettings(
     | "incomeEntries"
     | "migratedIncomeMonths"
     | "categories"
+    | "savings"
   > = {
     budgets: patch.budgets ?? state.data.budgets ?? {},
     goals: patch.goals ?? state.data.goals ?? [],
@@ -420,6 +427,7 @@ async function saveFinancialSettings(
     migratedIncomeMonths:
       patch.migratedIncomeMonths ?? state.data.migratedIncomeMonths ?? [],
     categories: patch.categories ?? state.data.categories,
+    savings: patch.savings ?? state.data.savings,
   };
   const saved = await repository.saveFinanceSettings(writable.value, settings);
   if (saved.ok) publish({ ...state, data: { ...state.data, ...settings } });
@@ -558,6 +566,73 @@ export function updateRecurringExpense(
 export function deleteRecurringExpense(id: string): Promise<Result<null>> {
   return saveFinancialSettings({
     recurring: (state.data.recurring ?? []).filter((item) => item.id !== id),
+  });
+}
+
+// ---------- Ahorro ----------
+
+/** Guarda lo que tenías ahorrado al empezar `baseMonth`. Conserva los ajustes. */
+export function setSavingsBase(
+  baseCents: number,
+  baseMonth: MonthKey,
+): Promise<Result<null>> {
+  const checked = checkSavingsBase(baseCents, baseMonth);
+  if (!checked.ok) return Promise.resolve(checked);
+  return saveFinancialSettings({
+    savings: { adjustments: [], ...state.data.savings, baseCents, baseMonth },
+  });
+}
+
+/** Añade dinero que entra o sale del ahorro sin pasar por ingresos ni gastos. */
+export function addSavingsAdjustment(
+  input: SavingsAdjustmentInput,
+): Promise<Result<null>> {
+  const savings = state.data.savings;
+  if (savings === undefined)
+    return Promise.resolve({ ok: false, error: "Primero indica tu ahorro base." });
+  const checked = checkSavingsAdjustment(input);
+  if (!checked.ok) return Promise.resolve(checked);
+  const now = Date.now();
+  return saveFinancialSettings({
+    savings: {
+      ...savings,
+      adjustments: [
+        ...savings.adjustments,
+        { id: crypto.randomUUID(), ...checked.value, createdAt: now, updatedAt: now },
+      ],
+    },
+  });
+}
+
+export function updateSavingsAdjustment(
+  id: string,
+  input: SavingsAdjustmentInput,
+): Promise<Result<null>> {
+  const savings = state.data.savings;
+  if (!savings?.adjustments.some((adjustment) => adjustment.id === id))
+    return Promise.resolve({ ok: false, error: "Ese ajuste ya no existe." });
+  const checked = checkSavingsAdjustment(input);
+  if (!checked.ok) return Promise.resolve(checked);
+  return saveFinancialSettings({
+    savings: {
+      ...savings,
+      adjustments: savings.adjustments.map((adjustment) =>
+        adjustment.id === id
+          ? { ...adjustment, ...checked.value, updatedAt: Date.now() }
+          : adjustment,
+      ),
+    },
+  });
+}
+
+export function deleteSavingsAdjustment(id: string): Promise<Result<null>> {
+  const savings = state.data.savings;
+  if (savings === undefined) return Promise.resolve({ ok: true, value: null });
+  return saveFinancialSettings({
+    savings: {
+      ...savings,
+      adjustments: savings.adjustments.filter((adjustment) => adjustment.id !== id),
+    },
   });
 }
 

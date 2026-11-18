@@ -129,6 +129,28 @@ export interface WalletTransfer {
   createdAt: number;
 }
 
+/** Dinero que entra o sale del ahorro sin pasar por ingresos ni gastos. */
+export interface SavingsAdjustment {
+  id: string;
+  /** "in" suma al ahorro y "out" resta; el importe siempre es positivo. */
+  kind: "in" | "out";
+  title: string;
+  amountCents: number;
+  date: IsoDate;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/**
+ * Ahorro acumulado: lo que se tenía al empezar `baseMonth`, más lo que sobra cada mes
+ * desde entonces (ingresos − gastos) y los ajustes.
+ */
+export interface SavingsSettings {
+  baseCents: number;
+  baseMonth: MonthKey;
+  adjustments: SavingsAdjustment[];
+}
+
 /** Documento que se exporta a JSON y se importa. */
 export interface AppData {
   version: 1;
@@ -147,6 +169,8 @@ export interface AppData {
    * calcula con las básicas y las de siempre que ya se hayan usado (categories.ts).
    */
   categories?: UserCategory[];
+  /** Ahorro acumulado. Si falta, la pantalla Ahorro pide el ahorro base. */
+  savings?: SavingsSettings;
 }
 
 /** Ajustes de pantalla: no se guardan ni se exportan. */

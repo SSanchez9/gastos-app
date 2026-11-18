@@ -1,6 +1,7 @@
 import { CATEGORY_COLORS, CATEGORY_ICONS, CATEGORY_NAME_MAX_LENGTH } from "./categories";
 import { DATA_VERSION, NOTE_MAX_LENGTH, isCategoryKey } from "./config";
 import { isValidIsoDate, isValidMonthKey } from "./format";
+import { SAVINGS_TITLE_MAX_LENGTH } from "./savings";
 import type {
   AppData,
   Expense,
@@ -16,6 +17,8 @@ import type {
   CategoryColor,
   CategoryIcon,
   UserCategory,
+  SavingsAdjustment,
+  SavingsSettings,
 } from "./types";
 
 function fail(error: string): Result<never> {
@@ -177,6 +180,11 @@ export function parseAppData(raw: unknown): AppData | null {
       return null;
     result.categories = parsedCategories;
   }
+  if (raw["savings"] !== undefined) {
+    const savings = parseSavings(raw["savings"]);
+    if (savings === null) return null;
+    result.savings = savings;
+  }
   if (raw["goals"] !== undefined) {
     if (!Array.isArray(raw["goals"])) return null;
     const goals = raw["goals"].map(parseGoal);
@@ -229,6 +237,44 @@ export function parseAppData(raw: unknown): AppData | null {
   )
     return null;
   return result;
+}
+
+function parseSavings(raw: unknown): SavingsSettings | null {
+  if (!isRecord(raw)) return null;
+  const { baseCents, baseMonth, adjustments } = raw;
+  if (
+    !Number.isSafeInteger(baseCents) ||
+    (baseCents as number) < 0 ||
+    typeof baseMonth !== "string" ||
+    !isValidMonthKey(baseMonth) ||
+    !Array.isArray(adjustments)
+  )
+    return null;
+  const parsed = adjustments.map(parseSavingsAdjustment);
+  if (parsed.some((item) => item === null)) return null;
+  const list = parsed as SavingsAdjustment[];
+  if (new Set(list.map((item) => item.id)).size !== list.length) return null;
+  return { baseCents: baseCents as number, baseMonth, adjustments: list };
+}
+
+function parseSavingsAdjustment(raw: unknown): SavingsAdjustment | null {
+  if (!isRecord(raw)) return null;
+  const { id, kind, title, amountCents, date, createdAt, updatedAt } = raw;
+  if (
+    typeof id !== "string" ||
+    !id ||
+    (kind !== "in" && kind !== "out") ||
+    typeof title !== "string" ||
+    title.trim().length === 0 ||
+    title.length > SAVINGS_TITLE_MAX_LENGTH ||
+    !isPositiveInt(amountCents) ||
+    typeof date !== "string" ||
+    !isValidIsoDate(date) ||
+    !isFiniteNumber(createdAt) ||
+    !isFiniteNumber(updatedAt)
+  )
+    return null;
+  return { id, kind, title, amountCents, date, createdAt, updatedAt };
 }
 
 function parseCategory(raw: unknown): UserCategory | null {
